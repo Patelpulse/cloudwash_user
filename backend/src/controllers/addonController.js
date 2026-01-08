@@ -29,7 +29,7 @@ const uploadFromBuffer = (buffer) => {
 
 const createAddon = async (req, res) => {
     try {
-        const { name, description, price, duration, category, isActive } = req.body;
+        const { name, description, price, duration, category, subCategory, isActive } = req.body;
 
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload an image' });
@@ -37,23 +37,13 @@ const createAddon = async (req, res) => {
 
         const result = await uploadFromBuffer(req.file.buffer);
 
-        // Parse category - it might come as JSON string from frontend
-        let categories = ['Uncategorized'];
-        if (category) {
-            try {
-                categories = typeof category === 'string' ? JSON.parse(category) : category;
-            } catch (e) {
-                // If not valid JSON, treat as single category
-                categories = [category];
-            }
-        }
-
         const addon = await Addon.create({
             name,
             description,
             price: Number(price),
             duration,
-            category: categories,
+            category,
+            subCategory,
             imageUrl: result.secure_url,
             isActive: isActive === 'true'
         });
@@ -67,7 +57,10 @@ const createAddon = async (req, res) => {
 
 const getAddons = async (req, res) => {
     try {
-        const addons = await Addon.find({}).sort({ createdAt: -1 });
+        const addons = await Addon.find({})
+            .populate('category', 'name')
+            .populate('subCategory', 'name')
+            .sort({ createdAt: -1 });
         res.json(addons);
     } catch (error) {
         console.error(error);
@@ -93,7 +86,7 @@ const deleteAddon = async (req, res) => {
 
 const updateAddon = async (req, res) => {
     try {
-        const { name, description, price, duration, category, isActive } = req.body;
+        const { name, description, price, duration, category, subCategory, isActive } = req.body;
         const addon = await Addon.findById(req.params.id);
 
         if (!addon) {
@@ -104,16 +97,8 @@ const updateAddon = async (req, res) => {
         addon.description = description || addon.description;
         addon.price = price ? Number(price) : addon.price;
         addon.duration = duration || addon.duration;
-
-        // Parse category - it might come as JSON string from frontend
-        if (category) {
-            try {
-                addon.category = typeof category === 'string' ? JSON.parse(category) : category;
-            } catch (e) {
-                // If not valid JSON, treat as single category
-                addon.category = [category];
-            }
-        }
+        addon.category = category || addon.category;
+        addon.subCategory = subCategory || addon.subCategory;
 
         // Handle boolean update logic properly
         if (isActive !== undefined) {

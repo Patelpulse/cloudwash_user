@@ -9,12 +9,12 @@ part 'api_client.g.dart';
 @Riverpod(keepAlive: true)
 Dio apiClient(ApiClientRef ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
-  
+
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 120),
+      receiveTimeout: const Duration(seconds: 120),
       contentType: Headers.jsonContentType,
     ),
   );
@@ -26,12 +26,16 @@ Dio apiClient(ApiClientRef ref) {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
-        
+
         if (kDebugMode) {
           print('🌐 [${options.method}] ${options.uri}');
+          print(
+            '🔑 Token: ${token != null ? "Present (Starts with ${token.substring(0, 10)}...)" : "MISSING"}',
+          );
+          print('📂 Headers: ${options.headers}');
           if (options.data != null) print('📦 Data: ${options.data}');
         }
-        
+
         return handler.next(options);
       },
       onResponse: (response, handler) {
@@ -42,16 +46,19 @@ Dio apiClient(ApiClientRef ref) {
       },
       onError: (DioException error, handler) async {
         if (kDebugMode) {
-          print('❌ [${error.response?.statusCode}] ${error.requestOptions.uri}');
-          print('❌ Error: ${error.message}');
-          print('❌ Response: ${error.response?.data}');
+          print(
+            '❌ [${error.response?.statusCode}] ${error.requestOptions.uri}',
+          );
+          print('❌ Error Message: ${error.message}');
+          print('❌ Request Headers: ${error.requestOptions.headers}');
+          print('❌ Response Data: ${error.response?.data}');
         }
-        
+
         // Handle 401 Unauthorized (optional: trigger logout)
         if (error.response?.statusCode == 401) {
-          // You might want to clear token here or notify auth state
+          print('🔒 UNAUTHORIZED: Token might be invalid or expired.');
         }
-        
+
         return handler.next(error);
       },
     ),

@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['info', 'success', 'warning', 'error', 'promotional'],
+        enum: ['info', 'success', 'warning', 'error', 'promotional', 'order_created', 'order_update'],
         default: 'info',
     },
     targetAudience: {
@@ -35,6 +35,20 @@ const notificationSchema = new mongoose.Schema({
     sentAt: {
         type: Date,
         default: null,
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+    },
+    orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+        default: null,
+    },
+    isRead: {
+        type: Boolean,
+        default: false,
     },
 }, {
     timestamps: true,

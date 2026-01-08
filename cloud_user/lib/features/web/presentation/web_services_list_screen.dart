@@ -27,6 +27,7 @@ class _WebServicesListScreenState extends ConsumerState<WebServicesListScreen> {
   String _sortBy = 'Recommended';
   RangeValues _priceRange = const RangeValues(0, 5000);
   final double _maxPriceLimit = 5000;
+  bool _showDetails = false;
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +37,12 @@ class _WebServicesListScreenState extends ConsumerState<WebServicesListScreen> {
     final cartState = ref.watch(cartProvider);
     final cartItems = cartState.items;
     final cartTotal = ref.watch(cartTotalProvider);
+    final isMobile = MediaQuery.of(context).size.width < 1000;
 
     return WebLayout(
+      floatingBottomBar: (isMobile && cartItems.isNotEmpty)
+          ? _buildStickyBottomBar(cartItems, cartTotal)
+          : null,
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 1600),
@@ -61,8 +66,7 @@ class _WebServicesListScreenState extends ConsumerState<WebServicesListScreen> {
 
               return LayoutBuilder(
                 builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 1000;
-
+                  // We already have isMobile from MediaQuery, but keeping consistent logic
                   if (isMobile) {
                     return _buildMobileServicesView(
                       filtered,
@@ -115,6 +119,224 @@ class _WebServicesListScreenState extends ConsumerState<WebServicesListScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStickyBottomBar(List<dynamic> cartItems, double cartTotal) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // Slider Content (Details)
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: _showDetails ? MediaQuery.of(context).size.height * 0.5 : 0,
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: _showDetails
+              ? Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade200),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Added Services',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () =>
+                                setState(() => _showDetails = false),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: cartItems.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final item = cartItems[index];
+                          return Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: item.service.image ?? '',
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(
+                                    color: Colors.grey.shade100,
+                                    child: const Icon(Icons.broken_image),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.service.title,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${item.service.price}',
+                                      style: TextStyle(
+                                        color: AppTheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => ref
+                                    .read(cartProvider.notifier)
+                                    .removeFromCart(item.service.id),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                )
+              : null,
+        ),
+
+        // Bottom Bar
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                // Info Section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            '₹${cartTotal.toInt()}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '| ${cartItems.length} Services',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Row(
+                        children: [
+                          Icon(Icons.access_time, size: 14, color: Colors.grey),
+                          SizedBox(width: 4),
+                          Text(
+                            '60 mins', // Placeholder for timing
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Actions
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => setState(() => _showDetails = !_showDetails),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey.shade100,
+                        ),
+                        child: Icon(
+                          _showDetails
+                              ? Icons.keyboard_arrow_down
+                              : Icons.keyboard_arrow_up,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () => context.push('/cart'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Go to Cart',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -173,6 +395,8 @@ class _WebServicesListScreenState extends ConsumerState<WebServicesListScreen> {
         ),
         const SizedBox(height: 16),
         _buildServicesGrid(filtered, isMobile: true),
+        // Add padding for sticky bottom bar if cart is not empty
+        if (items.isNotEmpty) const SizedBox(height: 100),
       ],
     );
   }

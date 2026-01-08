@@ -5,7 +5,8 @@ class AddonModel {
   final double price;
   final String duration;
   final String imageUrl;
-  final List<String> category;
+  final String category;
+  final String? subCategory;
   final bool isActive;
 
   AddonModel({
@@ -16,10 +17,27 @@ class AddonModel {
     required this.duration,
     required this.imageUrl,
     required this.category,
+    this.subCategory,
     required this.isActive,
   });
 
   factory AddonModel.fromJson(Map<String, dynamic> json) {
+    // Handle category being Map or String
+    String catId = '';
+    if (json['category'] is Map) {
+      catId = json['category']['_id'] ?? '';
+    } else if (json['category'] is String) {
+      catId = json['category'];
+    }
+
+    // Handle subCategory being Map or String
+    String? subCatId;
+    if (json['subCategory'] is Map) {
+      subCatId = json['subCategory']['_id'];
+    } else if (json['subCategory'] is String) {
+      subCatId = json['subCategory'];
+    }
+
     return AddonModel(
       id: json['_id'] ?? '',
       name: json['name'] ?? '',
@@ -27,7 +45,8 @@ class AddonModel {
       price: (json['price'] ?? 0).toDouble(),
       duration: json['duration'] ?? '0',
       imageUrl: json['imageUrl'] ?? '',
-      category: List<String>.from(json['category'] ?? []),
+      category: catId,
+      subCategory: subCatId,
       isActive: json['isActive'] ?? true,
     );
   }

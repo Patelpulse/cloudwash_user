@@ -58,7 +58,7 @@ final testimonialsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TestimonialsRef = AutoDisposeFutureProviderRef<List<TestimonialModel>>;
-String _$whyChooseUsHash() => r'960d8b967d2273b992f85ebdc904a3a2f52c158f';
+String _$whyChooseUsHash() => r'8ead810e49380b7041309254a4ff3789fb70c5bf';
 
 /// See also [whyChooseUs].
 @ProviderFor(whyChooseUs)

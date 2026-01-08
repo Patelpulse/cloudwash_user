@@ -11,6 +11,8 @@ enum StaticPageType {
   blog,
   reviews,
   childProtection,
+  help,
+  refundPolicy,
 }
 
 class WebStaticPage extends StatelessWidget {
@@ -23,16 +25,17 @@ class WebStaticPage extends StatelessWidget {
     final pageData = _getPageData(pageType);
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
-    
+
     // Use wider layout for blog page
-    final isWideLayout = pageType == StaticPageType.blog || pageType == StaticPageType.reviews;
+    final isWideLayout =
+        pageType == StaticPageType.blog || pageType == StaticPageType.reviews;
 
     return WebLayout(
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 40 : 60, 
-          horizontal: isMobile ? 20 : 40
+          vertical: isMobile ? 40 : 60,
+          horizontal: isMobile ? 20 : 40,
         ),
         child: Center(
           child: ConstrainedBox(
@@ -48,10 +51,7 @@ class WebStaticPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(
-                  height: 1,
-                  color: Colors.grey.shade300,
-                ),
+                Container(height: 1, color: Colors.grey.shade300),
                 const SizedBox(height: 32),
                 pageData.content,
               ],
@@ -72,7 +72,7 @@ class WebStaticPage extends StatelessWidget {
             children: [
               _paragraph(
                 'Cloud Wash is India\'s premier laundry and dry cleaning service, providing doorstep pickup and delivery '
-                'across major cities. Founded in 2024, our mission is to make laundry day hassle-free with professional ' 
+                'across major cities. Founded in 2024, our mission is to make laundry day hassle-free with professional '
                 'garment care using world-class German eco-friendly solutions.',
               ),
               _paragraph(
@@ -160,14 +160,33 @@ class WebStaticPage extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _paragraph('We\'d love to hear from you. Reach out to us for any queries or feedback.'),
+                  _paragraph(
+                    'We\'d love to hear from you. Reach out to us for any queries or feedback.',
+                  ),
                   const SizedBox(height: 24),
-                  _contactItem(Icons.email_outlined, 'Email', 'help@cloudwash.com', isMobile),
-                  _contactItem(Icons.phone_outlined, 'Phone', '+91 1800-123-4567', isMobile),
-                  _contactItem(Icons.location_on_outlined, 'Office', 'Cloud Wash HQ, Bangalore, 560038', isMobile),
+                  _contactItem(
+                    Icons.email_outlined,
+                    'Email',
+                    'help@cloudwash.com',
+                    isMobile,
+                  ),
+                  _contactItem(
+                    Icons.phone_outlined,
+                    'Phone',
+                    '+91 1800-123-4567',
+                    isMobile,
+                  ),
+                  _contactItem(
+                    Icons.location_on_outlined,
+                    'Office',
+                    'Cloud Wash HQ, Bangalore, 560038',
+                    isMobile,
+                  ),
                   const SizedBox(height: 32),
                   _heading('Business Hours'),
-                  _paragraph('Monday - Saturday: 8:00 AM - 9:00 PM\nSunday: 9:00 AM - 6:00 PM'),
+                  _paragraph(
+                    'Monday - Saturday: 8:00 AM - 9:00 PM\nSunday: 9:00 AM - 6:00 PM',
+                  ),
                 ],
               );
             },
@@ -184,7 +203,9 @@ class WebStaticPage extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _paragraph('Tips, tricks, and insights for garment care and laundry.'),
+                  _paragraph(
+                    'Tips, tricks, and insights for garment care and laundry.',
+                  ),
                   const SizedBox(height: 32),
                   Wrap(
                     spacing: 24,
@@ -192,19 +213,35 @@ class WebStaticPage extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: isMobile ? screenWidth - 40 : 520,
-                        child: _blogCard('How to Keep Your White Clothes Bright', 'Expert tips on maintaining the brightness of your white garments...', 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=600'),
+                        child: _blogCard(
+                          'How to Keep Your White Clothes Bright',
+                          'Expert tips on maintaining the brightness of your white garments...',
+                          'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=600',
+                        ),
                       ),
                       SizedBox(
                         width: isMobile ? screenWidth - 40 : 520,
-                        child: _blogCard('The Ultimate Guide to Dry Cleaning', 'When should you dry clean vs wash? Learn what fabrics need professional care...', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600'),
+                        child: _blogCard(
+                          'The Ultimate Guide to Dry Cleaning',
+                          'When should you dry clean vs wash? Learn what fabrics need professional care...',
+                          'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600',
+                        ),
                       ),
                       SizedBox(
                         width: isMobile ? screenWidth - 40 : 520,
-                        child: _blogCard('5 Tips to Make Your Shoes Last Longer', 'Proper shoe care can extend the life of your footwear...', 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'),
+                        child: _blogCard(
+                          '5 Tips to Make Your Shoes Last Longer',
+                          'Proper shoe care can extend the life of your footwear...',
+                          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
+                        ),
                       ),
                       SizedBox(
                         width: isMobile ? screenWidth - 40 : 520,
-                        child: _blogCard('Caring for Leather Goods', 'Professional tips for maintaining your leather bags and jackets...', 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600'),
+                        child: _blogCard(
+                          'Caring for Leather Goods',
+                          'Professional tips for maintaining your leather bags and jackets...',
+                          'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600',
+                        ),
                       ),
                     ],
                   ),
@@ -220,13 +257,35 @@ class WebStaticPage extends StatelessWidget {
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _paragraph('See what our happy customers have to say about our laundry services.'),
+              _paragraph(
+                'See what our happy customers have to say about our laundry services.',
+              ),
               const SizedBox(height: 24),
-              _reviewCard(5, '"Excellent laundry service! My clothes came back perfectly folded and smelling fresh. The pickup was right on time."', 'Priya S., Bangalore'),
-              _reviewCard(5, '"Best dry cleaning I\'ve ever used. My silk sarees look brand new!"', 'Deepika R., Mumbai'),
-              _reviewCard(5, '"Amazing shoe cleaning service. My white sneakers look spotless now. Highly recommend!"', 'Rahul K., Delhi'),
-              _reviewCard(5, '"The curtain cleaning was fantastic. They handled my delicate curtains with care."', 'Meera P., Hyderabad'),
-              _reviewCard(4, '"Great carpet cleaning! Removed all the stains and the carpet smells fresh."', 'Amit S., Chennai'),
+              _reviewCard(
+                5,
+                '"Excellent laundry service! My clothes came back perfectly folded and smelling fresh. The pickup was right on time."',
+                'Priya S., Bangalore',
+              ),
+              _reviewCard(
+                5,
+                '"Best dry cleaning I\'ve ever used. My silk sarees look brand new!"',
+                'Deepika R., Mumbai',
+              ),
+              _reviewCard(
+                5,
+                '"Amazing shoe cleaning service. My white sneakers look spotless now. Highly recommend!"',
+                'Rahul K., Delhi',
+              ),
+              _reviewCard(
+                5,
+                '"The curtain cleaning was fantastic. They handled my delicate curtains with care."',
+                'Meera P., Hyderabad',
+              ),
+              _reviewCard(
+                4,
+                '"Great carpet cleaning! Removed all the stains and the carpet smells fresh."',
+                'Amit S., Chennai',
+              ),
             ],
           ),
         );
@@ -264,8 +323,68 @@ class WebStaticPage extends StatelessWidget {
             ],
           ),
         );
+
+      case StaticPageType.help:
+        return _PageData(
+          title: 'Help & Support',
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _paragraph(
+                'Got questions? We\'re here to help you 24/7. Check out our common topics below or reach out to us directly.',
+              ),
+              _heading('Frequently Asked Topics'),
+              _paragraph(
+                '• How to track my order?\n'
+                '• How do I reschedule a pickup?\n'
+                '• What fabrics can be dry cleaned?\n'
+                '• How to apply a coupon code?',
+              ),
+              _heading('Contact Support'),
+              _paragraph(
+                'Email: help@cloudwash.com\n'
+                'Toll Free: 1800-123-4567\n'
+                'WhatsApp: +91 9988776655',
+              ),
+              _heading('Service Hours'),
+              _paragraph(
+                'Our pickup and delivery agents operate from 8:00 AM to 9:00 PM every day.',
+              ),
+            ],
+          ),
+        );
+
+      case StaticPageType.refundPolicy:
+        return _PageData(
+          title: 'Return & Refund Policy',
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _paragraph('Last Updated: December 2024'),
+              _paragraph(
+                'At Cloud Wash, we strive for 100% customer satisfaction. If you\'re not happy with our service, here is our policy.',
+              ),
+              _heading('1. Rework Policy'),
+              _paragraph(
+                'If you\'re unsatisfied with the cleaning quality, we offer a "Free Rework". Please report the issue within 24 hours of delivery, and we will collect the garment for re-processing at no extra cost.',
+              ),
+              _heading('2. Cancellations'),
+              _paragraph(
+                'Cancellations made more than 2 hours before the scheduled pickup time are free. Late cancellations may incur a nominal fee of ₹50.',
+              ),
+              _heading('3. Refunds'),
+              _paragraph(
+                'For pre-paid orders: If a service is cancelled or cannot be fulfilled, a full refund will be processed to the original payment method within 5-7 business days.',
+              ),
+              _heading('4. Damage Policy'),
+              _paragraph(
+                'While we handle your clothes with extreme care, in the unlikely event of damage, our liability is limited to 10 times the cleaning cost of that specific item.',
+              ),
+            ],
+          ),
+        );
     }
-}
+  }
 
   Widget _paragraph(String text) {
     return Padding(
@@ -286,15 +405,17 @@ class WebStaticPage extends StatelessWidget {
       padding: const EdgeInsets.only(top: 24, bottom: 12),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  Widget _contactItem(IconData icon, String label, String value, bool isMobile) {
+  Widget _contactItem(
+    IconData icon,
+    String label,
+    String value,
+    bool isMobile,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -303,35 +424,59 @@ class WebStaticPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: isMobile 
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, size: 24, color: AppTheme.primary),
-                  const SizedBox(width: 12),
-                  Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            ],
-          )
-        : Row(
-            children: [
-              Icon(icon, size: 28, color: AppTheme.primary),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
-          ),
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 24, color: AppTheme.primary),
+                    const SizedBox(width: 12),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(icon, size: 28, color: AppTheme.primary),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 
@@ -342,7 +487,13 @@ class WebStaticPage extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,7 +508,13 @@ class WebStaticPage extends StatelessWidget {
               errorBuilder: (_, __, ___) => Container(
                 height: 180,
                 color: Colors.grey.shade200,
-                child: Center(child: Icon(Icons.image, size: 50, color: Colors.grey.shade400)),
+                child: Center(
+                  child: Icon(
+                    Icons.image,
+                    size: 50,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
               ),
             ),
           ),
@@ -366,17 +523,35 @@ class WebStaticPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text(snippet, style: TextStyle(color: Colors.grey.shade600, height: 1.5)),
+                Text(
+                  snippet,
+                  style: TextStyle(color: Colors.grey.shade600, height: 1.5),
+                ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('Read More', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    'Read More',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -399,16 +574,29 @@ class WebStaticPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: List.generate(5, (i) => Icon(
-              i < stars ? Icons.star : Icons.star_border,
-              color: Colors.amber,
-              size: 20,
-            )),
+            children: List.generate(
+              5,
+              (i) => Icon(
+                i < stars ? Icons.star : Icons.star_border,
+                color: Colors.amber,
+                size: 20,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
-          Text(review, style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey.shade700)),
+          Text(
+            review,
+            style: TextStyle(
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+              color: Colors.grey.shade700,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('- $reviewer', style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            '- $reviewer',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

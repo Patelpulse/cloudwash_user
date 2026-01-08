@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "864806051234",
+    "project_id": "cloudwash-6ceb6",
+    "storage_bucket": "cloudwash-6ceb6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:864806051234:android:96bc248adb99fa778a26fb",
+        "android_client_info": {
+          "package_name": "com.cloudwash.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "864806051234-7a45j1bm87vrsj7m7hhcgi51acqpm7e2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cloudwash.app",
+            "certificate_hash": "7b4febbb7c146c53d8792c878fbdb7522561baa9"
+          }
+        },
+        {
+          "client_id": "864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRIGbcvURX41hw9lcvkGFtCrPn1wbwzek"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

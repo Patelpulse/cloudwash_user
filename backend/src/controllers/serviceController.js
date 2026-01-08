@@ -95,7 +95,7 @@ const deleteService = async (req, res) => {
 
 const updateService = async (req, res) => {
     try {
-        const { name, category, price, duration, description, isActive } = req.body;
+        const { name, category, subCategory, price, duration, description, isActive } = req.body;
         const service = await Service.findById(req.params.id);
 
         if (!service) {
@@ -104,6 +104,7 @@ const updateService = async (req, res) => {
 
         service.name = name || service.name;
         if (category) service.category = category;
+        if (subCategory) service.subCategory = subCategory;
         service.price = price || service.price;
         service.duration = duration || service.duration;
         service.description = description || service.description;
@@ -126,9 +127,25 @@ const updateService = async (req, res) => {
     }
 };
 
+const bulkDeleteServices = async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids)) {
+            return res.status(400).json({ message: 'Please provide an array of service IDs' });
+        }
+
+        await Service.deleteMany({ _id: { $in: ids } });
+        res.json({ message: 'Services removed successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     createService,
     getServices,
     deleteService,
-    updateService
+    updateService,
+    bulkDeleteServices
 };

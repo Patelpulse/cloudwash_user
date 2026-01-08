@@ -1,3 +1,5 @@
+import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
 import 'package:cloud_user/features/auth/data/auth_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -8,11 +10,7 @@ class OtpScreen extends ConsumerStatefulWidget {
   final String phone;
   final String generatedOtp;
 
-  const OtpScreen({
-    super.key,
-    required this.phone,
-    required this.generatedOtp,
-  });
+  const OtpScreen({super.key, required this.phone, required this.generatedOtp});
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -35,12 +33,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
     try {
       // Call Backend to Login/Register
-      await ref.read(authRepositoryProvider).verifyOtp(
-        widget.phone, 
-        enteredOtp,
-      );
-      
+      await ref
+          .read(authRepositoryProvider)
+          .verifyOtp(widget.phone, enteredOtp);
+
       if (mounted) {
+        ref.invalidate(authStateProvider);
+        ref.invalidate(userProfileProvider);
         if (kIsWeb) {
           context.go('/');
         } else {
@@ -72,7 +71,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             ),
             Text(
               '+91 ${widget.phone}',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
             TextField(
@@ -91,9 +92,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _verifyOtp,
-                child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Verify & Login'),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Verify & Login'),
               ),
             ),
           ],

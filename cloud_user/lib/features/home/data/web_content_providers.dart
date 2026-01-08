@@ -47,6 +47,32 @@ Future<List<WhyChooseUsModel>> whyChooseUs(WhyChooseUsRef ref) async {
   try {
     final response = await dio.get('/why-choose-us');
     final List data = response.data;
+    if (data.isEmpty) {
+      return [
+        WhyChooseUsModel(
+          id: '1',
+          title: 'Premium Quality',
+          description: 'We use the finest detergents and specialized care.',
+          iconUrl: '',
+          isActive: true,
+        ),
+        WhyChooseUsModel(
+          id: '2',
+          title: 'Express Delivery',
+          description: 'Get your clothes back clean within 24 hours.',
+          iconUrl: '',
+          isActive: true,
+        ),
+        WhyChooseUsModel(
+          id: '3',
+          title: 'Expert Handling',
+          description:
+              'Our staff is trained to handle delicate fabrics with care.',
+          iconUrl: '',
+          isActive: true,
+        ),
+      ];
+    }
     return data.map((e) => WhyChooseUsModel.fromJson(e)).toList();
   } catch (e) {
     return [];

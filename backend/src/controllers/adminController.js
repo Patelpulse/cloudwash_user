@@ -137,12 +137,24 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
+        const jwt = require('jsonwebtoken');
+
+        const generateToken = (id) => {
+            return jwt.sign({ id }, process.env.JWT_SECRET || 'your_fallback_secret', {
+                expiresIn: '30d',
+            });
+        };
+
+        // ...
+
+        // Inside login function
         res.json({
             _id: admin._id,
             name: admin.name,
             email: admin.email,
             profileImage: admin.profileImage,
             role: admin.role,
+            token: generateToken(admin._id),
         });
     } catch (error) {
         console.error(error);

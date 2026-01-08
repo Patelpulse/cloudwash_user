@@ -1,0 +1,8 @@
+{
+    "name": "cloudwash-user",
+    "version": "1.0.0",
+    "description": "CloudWash User App",
+    "scripts": {
+        "build": "mkdir -p public && cp -r build/web/* public/"
+    }
+}

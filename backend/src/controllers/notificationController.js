@@ -1,106 +1,94 @@
 const Notification = require('../models/Notification');
+const User = require('../models/User');
+const admin = require('../config/firebase');
 
-const createNotification = async (req, res) => {
+// Internal helper to send notification
+const sendNotification = async (req, userId, title, message, type, orderId) => {
     try {
-        const { title, message, type, targetAudience, isActive, scheduledFor } = req.body;
-
         const notification = await Notification.create({
+            userId,
             title,
             message,
-            type: type || 'info',
-            targetAudience: targetAudience || 'all',
-            isActive: isActive === 'true' || isActive === true,
-            scheduledFor: scheduledFor || null,
+            type, // ensure type fits enum in model or update model if needed
+            orderId,
+            targetAudience: 'customers', // For compatibility
+            isSent: true,
+            sentAt: new Date()
         });
 
-        res.status(201).json(notification);
+        // 1. Emit via Socket.IO
+        if (req.io) {
+            // Emitting to room named by userId
+            req.io.to(userId.toString()).emit('notification', notification);
+            console.log(`📡 Socket Notification sent to ${userId}: ${title}`);
+        }
+
+        // 2. Sync to Firebase Firestore for real-time mobile updates
+        try {
+            const user = await User.findById(userId);
+            if (user && user.firebaseUid && admin.firestore) {
+                await admin.firestore()
+                    .collection('notifications')
+                    .doc(notification._id.toString())
+                    .set({
+                        userId: user.firebaseUid,
+                        mongoUserId: userId.toString(),
+                        title,
+                        message,
+                        type,
+                        orderId: orderId ? orderId.toString() : null,
+                        isRead: false,
+                        createdAt: notification.createdAt.toISOString(),
+                        source: 'system'
+                    });
+                console.log(`🔥 Firebase Notification synced for ${user.firebaseUid}`);
+            }
+        } catch (firebaseError) {
+            console.error("Firebase Sync Error:", firebaseError.message);
+        }
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        console.error("Notification Error:", error);
     }
 };
 
-const getNotifications = async (req, res) => {
+// API: Get notifications for logged in user
+const getUserNotifications = async (req, res) => {
     try {
-        const notifications = await Notification.find({}).sort({ createdAt: -1 });
+        const notifications = await Notification.find({ userId: req.user._id })
+            .sort({ createdAt: -1 })
+            .limit(50); // Cap at 50
         res.json(notifications);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
-const deleteNotification = async (req, res) => {
+// API: Mark notification as read
+const markRead = async (req, res) => {
     try {
-        const notification = await Notification.findById(req.params.id);
+        const { id } = req.params;
+        const notification = await Notification.findById(id);
 
         if (!notification) {
             return res.status(404).json({ message: 'Notification not found' });
         }
 
-        await notification.deleteOne();
-        res.json({ message: 'Notification removed' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
-const updateNotification = async (req, res) => {
-    try {
-        const { title, message, type, targetAudience, isActive, scheduledFor } = req.body;
-        const notification = await Notification.findById(req.params.id);
-
-        if (!notification) {
-            return res.status(404).json({ message: 'Notification not found' });
+        if (notification.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized' });
         }
 
-        notification.title = title || notification.title;
-        notification.message = message || notification.message;
-        notification.type = type || notification.type;
-        notification.targetAudience = targetAudience || notification.targetAudience;
-
-        if (scheduledFor !== undefined) {
-            notification.scheduledFor = scheduledFor || null;
-        }
-
-        // Handle boolean update logic properly
-        if (isActive !== undefined) {
-            notification.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : notification.isActive);
-        }
-
-        const updatedNotification = await notification.save();
-        res.json(updatedNotification);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
-const sendNotification = async (req, res) => {
-    try {
-        const notification = await Notification.findById(req.params.id);
-
-        if (!notification) {
-            return res.status(404).json({ message: 'Notification not found' });
-        }
-
-        // TODO: Implement actual notification sending logic (FCM, email, etc.)
-        notification.isSent = true;
-        notification.sentAt = new Date();
+        notification.isRead = true;
         await notification.save();
 
-        res.json({ message: 'Notification sent successfully', notification });
+        res.json({ success: true });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
 module.exports = {
-    createNotification,
-    getNotifications,
-    deleteNotification,
-    updateNotification,
-    sendNotification
+    sendNotification,
+    getUserNotifications,
+    markRead
 };

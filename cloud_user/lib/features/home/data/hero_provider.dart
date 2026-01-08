@@ -16,7 +16,6 @@ Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
     }
     return null;
   } catch (e) {
-    print('❌ Error fetching hero section: $e');
     return null; // Return null on error, UI should handle fallback
   }
 }

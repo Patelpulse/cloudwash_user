@@ -1,4 +1,5 @@
-import 'package:cloud_user/features/home/data/categories_provider.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'package:cloud_user/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -49,6 +50,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch notifications
+    final notificationsAsync = ref.watch(notificationsProvider);
+    int unreadCount = 0;
+    notificationsAsync.whenData((list) {
+      unreadCount = list.where((n) => n['isRead'] == false).length;
+    });
+
+    // Listen for real-time notifications
+    ref.listen(notificationsProvider, (previous, next) {
+      next.whenData((currentList) {
+        previous?.whenData((prevList) {
+          if (currentList.isNotEmpty &&
+              (prevList.isEmpty ||
+                  currentList.first['_id'] != prevList.first['_id'])) {
+            final newNotif = currentList.first;
+            // Only show if it's unread (newly arrived)
+            if (newNotif['isRead'] == false) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(16),
+                  backgroundColor: const Color(0xFF323232),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.notifications_active,
+                            color: Colors.amber,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            newNotif['title'] ?? 'Notification',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        newNotif['message'] ?? '',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  action: SnackBarAction(
+                    label: 'VIEW',
+                    textColor: Colors.amber,
+                    onPressed: () => context.push('/notifications'),
+                  ),
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          }
+        });
+      });
+    });
+
     // 🎨 LUXURY PALETTE
     const Color bgGrey = Color(0xFFF2F2F7);
     const Color pureWhite = Colors.white;
@@ -145,6 +219,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           fontSize: 10,
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                InkWell(
+                  onTap: () => context.push('/notifications'),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.black87,
+                          size: 20,
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              unreadCount > 9 ? '9+' : '$unreadCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -263,9 +384,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisSpacing: 12,
                       childAspectRatio: 0.85,
                       children: categories.map((category) {
-                        return _VisualCategory(
-                          category.name,
-                          category.imageUrl,
+                        return InkWell(
+                          onTap: () {
+                            context.push(
+                              '/category/${category.id}',
+                              extra: category.name,
+                            );
+                          },
+                          child: _VisualCategory(
+                            category.name,
+                            category.imageUrl,
+                          ),
                         );
                       }).toList(),
                     ),

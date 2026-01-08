@@ -1,3 +1,4 @@
+import 'package:cloud_user/core/models/banner_model.dart';
 import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/core/network/api_client.dart';
@@ -18,65 +19,24 @@ class HomeRepository {
 
   Future<List<CategoryModel>> getCategories() async {
     try {
-      // Logic from APIService: apiClient.get('/content/categories')
-      final response = await _dio.get('/content/categories');
+      // Logic from APIService: apiClient.get('/categories')
+      final response = await _dio.get('categories');
 
-      // Assuming response.data is List or { data: List }
-      final data = response.data['data'] as List;
+      // Backend returns a direct list, not { data: [] }
+      final data = response.data as List;
       return data.map((e) => CategoryModel.fromJson(e)).toList();
     } catch (e) {
-      // Return Mock Data if API fails (for development)
-      return [
-        CategoryModel(
-          id: '1',
-          name: 'Laundry',
-          description: 'Professional laundry service',
-          price: 0,
-          imageUrl: 'https://via.placeholder.com/150',
-        ),
-        CategoryModel(
-          id: '2',
-          name: 'Dry Cleaning',
-          description: 'Expert dry cleaning',
-          price: 0,
-          imageUrl: 'https://via.placeholder.com/150',
-        ),
-        CategoryModel(
-          id: '3',
-          name: 'Shoe Cleaning',
-          description: 'Shoe care service',
-          price: 0,
-          imageUrl: 'https://via.placeholder.com/150',
-        ),
-        CategoryModel(
-          id: '4',
-          name: 'Leather Cleaning',
-          description: 'Leather care',
-          price: 0,
-          imageUrl: 'https://via.placeholder.com/150',
-        ),
-        CategoryModel(
-          id: '5',
-          name: 'Curtain Cleaning',
-          description: 'Curtain cleaning',
-          price: 0,
-          imageUrl: 'https://via.placeholder.com/150',
-        ),
-        CategoryModel(
-          id: '6',
-          name: 'Carpet Cleaning',
-          description: 'Carpet deep clean',
-          price: 0,
-          imageUrl: 'https://via.placeholder.com/150',
-        ),
-      ];
+      if (e is DioException) {
+        print('API Error (Categories): ${e.message} - ${e.response?.data}');
+      }
+      rethrow; // Rethrow to see the actual error in UI instead of mock data
     }
   }
 
   Future<List<ServiceModel>> getPopularServices() async {
     try {
-      final response = await _dio.get('/services?popular=true');
-      final data = response.data['data'] as List;
+      final response = await _dio.get('services?popular=true');
+      final data = response.data as List;
       return data.map((e) => ServiceModel.fromJson(e)).toList();
     } catch (e) {
       return [
@@ -99,6 +59,48 @@ class HomeRepository {
           image: 'https://cdn-icons-png.flaticon.com/512/2954/2954835.png',
         ),
       ];
+    }
+  }
+
+  Future<List<BannerModel>> getBanners() async {
+    try {
+      final response = await _dio.get('banners');
+      final data = response.data as List;
+      return data.map((e) => BannerModel.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<ServiceModel>> getAllServices() async {
+    try {
+      final response = await _dio.get('services');
+      final data = response.data as List;
+      return data.map((e) => ServiceModel.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> getSubCategories() async {
+    try {
+      final response = await _dio.get('sub-categories');
+      return response.data as List;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> getHeroSection() async {
+    try {
+      final response = await _dio.get('hero-section');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'youtubeUrl':
+            'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=1&show_logo=false&bigPlayButton=false',
+        'isActive': true,
+      };
     }
   }
 }

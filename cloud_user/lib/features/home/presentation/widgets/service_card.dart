@@ -35,18 +35,21 @@ class ServiceCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: service.image ?? 'https://via.placeholder.com/100',
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) => Container(
-                  width: 80, 
-                  height: 80, 
-                  color: Colors.grey.shade200, 
-                  child: const Icon(Icons.broken_image)
+            Hero(
+              tag: 'service_${service.id}',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CachedNetworkImage(
+                  imageUrl: service.image ?? 'https://via.placeholder.com/100',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image),
+                  ),
                 ),
               ),
             ),
@@ -85,10 +88,11 @@ class ServiceCard extends StatelessWidget {
                     children: [
                       Text(
                         "₹${service.price}",
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
                       ),
                       Container(
                         height: 32,
@@ -96,18 +100,21 @@ class ServiceCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppTheme.background,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppTheme.primaryLight.withOpacity(0.3)),
+                          border: Border.all(
+                            color: AppTheme.primaryLight.withOpacity(0.3),
+                          ),
                         ),
                         child: TextButton(
                           onPressed: onAdd,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                          child: const Text(
+                            'ADD +',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
+                            ),
                           ),
-                          child: const Text('ADD +', style: TextStyle(
-                            fontSize: 12, 
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primary,
-                          )),
                         ),
                       ),
                     ],

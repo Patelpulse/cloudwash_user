@@ -23,8 +23,13 @@ const addonSchema = new mongoose.Schema({
         required: true,
     },
     category: {
-        type: [String],
-        default: ['Uncategorized'],
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: true,
+    },
+    subCategory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SubCategory',
     },
     isActive: {
         type: Boolean,
