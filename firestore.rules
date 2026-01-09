@@ -42,14 +42,34 @@ service cloud.firestore {
     }
     
     // ========================
+    // ORDERS COLLECTION GROUP (For all user orders)
+    // Allows querying all orders from users/{userId}/orders/{orderId}
+    // ========================
+    match /{path=**}/orders/{orderId} {
+      allow read: if true;  // Allow reading orders from any user
+      allow write: if true; // Allow writing orders
+    }
+    
+    // ========================
     // SERVICES COLLECTION
     // ========================
     match /services/{serviceId} {
       // Anyone can read services (public)
       allow read: if true;
       
-      // Only admins can write
-      allow write: if isAdmin();
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
+    }
+    
+    // ========================
+    // SUB-CATEGORIES COLLECTION
+    // ========================
+    match /subCategories/{subCategoryId} {
+      // Anyone can read sub-categories (public)
+      allow read: if true;
+      
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
     }
     
     // ========================
@@ -59,8 +79,8 @@ service cloud.firestore {
       // Anyone can read categories (public)
       allow read: if true;
       
-      // Only admins can write
-      allow write: if isAdmin();
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
     }
     
     // ========================
@@ -70,8 +90,41 @@ service cloud.firestore {
       // Anyone can read addons (public)
       allow read: if true;
       
-      // Only admins can write
-      allow write: if isAdmin();
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
+    }
+    
+    // ========================
+    // CITIES COLLECTION
+    // ========================
+    match /cities/{cityId} {
+      // Anyone can read cities (public)
+      allow read: if true;
+      
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
+    }
+    
+    // ========================
+    // BANNERS COLLECTION
+    // ========================
+    match /banners/{bannerId} {
+      // Anyone can read banners (public)
+      allow read: if true;
+      
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
+    }
+    
+    // ========================
+    // TESTIMONIALS COLLECTION
+    // ========================
+    match /testimonials/{testimonialId} {
+      // Anyone can read testimonials (public)
+      allow read: if true;
+      
+      // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
+      allow write: if true;
     }
     
     // ========================

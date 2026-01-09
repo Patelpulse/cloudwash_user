@@ -1,5 +1,5 @@
 import 'package:cloud_user/features/cart/data/cart_provider.dart';
-import 'package:cloud_user/features/home/data/services_provider.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/home/presentation/widgets/service_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

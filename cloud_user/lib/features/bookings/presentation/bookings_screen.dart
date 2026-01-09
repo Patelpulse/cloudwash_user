@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_user/features/orders/data/order_provider.dart';
+import 'package:cloud_user/features/orders/data/order_model.dart';
+import 'package:intl/intl.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
   const BookingsScreen({super.key});
@@ -108,79 +111,70 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen>
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildOngoingTab(),
-          _buildHistoryTab(),
-          _buildCancelledTab(),
-        ],
-      ),
+      body: ref
+          .watch(userOrdersRealtimeProvider)
+          .when(
+            data: (orders) => TabBarView(
+              controller: _tabController,
+              children: [
+                _buildOngoingTab(orders),
+                _buildHistoryTab(orders),
+                _buildCancelledTab(orders),
+              ],
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading bookings',
+                    style: GoogleFonts.poppins(fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(err.toString(), style: GoogleFonts.inter()),
+                  const SizedBox(height: 16),
+                  OutlinedButton(
+                    onPressed: () => ref.invalidate(userOrdersRealtimeProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
     );
   }
 
-  Widget _buildOngoingTab() {
-    return _buildBookingList([
-      _BookingData(
-        id: 'ORD-2024-88',
-        service: 'Premium Laundry',
-        dateTime: 'Today, 02:00 PM',
-        price: '₹899',
-        status: 'In Progress',
-        statusColor: const Color(0xFF3B82F6),
-        icon: Icons.local_laundry_service_outlined,
-      ),
-      _BookingData(
-        id: 'ORD-2024-92',
-        service: 'Carpet Cleaning',
-        dateTime: '12 Jan, 10:00 AM',
-        price: '₹2,450',
-        status: 'Professional Assigned',
-        statusColor: const Color(0xFFF59E0B),
-        icon: Icons.cleaning_services_outlined,
-      ),
-    ]);
+  Widget _buildOngoingTab(List<OrderModel> allOrders) {
+    final ongoingOrders = allOrders
+        .where(
+          (o) =>
+              o.status == 'pending' ||
+              o.status == 'confirmed' ||
+              o.status == 'in-progress',
+        )
+        .toList();
+    return _buildBookingList(ongoingOrders);
   }
 
-  Widget _buildHistoryTab() {
-    return _buildBookingList([
-      _BookingData(
-        id: 'ORD-2023-77',
-        service: 'Kitchen Cleaning',
-        dateTime: '28 Dec, 09:30 AM',
-        price: '₹1,299',
-        status: 'Completed',
-        statusColor: const Color(0xFF10B981),
-        icon: Icons.sanitizer_outlined,
-      ),
-      _BookingData(
-        id: 'ORD-2023-65',
-        service: 'Sofa Cleaning',
-        dateTime: '15 Dec, 11:00 AM',
-        price: '₹750',
-        status: 'Completed',
-        statusColor: const Color(0xFF10B981),
-        icon: Icons.weekend_outlined,
-      ),
-    ]);
+  Widget _buildHistoryTab(List<OrderModel> allOrders) {
+    final completedOrders = allOrders
+        .where((o) => o.status == 'completed')
+        .toList();
+    return _buildBookingList(completedOrders);
   }
 
-  Widget _buildCancelledTab() {
-    return _buildBookingList([
-      _BookingData(
-        id: 'ORD-2023-50',
-        service: 'AC Servicing',
-        dateTime: '10 Dec, 10:00 AM',
-        price: '₹499',
-        status: 'Cancelled',
-        statusColor: const Color(0xFFEF4444),
-        icon: Icons.ac_unit_outlined,
-      ),
-    ]);
+  Widget _buildCancelledTab(List<OrderModel> allOrders) {
+    final cancelledOrders = allOrders
+        .where((o) => o.status == 'cancelled')
+        .toList();
+    return _buildBookingList(cancelledOrders);
   }
 
-  Widget _buildBookingList(List<_BookingData> bookings) {
-    if (bookings.isEmpty) {
+  Widget _buildBookingList(List<OrderModel> orders) {
+    if (orders.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -221,42 +215,79 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: bookings.length,
+      itemCount: orders.length,
       itemBuilder: (context, index) {
-        final booking = bookings[index];
-        return _BookingCard(booking: booking);
+        final order = orders[index];
+        return _BookingCard(order: order);
       },
     );
   }
 }
 
-class _BookingData {
-  final String id;
-  final String service;
-  final String dateTime;
-  final String price;
-  final String status;
-  final Color statusColor;
-  final IconData icon;
-
-  _BookingData({
-    required this.id,
-    required this.service,
-    required this.dateTime,
-    required this.price,
-    required this.status,
-    required this.statusColor,
-    required this.icon,
-  });
-}
-
 class _BookingCard extends StatelessWidget {
-  final _BookingData booking;
+  final OrderModel order;
 
-  const _BookingCard({required this.booking});
+  const _BookingCard({required this.order});
+
+  IconData _getServiceIcon(String serviceName) {
+    final lower = serviceName.toLowerCase();
+    if (lower.contains('laundry') || lower.contains('wash')) {
+      return Icons.local_laundry_service_outlined;
+    } else if (lower.contains('clean')) {
+      return Icons.cleaning_services_outlined;
+    } else if (lower.contains('carpet')) {
+      return Icons.texture_outlined;
+    } else if (lower.contains('sofa')) {
+      return Icons.weekend_outlined;
+    } else if (lower.contains('ac') || lower.contains('air')) {
+      return Icons.ac_unit_outlined;
+    }
+    return Icons.home_repair_service_outlined;
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return const Color(0xFFF59E0B);
+      case 'confirmed':
+        return const Color(0xFF3B82F6);
+      case 'in-progress':
+        return const Color(0xFF8B5CF6);
+      case 'completed':
+        return const Color(0xFF10B981);
+      case 'cancelled':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'confirmed':
+        return 'Professional Assigned';
+      case 'in-progress':
+        return 'In Progress';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final serviceName = order.services.isNotEmpty
+        ? order.services.first.name
+        : 'Service';
+    final icon = _getServiceIcon(serviceName);
+    final statusColor = _getStatusColor(order.status);
+    final statusText = _getStatusText(order.status);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -280,10 +311,10 @@ class _BookingCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: booking.statusColor.withOpacity(0.08),
+                  color: statusColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(booking.icon, color: booking.statusColor),
+                child: Icon(icon, color: statusColor),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -294,7 +325,7 @@ class _BookingCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          booking.id,
+                          order.orderNumber,
                           style: GoogleFonts.inter(
                             color: const Color(0xFF94A3B8),
                             fontSize: 10,
@@ -302,12 +333,12 @@ class _BookingCard extends StatelessWidget {
                             letterSpacing: 0.5,
                           ),
                         ),
-                        _buildStatusPill(),
+                        _buildStatusPill(statusText, statusColor),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      booking.service,
+                      serviceName,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -335,7 +366,7 @@ class _BookingCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  booking.dateTime,
+                  DateFormat('MMM dd, hh:mm a').format(order.createdAt),
                   style: GoogleFonts.inter(
                     color: const Color(0xFF475569),
                     fontSize: 13,
@@ -344,7 +375,7 @@ class _BookingCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  booking.price,
+                  '₹${order.priceSummary.total.toStringAsFixed(0)}',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
@@ -360,7 +391,7 @@ class _BookingCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    context.push('/booking-details/${booking.id}');
+                    context.push('/booking-details/${order.id}');
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -408,11 +439,11 @@ class _BookingCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusPill() {
+  Widget _buildStatusPill(String status, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: booking.statusColor.withOpacity(0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -421,16 +452,13 @@ class _BookingCard extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: booking.statusColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
-            booking.status.toUpperCase(),
+            status.toUpperCase(),
             style: GoogleFonts.inter(
-              color: booking.statusColor,
+              color: color,
               fontSize: 9,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.2,

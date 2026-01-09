@@ -1,5 +1,7 @@
+import 'package:cloud_user/core/models/category_model.dart';
+import 'package:cloud_user/core/models/service_model.dart';
+import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
-import 'package:cloud_user/features/home/data/hero_provider.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/home/data/web_content_providers.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
@@ -8,9 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:cloud_user/core/models/service_model.dart';
-import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_user/core/widgets/home_shimmer_loading.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MobileHomeScreen extends ConsumerStatefulWidget {
   const MobileHomeScreen({super.key});
@@ -23,6 +26,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   late final WebViewController _videoController;
   bool _isMuted = false;
 
+  get import => null;
+
   @override
   void initState() {
     super.initState();
@@ -31,31 +36,42 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
 
   void _initializeController() async {
     final heroAsync = ref.read(heroSectionProvider);
+    // Updated video URL with unmuted settings
     String videoUrl =
-        'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=1&show_logo=false&bigPlayButton=false';
+        'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=0&show_logo=false&bigPlayButton=false';
 
     heroAsync.whenData((data) {
       if (data != null && data.youtubeUrl != null) {
-        videoUrl = data.youtubeUrl!;
-        // Ensure muted if it's Cloudinary/WebView based or handled by params
-        if (!videoUrl.contains('muted=')) {
-          videoUrl += videoUrl.contains('?') ? '&muted=1' : '?muted=1';
+        String url = data.youtubeUrl!;
+
+        // Remove existing muted params to avoid conflicts
+        url = url.replaceAll('&muted=1', '').replaceAll('?muted=1', '');
+
+        // Force unmuted and other settings
+        if (!url.contains('?')) {
+          url += '?muted=0&autoplay=true&controls=false&loop=true';
+        } else {
+          url += '&muted=0&autoplay=true&controls=false&loop=true';
         }
+        videoUrl = url;
       }
     });
 
     _videoController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) => NavigationDecision.prevent,
+        ),
+      )
       ..enableZoom(false);
 
-    // Enable media playback for Android
+    // Platform-specific configuration for auto-play (Android)
     if (WebViewPlatform.instance != null) {
-      await _videoController.runJavaScript('''
-        navigator.mediaDevices.getUserMedia = navigator.mediaDevices.getUserMedia ||
-        navigator.mediaDevices.webkitGetUserMedia ||
-        navigator.mediaDevices.mozGetUserMedia;
-      ''');
+      // Logic for Android specific media settings if accessible
+      // Note: Full autoplay with sound usually requires user interaction
+      // on mobile browsers, but we try via Javascript permissions.
     }
 
     _videoController.loadRequest(Uri.parse(videoUrl));
@@ -79,6 +95,14 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     final topServicesAsync = ref.watch(topServicesProvider);
     final subCategoriesAsync = ref.watch(subCategoriesProvider);
     final whyChooseUsAsync = ref.watch(whyChooseUsProvider);
+
+    // Show Skeleton Loader only on initial load (no data yet)
+    if (categoriesAsync.isLoading && !categoriesAsync.hasValue) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8F9FA),
+        body: HomeShimmerLoading(),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -382,7 +406,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                         ? categories.skip(4).take(4).toList()
                         : <dynamic>[];
 
-                    Widget buildItem(dynamic cat) {
+                    Widget buildItem(CategoryModel cat) {
                       String displayName = cat.name.toString().toUpperCase();
                       final words = cat.name.toString().trim().split(' ');
                       if (words.length > 1) {
@@ -521,7 +545,6 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
               ],
             ),
           ),
-
           // 4. BANNERS
           SliverToBoxAdapter(
             child: bannersAsync.when(
@@ -532,7 +555,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                   child: CarouselSlider.builder(
                     itemCount: banners.length,
                     options: CarouselOptions(
-                      height: 180, // Slightly taller for text
+                      height: 180,
                       autoPlay: true,
                       viewportFraction: 0.9,
                       enlargeCenterPage: true,
@@ -553,10 +576,16 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(15),
-                              child: Image.network(
-                                banner.imageUrl,
+                              child: CachedNetworkImage(
+                                imageUrl: banner.imageUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Center(
+                                placeholder: (context, url) =>
+                                    Shimmer.fromColors(
+                                      baseColor: Colors.grey[300]!,
+                                      highlightColor: Colors.grey[100]!,
+                                      child: Container(color: Colors.white),
+                                    ),
+                                errorWidget: (_, __, ___) => const Center(
                                   child: Icon(
                                     Icons.broken_image,
                                     color: Colors.grey,
@@ -621,12 +650,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                   ),
                 );
               },
-              loading: () => const SizedBox(
-                height: 180,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (e, stack) =>
-                  const SizedBox.shrink(), // Start hidden on error
+              loading: () => const SizedBox(height: 180),
+              error: (_, __) => const SizedBox.shrink(),
             ),
           ),
 
@@ -800,10 +825,15 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
             children: [
               // Background Image
               service.image != null && service.image!.isNotEmpty
-                  ? Image.network(
-                      service.image!,
+                  ? CachedNetworkImage(
+                      imageUrl: service.image!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
                         color: Colors.grey[300],
                         child: Icon(
                           Icons.broken_image,
@@ -826,7 +856,9 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.8),
+                      Colors.black.withOpacity(
+                        0.8,
+                      ), // Using withOpacity instead of withValues for broader compatibility
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -939,7 +971,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
 
   Widget _buildSubCategoryCard(SubCategoryModel cat) {
     return GestureDetector(
-      onTap: () => context.push('/category/${cat.id}', extra: cat.name),
+      onTap: () => context.push('/services-list/${cat.id}', extra: cat.name),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
         decoration: BoxDecoration(
@@ -962,12 +994,17 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                 ),
                 child: Stack(
                   children: [
-                    Image.network(
-                      cat.imageUrl,
+                    CachedNetworkImage(
+                      imageUrl: cat.imageUrl,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (_, __, ___) =>
                           const Center(child: Icon(Icons.category)),
                     ),
                     Container(
@@ -1028,11 +1065,16 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(20),
                 ),
-                child: Image.network(
-                  service.image ?? '',
+                child: CachedNetworkImage(
+                  imageUrl: service.image ?? '',
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  errorBuilder: (_, __, ___) =>
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(color: Colors.white),
+                  ),
+                  errorWidget: (_, __, ___) =>
                       const Center(child: Icon(Icons.image)),
                 ),
               ),

@@ -11,6 +11,7 @@ class CategoryModel {
   final double price;
   final String imageUrl;
   final bool isActive;
+  final String? mongoId;
 
   CategoryModel({
     required this.id,
@@ -19,6 +20,7 @@ class CategoryModel {
     required this.price,
     required this.imageUrl,
     this.isActive = true,
+    this.mongoId,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) =>

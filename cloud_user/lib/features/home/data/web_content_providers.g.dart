@@ -6,7 +6,7 @@ part of 'web_content_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$aboutUsHash() => r'1a68b4d84f92ef8126f392fd72b8ae9dcddb6b62';
+String _$aboutUsHash() => r'd2046aef40aaca0ae468e9de8908f93e5370ea7d';
 
 /// See also [aboutUs].
 @ProviderFor(aboutUs)
@@ -23,7 +23,7 @@ final aboutUsProvider = AutoDisposeFutureProvider<AboutUsModel?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AboutUsRef = AutoDisposeFutureProviderRef<AboutUsModel?>;
-String _$statsHash() => r'd9e276aa4938274adeb046ca345ca48084ac2e0e';
+String _$statsHash() => r'156b22f1f32d90e5896a7da10b8da81b065450cd';
 
 /// See also [stats].
 @ProviderFor(stats)
@@ -40,7 +40,7 @@ final statsProvider = AutoDisposeFutureProvider<StatsModel?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef StatsRef = AutoDisposeFutureProviderRef<StatsModel?>;
-String _$testimonialsHash() => r'7cf69be7157997effbd1b8cb02de701cc4020f85';
+String _$testimonialsHash() => r'009369712502788f1fdd3e8708393b3c38149da0';
 
 /// See also [testimonials].
 @ProviderFor(testimonials)
@@ -58,7 +58,7 @@ final testimonialsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TestimonialsRef = AutoDisposeFutureProviderRef<List<TestimonialModel>>;
-String _$whyChooseUsHash() => r'8ead810e49380b7041309254a4ff3789fb70c5bf';
+String _$whyChooseUsHash() => r'96a49143361c7e6c08e17e500e148f180267c6d3';
 
 /// See also [whyChooseUs].
 @ProviderFor(whyChooseUs)

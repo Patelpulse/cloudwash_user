@@ -59,7 +59,7 @@ class WebFooter extends StatelessWidget {
               Container(
                 height: 1,
                 width: double.infinity,
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
               ),
               const SizedBox(height: 48),
               if (isMobile)
@@ -303,7 +303,7 @@ class _SocialButtonState extends State<_SocialButton> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _isHovered ? widget.color : Colors.black.withOpacity(0.05),
+          color: _isHovered ? widget.color : Colors.black.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(

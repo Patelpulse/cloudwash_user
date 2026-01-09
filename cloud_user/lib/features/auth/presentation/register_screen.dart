@@ -113,13 +113,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
+      String cleanPhone = _phoneController.text.replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
+      if (cleanPhone.length > 10) {
+        cleanPhone = cleanPhone.substring(cleanPhone.length - 10);
+      }
+
       await ref
           .read(authRepositoryProvider)
           .completeRegistration(
             uid: _firebaseUser!.uid,
             name: _nameController.text,
             email: _firebaseUser!.email!,
-            phone: _phoneController.text,
+            phone: cleanPhone,
             password: _passwordController.text,
             profileImage: _base64Image ?? _profileImageUrl,
           );
@@ -130,10 +138,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         context.go('/');
       }
     } catch (e) {
+      String errorMessage = 'Registration failed. Please try again.';
+
+      // Try to parse specific backend error message
+      if (e.toString().contains('DioException')) {
+        try {
+          // Dynamic access to avoid strict type need without import
+          final dynamic exception = e;
+          if (exception.response?.data != null) {
+            final data = exception.response.data;
+            if (data is Map && data.containsKey('message')) {
+              errorMessage = data['message'];
+            } else if (data is String) {
+              errorMessage = data;
+            }
+          }
+        } catch (_) {}
+      }
+
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

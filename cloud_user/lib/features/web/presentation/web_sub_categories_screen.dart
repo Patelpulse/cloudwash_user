@@ -1,5 +1,6 @@
-import 'package:cloud_user/features/home/data/sub_categories_provider.dart';
-import 'package:cloud_user/features/home/data/sub_category_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +105,7 @@ class _SubCategoryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -128,10 +129,14 @@ class _SubCategoryCard extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
-                    child: Image.network(
-                      item.imageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: item.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade100,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
                         color: Colors.grey.shade100,
                         child: const Icon(
                           Icons.dry_cleaning,
@@ -174,7 +179,7 @@ class _SubCategoryCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            item.description,
+                            item.description ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF64748B),
@@ -185,6 +190,7 @@ class _SubCategoryCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),

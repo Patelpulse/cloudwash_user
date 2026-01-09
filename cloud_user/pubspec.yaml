@@ -1,7 +1,7 @@
 name: cloud_user
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ^3.10.3
@@ -54,6 +54,7 @@ dependencies:
   carousel_slider: ^5.1.1
   flutter_local_notifications: ^19.5.0
   flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +66,24 @@ dev_dependencies:
   build_runner: ^2.4.8
   json_serializable: ^6.7.1
   json_annotation: ^4.9.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/logo.png
+  android_12:
+    image: assets/images/logo.png
+    color: "#FFFFFF"
+  android: true
+  ios: true
 
 flutter:
   uses-material-design: true

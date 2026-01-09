@@ -1,5 +1,5 @@
-import 'package:cloud_user/features/home/data/sub_categories_provider.dart';
-import 'package:cloud_user/features/home/data/sub_category_model.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -136,7 +136,7 @@ class _SubCategoryCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            item.description,
+                            item.description ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF64748B),
@@ -147,6 +147,7 @@ class _SubCategoryCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 6),
                   ],
                 ),
               ),

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
 import 'package:cloud_user/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class WebNavBar extends ConsumerWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
@@ -32,10 +33,10 @@ class WebNavBar extends ConsumerWidget {
                 filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     border: Border(
                       bottom: BorderSide(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         width: 1,
                       ),
                     ),
@@ -205,7 +206,7 @@ class WebNavBar extends ConsumerWidget {
                                                                   backgroundImage:
                                                                       user['profileImage'] !=
                                                                           null
-                                                                      ? NetworkImage(
+                                                                      ? CachedNetworkImageProvider(
                                                                           user['profileImage'],
                                                                         )
                                                                       : null,
@@ -317,7 +318,7 @@ class WebNavBar extends ConsumerWidget {
                                                                       backgroundImage:
                                                                           user['profileImage'] !=
                                                                               null
-                                                                          ? NetworkImage(
+                                                                          ? CachedNetworkImageProvider(
                                                                               user['profileImage'],
                                                                             )
                                                                           : null,
@@ -480,7 +481,7 @@ class _NavLinkState extends State<_NavLink>
                   fontSize: 15,
                   color: _isHovered
                       ? AppTheme.primary
-                      : AppTheme.textPrimary.withOpacity(0.8),
+                      : AppTheme.textPrimary.withValues(alpha: 0.8),
                 ),
                 child: Text(widget.label),
               ),
@@ -522,13 +523,13 @@ class _NavActionButtonState extends State<_NavActionButton> {
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
-        hoverColor: AppTheme.primary.withOpacity(0.05),
+        hoverColor: AppTheme.primary.withValues(alpha: 0.05),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: _isHovered
-                ? AppTheme.primary.withOpacity(0.05)
+                ? AppTheme.primary.withValues(alpha: 0.05)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -567,7 +568,7 @@ class _NotificationButtonState extends State<_NotificationButton> {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: _isHovered
-                ? AppTheme.primary.withOpacity(0.05)
+                ? AppTheme.primary.withValues(alpha: 0.05)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -598,7 +599,7 @@ class _NotificationButtonState extends State<_NotificationButton> {
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.red.withOpacity(0.4),
+                                color: Colors.red.withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 spreadRadius: 1,
                               ),

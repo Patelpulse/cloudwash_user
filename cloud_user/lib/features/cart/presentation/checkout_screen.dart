@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_user/features/location/data/address_provider.dart';
 import 'package:cloud_user/features/orders/data/order_provider.dart';
+import 'package:cloud_user/features/orders/data/order_repository.dart';
 import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -50,8 +51,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return {
           'serviceId': item.service.id,
           'name': item.service.title,
-          'categoryName': item.service.category,
-          'subCategoryName': item.service.subCategory ?? item.service.category,
           'price': item.service.price,
           'quantity': item.quantity,
           'total': item.service.price * item.quantity,
@@ -63,8 +62,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final deliveryCharge = 50.0;
       final grandTotal = subtotal + tax + deliveryCharge;
 
+      // Add-ons from Firebase (works fine since we're not using MongoDB anymore)
       final addons = cart.selectedAddons.map((addon) {
-        return {'addonId': addon.id, 'name': addon.name, 'price': addon.price};
+        return {
+          'addonId': addon.id,
+          'name': addon.name,
+          'price': addon.price,
+          'duration': addon.duration,
+        };
       }).toList();
 
       final scheduledDateTime = DateTime.now();
@@ -95,10 +100,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'notes': 'Please handle with care',
       };
 
-      // ... existing createOrder call ...
+      print('📦 Order Data being sent:');
+      print('   Services: ${services.length} items');
+      print('   Addons: ${addons.length} items');
+      print('   Total: ₹$grandTotal');
+      print('   Full payload: $orderData');
+
+      // Create order in Firebase ONLY (no MongoDB)
       final result = await ref
-          .read(userOrdersProvider.notifier)
-          .createOrder(orderData);
+          .read(orderRepositoryProvider)
+          .createOrderFirebase(orderData);
+
+      print('✅ Order created successfully in Firebase: $result');
 
       final otp = result['order']['otp'];
       final orderNumber = result['order']['orderNumber'];
@@ -117,11 +130,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (e) {
       print('❌ Order creation error: $e');
+
+      // Better error message extraction
+      String errorMessage = 'Failed to place order';
+      if (e.toString().contains('DioException')) {
+        try {
+          final dynamic exception = e;
+          if (exception.response?.data != null) {
+            final data = exception.response.data;
+            if (data is Map && data.containsKey('message')) {
+              errorMessage = data['message'];
+            } else if (data is String) {
+              errorMessage = data;
+            }
+          }
+          print('🔍 Server response: ${exception.response?.data}');
+          print('🔍 Server status: ${exception.response?.statusCode}');
+        } catch (_) {}
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to place order: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
           ),
         );
       }
@@ -719,23 +752,129 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...cartState.items.map(
-            (item) => _itemRow(
-              item.service.title,
-              '₹${item.totalPrice}',
-              color: textColor,
-              secondaryColor: secondaryColor,
+          if (cartState.items.isNotEmpty) ...[
+            Text(
+              'Services',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: textColor,
+              ),
             ),
-          ),
-          ...cartState.selectedAddons.map(
-            (addon) => _itemRow(
-              addon.name,
-              '₹${addon.price}',
-              color: textColor,
-              secondaryColor: secondaryColor,
+            const SizedBox(height: 12),
+            ...cartState.items.map(
+              (item) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : Colors.grey.shade200,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (item.service.image != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          item.service.image!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey.shade300,
+                            child: Icon(
+                              Icons.cleaning_services,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.service.title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: textColor,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          if (item.service.description != null &&
+                              item.service.description!.isNotEmpty)
+                            Text(
+                              item.service.description!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: secondaryColor,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '₹${item.service.price} × ${item.quantity}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: secondaryColor,
+                                ),
+                              ),
+                              Text(
+                                '₹${item.totalPrice}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: textColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
+          if (cartState.selectedAddons.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Add-ons',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...cartState.selectedAddons.map(
+              (addon) => _itemRow(
+                '+ ${addon.name}',
+                '₹${addon.price}',
+                color: textColor,
+                secondaryColor: secondaryColor,
+              ),
+            ),
+          ],
           Divider(height: 48, color: isDark ? Colors.white12 : null),
           _itemRow(
             'Subtotal',

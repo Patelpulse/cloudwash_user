@@ -1,3 +1,5 @@
  flutter run -d chrome --web-port 63244
 
  flutter run -d 3080550765000DY
+
+ flutter run -d adb-3080550765000DY-ajEJQS._adb-tls-connect._tcp

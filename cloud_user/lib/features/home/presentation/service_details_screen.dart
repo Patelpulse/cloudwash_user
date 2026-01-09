@@ -100,7 +100,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
               leading: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: CircleAvatar(
-                  backgroundColor: Colors.white.withOpacity(0.9),
+                  backgroundColor: Colors.white.withValues(alpha: 0.9),
                   child: IconButton(
                     icon: const Icon(
                       Icons.arrow_back_ios_new,
@@ -115,7 +115,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: CircleAvatar(
-                    backgroundColor: Colors.white.withOpacity(0.9),
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
                     child: IconButton(
                       icon: const Icon(
                         Icons.shopping_cart_outlined,
@@ -129,7 +129,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: CircleAvatar(
-                    backgroundColor: Colors.white.withOpacity(0.9),
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
                     child: IconButton(
                       icon: const Icon(
                         Icons.share_outlined,
@@ -156,6 +156,12 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                             widget.service.image ??
                             'https://via.placeholder.com/600',
                         fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey.shade100,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
                         errorWidget: (_, __, ___) => Container(
                           color: Colors.grey.shade200,
                           child: const Icon(Icons.broken_image, size: 64),
@@ -171,7 +177,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                             colors: [
                               Colors.transparent,
                               Colors.transparent,
-                              Colors.black.withOpacity(0.5),
+                              Colors.black.withValues(alpha: 0.5),
                             ],
                           ),
                         ),
@@ -269,6 +275,12 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                             widget.service.image ??
                             'https://via.placeholder.com/800',
                         fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey.shade100,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
                         errorWidget: (_, __, ___) => Container(
                           color: Colors.grey.shade200,
                           child: const Icon(Icons.broken_image, size: 64),
@@ -305,7 +317,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -414,7 +426,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
+                color: AppTheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -493,9 +505,9 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withOpacity(0.05),
+        color: AppTheme.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.primary.withOpacity(0.1)),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -522,7 +534,7 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
           child: Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               border: Border(top: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Row(
@@ -662,7 +674,7 @@ class _AddonCarouselItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -681,6 +693,10 @@ class _AddonCarouselItem extends StatelessWidget {
                 imageUrl: addon.imageUrl,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey.shade100,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
                 errorWidget: (_, __, ___) => const Icon(Icons.image),
               ),
             ),

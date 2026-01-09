@@ -1060,17 +1060,24 @@ class _CartScreenState extends ConsumerState<CartScreen>
             item.service.title,
             '₹${item.totalPrice}',
             qty: '${item.quantity}x',
+            duration: item.service.duration != null
+                ? '${item.service.duration} mins'
+                : null,
             isDark: isDark,
           ),
         ),
-        ...cartState.selectedAddons.map(
-          (addon) => _sidebarItemRow(
+        ...cartState.selectedAddons.map((addon) {
+          final durationMins = int.tryParse(
+            addon.duration.replaceAll(RegExp(r'[^0-9]'), ''),
+          );
+          return _sidebarItemRow(
             addon.name,
             '₹${addon.price}',
             qty: '1x',
+            duration: durationMins != null ? '${durationMins} mins' : null,
             isDark: isDark,
-          ),
-        ),
+          );
+        }),
         const SizedBox(height: 24),
         _sidebarSectionHeader('Duration', isDark: isDark),
         Row(
@@ -1189,43 +1196,71 @@ class _CartScreenState extends ConsumerState<CartScreen>
     String name,
     String price, {
     String? qty,
+    String? duration,
     bool isDark = true,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                color: isDark ? Colors.white : Colors.black87,
-                fontSize: 13,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (qty != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(
-                qty,
-                style: const TextStyle(
-                  color: Color(0xFF00C853),
-                  fontSize: 12,
+              if (qty != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Text(
+                    qty,
+                    style: const TextStyle(
+                      color: Color(0xFF00C853),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              Text(
+                price,
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFFFCC00) : Colors.black87,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          Text(
-            price,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
+            ],
           ),
+          if (duration != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 12,
+                    color: isDark ? Colors.white54 : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    duration,
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.grey,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -1377,10 +1412,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
             .toSet();
 
         final available = addons.where((a) {
-          // Already in cart?
-          if (cartState.selectedAddons.any((sa) => sa.id == a.id)) return false;
-
-          // Match category OR subcategory
+          // Match category OR subcategory (don't filter out selected ones)
           bool matchesCategory = cartCategories.contains(a.category);
           bool matchesSubCategory =
               a.subCategory != null &&
@@ -1395,11 +1427,18 @@ class _CartScreenState extends ConsumerState<CartScreen>
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: available.length,
-            itemBuilder: (context, index) => _AddonCardSmall(
-              addon: available[index],
-              onAdd: () =>
-                  ref.read(cartProvider.notifier).toggleAddon(available[index]),
-            ),
+            itemBuilder: (context, index) {
+              final addon = available[index];
+              final isSelected = cartState.selectedAddons.any(
+                (sa) => sa.id == addon.id,
+              );
+
+              return _AddonCardSmall(
+                addon: addon,
+                isSelected: isSelected,
+                onAdd: () => ref.read(cartProvider.notifier).toggleAddon(addon),
+              );
+            },
           ),
         );
       },
@@ -1698,7 +1737,14 @@ class _CartItemRow extends StatelessWidget {
 class _AddonCardSmall extends StatelessWidget {
   final dynamic addon;
   final VoidCallback onAdd;
-  const _AddonCardSmall({required this.addon, required this.onAdd});
+  final bool isSelected;
+
+  const _AddonCardSmall({
+    required this.addon,
+    required this.onAdd,
+    this.isSelected = false,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1707,7 +1753,10 @@ class _AddonCardSmall extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(
+          color: isSelected ? AppTheme.primary : Colors.black12,
+          width: isSelected ? 2 : 1,
+        ),
       ),
       child: Column(
         children: [
@@ -1754,8 +1803,9 @@ class _AddonCardSmall extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.zero,
                       textStyle: const TextStyle(fontSize: 10),
+                      backgroundColor: isSelected ? Colors.green : null,
                     ),
-                    child: const Text('ADD'),
+                    child: Text(isSelected ? 'ADDED ✓' : 'ADD'),
                   ),
                 ),
               ],

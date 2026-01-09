@@ -1,5 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
-import 'package:cloud_user/features/home/data/categories_provider.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,9 +102,12 @@ class WebServicesPage extends ConsumerWidget {
                       final category = entry.value;
                       return _ServiceCategoryCard(
                         name: category.name,
+                        imageUrl: category.imageUrl, // Pass image URL
                         icon: _getCategoryIcon(category.name),
                         bgColor: _getCategoryColor(index),
-                        description: _getDescription(category.name),
+                        description: category.description.isNotEmpty
+                            ? category.description
+                            : _getDescription(category.name),
                         onTap: () => context.push(
                           '/category/${category.id}',
                           extra: category.name,
@@ -211,7 +215,7 @@ class WebServicesPage extends ConsumerWidget {
                               "Can't find what you're looking for? Contact us for custom solutions.",
                               style: TextStyle(
                                 fontSize: 15,
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                             const SizedBox(height: 32),
@@ -253,7 +257,9 @@ class WebServicesPage extends ConsumerWidget {
                                     "Can't find what you're looking for? Contact us for custom solutions.",
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -311,6 +317,7 @@ class WebServicesPage extends ConsumerWidget {
 
 class _ServiceCategoryCard extends StatefulWidget {
   final String name;
+  final String imageUrl;
   final IconData icon;
   final Color bgColor;
   final String description;
@@ -318,6 +325,7 @@ class _ServiceCategoryCard extends StatefulWidget {
 
   const _ServiceCategoryCard({
     required this.name,
+    required this.imageUrl,
     required this.icon,
     required this.bgColor,
     required this.description,
@@ -351,8 +359,8 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
             boxShadow: [
               BoxShadow(
                 color: _hovered
-                    ? Colors.black.withOpacity(0.12)
-                    : Colors.black.withOpacity(0.05),
+                    ? Colors.black.withValues(alpha: 0.12)
+                    : Colors.black.withValues(alpha: 0.05),
                 blurRadius: _hovered ? 20 : 10,
                 offset: Offset(0, _hovered ? 10 : 4),
               ),
@@ -367,13 +375,40 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
                   color: widget.bgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  widget.icon,
-                  size: 32,
-                  color: HSLColor.fromColor(
-                    widget.bgColor,
-                  ).withLightness(0.3).toColor(),
-                ),
+                child: widget.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.imageUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: widget.bgColor,
+                            child: Icon(
+                              widget.icon,
+                              size: 32,
+                              color: HSLColor.fromColor(widget.bgColor)
+                                  .withLightness(0.5) // Darker for visibility
+                                  .toColor(),
+                            ),
+                          ),
+                          errorWidget: (_, __, ___) => Icon(
+                            widget.icon,
+                            size: 32,
+                            color: HSLColor.fromColor(
+                              widget.bgColor,
+                            ).withLightness(0.3).toColor(),
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        widget.icon,
+                        size: 32,
+                        color: HSLColor.fromColor(
+                          widget.bgColor,
+                        ).withLightness(0.3).toColor(),
+                      ),
               ),
               const SizedBox(height: 16),
               Text(

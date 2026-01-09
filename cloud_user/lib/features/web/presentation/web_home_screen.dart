@@ -1,6 +1,6 @@
+import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
-import 'package:cloud_user/features/home/data/categories_provider.dart';
-import 'package:cloud_user/features/home/data/hero_provider.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/home/data/hero_section_model.dart';
 import 'package:cloud_user/features/home/data/about_us_model.dart';
 import 'package:cloud_user/features/home/data/stats_model.dart';
@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'dart:math' as math;
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class WebHomeScreen extends ConsumerStatefulWidget {
   const WebHomeScreen({super.key});
@@ -70,6 +71,10 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final heroAsync = ref.watch(heroSectionProvider);
+    final aboutUsAsync = ref.watch(aboutUsProvider);
+    final statsAsync = ref.watch(statsProvider);
+    final testimonialsAsync = ref.watch(testimonialsProvider);
+    final whyChooseUsAsync = ref.watch(whyChooseUsProvider);
 
     return Stack(
       children: [
@@ -78,14 +83,14 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             children: [
               _buildHeroSection(context, heroAsync),
               _buildCategoriesSection(context, categoriesAsync),
-              _buildAboutUsSection(context),
+              _buildAboutUsSection(context, aboutUsAsync),
               _buildSpotlightSection(context),
               _buildOffersSection(context),
               _buildMostBookedSection(context),
               _buildBlogPreviewSection(context),
-              _buildWhyChooseUsSection(context),
-              _buildTestimonialsSection(context),
-              _buildStatsAndDownloadSection(context),
+              _buildWhyChooseUsSection(context, whyChooseUsAsync),
+              _buildTestimonialsSection(context, testimonialsAsync),
+              _buildStatsAndDownloadSection(context, statsAsync),
             ],
           ),
         ),
@@ -158,7 +163,9 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             left: -50,
             child: _AnimatedBubble(
               size: isMobile ? 120 : 200,
-              color: const Color(0xFF89CFF0).withOpacity(0.3), // Soft Blue
+              color: const Color(
+                0xFF89CFF0,
+              ).withValues(alpha: 0.3), // Soft Blue
               delay: 0,
             ),
           ),
@@ -167,7 +174,9 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             right: 100,
             child: _AnimatedBubble(
               size: isMobile ? 80 : 120,
-              color: const Color(0xFFB5EAD7).withOpacity(0.4), // Mint Green
+              color: const Color(
+                0xFFB5EAD7,
+              ).withValues(alpha: 0.4), // Mint Green
               delay: 1,
             ),
           ),
@@ -264,7 +273,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.blue.shade100),
           ),
@@ -345,7 +354,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 15,
                   ),
                 ],
@@ -409,11 +418,19 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
   Widget _buildHeroImage(BuildContext context, bool isMobile, String imageUrl) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: Image.network(
-        imageUrl,
+      child: CachedNetworkImage(
+        imageUrl: imageUrl,
         height: isMobile ? 350 : 500,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Container(
+        placeholder: (_, __) => Container(
+          height: isMobile ? 350 : 500,
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+        errorWidget: (_, __, ___) => Container(
           height: isMobile ? 350 : 500,
           decoration: BoxDecoration(
             color: Colors.blue.shade50,
@@ -429,7 +446,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
 
   Widget _buildCategoriesSection(
     BuildContext context,
-    AsyncValue<List<dynamic>> categoriesAsync,
+    AsyncValue<List<CategoryModel>> categoriesAsync,
   ) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
@@ -536,42 +553,53 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     );
   }
 
-  Widget _buildAboutUsSection(BuildContext context) {
+  Widget _buildAboutUsSection(
+    BuildContext context,
+    AsyncValue<AboutUsModel?> aboutUsAsync,
+  ) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 20 : 40,
-        horizontal: isMobile ? 20 : 40,
-      ),
-      color: Colors.white,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: isMobile
-              ? Column(
-                  children: [
-                    _buildAboutUsContent(context, isMobile),
-                    const SizedBox(height: 60),
-                    _buildAboutUsImages(isMobile),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Left Side: Image Collage
-                    Expanded(flex: 6, child: _buildAboutUsImages(isMobile)),
-                    const SizedBox(width: 80),
-                    // Right Side: Content
-                    Expanded(
-                      flex: 5,
-                      child: _buildAboutUsContent(context, isMobile),
-                    ),
-                  ],
-                ),
+    return aboutUsAsync.when(
+      data: (aboutUs) => Container(
+        padding: EdgeInsets.symmetric(
+          vertical: isMobile ? 20 : 40,
+          horizontal: isMobile ? 20 : 40,
+        ),
+        color: Colors.white,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: isMobile
+                ? Column(
+                    children: [
+                      _buildAboutUsContent(context, isMobile, aboutUs: aboutUs),
+                      const SizedBox(height: 60),
+                      _buildAboutUsImages(isMobile),
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left Side: Image Collage
+                      Expanded(flex: 6, child: _buildAboutUsImages(isMobile)),
+                      const SizedBox(width: 80),
+                      // Right Side: Content
+                      Expanded(
+                        flex: 5,
+                        child: _buildAboutUsContent(
+                          context,
+                          isMobile,
+                          aboutUs: aboutUs,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
+      loading: () => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 
@@ -589,7 +617,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
               height: isMobile ? 300 : 450,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFF1F5F9).withOpacity(0.8),
+                color: const Color(0xFFF1F5F9).withValues(alpha: 0.8),
               ),
             ),
           ),
@@ -628,7 +656,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4AC3F5).withOpacity(0.3),
+                      color: const Color(0xFF4AC3F5).withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -666,7 +694,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     Text(
                       'How we care for your clothes',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 12,
                       ),
                     ),
@@ -679,7 +707,11 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     );
   }
 
-  Widget _buildAboutUsContent(BuildContext context, bool isMobile) {
+  Widget _buildAboutUsContent(
+    BuildContext context,
+    bool isMobile, {
+    AboutUsModel? aboutUs,
+  }) {
     return Column(
       crossAxisAlignment: isMobile
           ? CrossAxisAlignment.center
@@ -703,7 +735,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Your Trusted Partner in\nLaundry Care.',
+          aboutUs?.title ?? 'Your Trusted Partner in\nLaundry Care.',
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
           style: GoogleFonts.playfairDisplay(
             fontSize: isMobile ? 32 : 48,
@@ -714,7 +746,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         ),
         const SizedBox(height: 20),
         Text(
-          'We provide professional laundry and dry cleaning services with a focus on quality, convenience, and care. Our mission is to make your life easier by taking the burden of laundry off your shoulders.',
+          aboutUs?.description ??
+              'We provide professional laundry and dry cleaning services with a focus on quality, convenience, and care. Our mission is to make your life easier by taking the burden of laundry off your shoulders.',
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
           style: TextStyle(
             fontSize: 16,
@@ -723,23 +756,36 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           ),
         ),
         const SizedBox(height: 40),
-        const _AboutFeatureItem(
-          title: 'Passionate Expertise',
-          desc:
-              'Our team consists of fabric care experts who treat every garment with the respect it deserves.',
-        ),
-        const SizedBox(height: 24),
-        const _AboutFeatureItem(
-          title: 'Cutting-Edge Technology',
-          desc:
-              'We use the latest eco-friendly cleaning technology to ensure the best results for your clothes and the environment.',
-        ),
-        const SizedBox(height: 24),
-        const _AboutFeatureItem(
-          title: 'Customer-Centric Approach',
-          desc:
-              'Everything we do is designed around your convenience, from easy scheduling to friendly service.',
-        ),
+        if (aboutUs != null && aboutUs.points.isNotEmpty)
+          ...aboutUs.points.map((point) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 24.0),
+              child: _AboutFeatureItem(
+                title: point,
+                desc:
+                    '', // Default description if not provided in simple string list
+              ),
+            );
+          }).toList()
+        else ...[
+          const _AboutFeatureItem(
+            title: 'Passionate Expertise',
+            desc:
+                'Our team consists of fabric care experts who treat every garment with the respect it deserves.',
+          ),
+          const SizedBox(height: 24),
+          const _AboutFeatureItem(
+            title: 'Cutting-Edge Technology',
+            desc:
+                'We use the latest eco-friendly cleaning technology to ensure the best results for your clothes and the environment.',
+          ),
+          const SizedBox(height: 24),
+          const _AboutFeatureItem(
+            title: 'Customer-Centric Approach',
+            desc:
+                'Everything we do is designed around your convenience, from easy scheduling to friendly service.',
+          ),
+        ],
       ],
     );
   }
@@ -853,10 +899,10 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -867,11 +913,17 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Image.network(
-              imageUrl,
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                height: 200,
+                color: Colors.grey.shade100,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (_, __, ___) => const Icon(Icons.image),
             ),
           ),
           Padding(
@@ -920,7 +972,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -1148,7 +1200,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                           desc: 'Bring back the\nshine',
                           imageUrl:
                               'https://images.unsplash.com/photo-1515562141207-7a18b5ce7142?q=80&w=400&auto=format&fit=crop',
-                          color: const Color(0xFFC084FC).withOpacity(0.2),
+                          color: const Color(0xFFC084FC).withValues(alpha: 0.2),
                         ),
                         _SmallOfferCard(
                           imageUrl:
@@ -1167,7 +1219,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                           subtitle: 'Well-Defined',
                           imageUrl:
                               'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop',
-                          color: const Color(0xFFFDE68A).withOpacity(0.3),
+                          color: const Color(0xFFFDE68A).withValues(alpha: 0.3),
                         ),
                       ],
                     ),
@@ -1209,7 +1261,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                                           'https://images.unsplash.com/photo-1515562141207-7a18b5ce7142?q=80&w=400&auto=format&fit=crop',
                                       color: const Color(
                                         0xFFC084FC,
-                                      ).withOpacity(0.2),
+                                      ).withValues(alpha: 0.2),
                                     ),
                                   ),
                                   const SizedBox(width: 15),
@@ -1245,7 +1297,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                                           'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop',
                                       color: const Color(
                                         0xFFFDE68A,
-                                      ).withOpacity(0.3),
+                                      ).withValues(alpha: 0.3),
                                     ),
                                   ),
                                 ],
@@ -1446,247 +1498,226 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     );
   }
 
-  Widget _buildWhyChooseUsSection(BuildContext context) {
+  Widget _buildWhyChooseUsSection(
+    BuildContext context,
+    AsyncValue<List<WhyChooseUsModel>> whyChooseUsAsync,
+  ) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 30 : 40,
-        horizontal: isMobile ? 20 : 40,
-      ),
-      color: const Color(0xFFFDFCFB),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1300),
-          child: Column(
-            children: [
-              Column(
-                children: [
-                  Text(
-                    'OUR COMMITMENT',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF6366F1),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Why Choose Us',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: isMobile ? 32 : 48,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'We provide the highest standards of care for your beloved garments.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: isMobile ? 16 : 18,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              if (isMobile)
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 0.65, // More vertical room for mobile
-                  children: [
-                    _WhyChooseCard(
-                      icon: Icons.verified_user_rounded,
-                      title: 'Quality Assurance',
-                      subtitle: 'Premium standards',
-                      color: const Color(0xFF6366F1),
-                    ),
-                    _WhyChooseCard(
-                      icon: Icons.timer_rounded,
-                      title: 'On Time Delivery',
-                      subtitle: 'Reliable schedule',
-                      color: const Color(0xFFEC4899),
-                    ),
-                    _WhyChooseCard(
-                      icon: Icons.eco_rounded,
-                      title: 'Eco Friendly',
-                      subtitle: 'Sustainable care',
-                      color: const Color(0xFF14B8A6),
-                    ),
-                    _WhyChooseCard(
-                      icon: Icons.payments_rounded,
-                      title: 'Fair Pricing',
-                      subtitle: 'Competitive rates',
-                      color: const Color(0xFFF59E0B),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: _WhyChooseCard(
-                        icon: Icons.verified_user_rounded,
-                        title: 'Quality Assurance',
-                        subtitle:
-                            'Highest quality standards for your premium clothes',
-                        color: const Color(0xFF6366F1),
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: _WhyChooseCard(
-                        icon: Icons.timer_rounded,
-                        title: 'On Time Delivery',
-                        subtitle:
-                            'Reliable schedule that respects your precious time',
-                        color: const Color(0xFFEC4899),
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: _WhyChooseCard(
-                        icon: Icons.eco_rounded,
-                        title: 'Eco Friendly',
-                        subtitle:
-                            'Sustainable practices and non-toxic cleaning agents',
-                        color: const Color(0xFF14B8A6),
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: _WhyChooseCard(
-                        icon: Icons.payments_rounded,
-                        title: 'Fair Pricing',
-                        subtitle:
-                            'Premium laundry service at competitive market rates',
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+    return whyChooseUsAsync.when(
+      data: (items) {
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 30 : 40,
+            horizontal: isMobile ? 20 : 40,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTestimonialsSection(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isMobile = screenWidth < 1000;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 30 : 50,
-        horizontal: isMobile ? 20 : 40,
-      ),
-      color: const Color(0xFFF8FAFC),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1300),
-          child: Column(
-            children: [
-              Column(
+          color: const Color(0xFFFDFCFB),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1300),
+              child: Column(
                 children: [
-                  Text(
-                    'REVIEWS',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF6366F1),
-                      letterSpacing: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'What Our Customers Say',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: isMobile ? 32 : 48,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              if (isMobile)
-                SizedBox(
-                  height: 300,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+                  Column(
                     children: [
-                      _buildTestimonialCard(
-                        'Sarah J.',
-                        'Mumbai',
-                        5,
-                        'Absolutely love the service! My clothes have never looked better.',
-                        'https://i.pravatar.cc/150?u=sarah',
+                      Text(
+                        'OUR COMMITMENT',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF6366F1),
+                          letterSpacing: 2,
+                        ),
                       ),
-                      _buildTestimonialCard(
-                        'Rahul M.',
-                        'Bangalore',
-                        5,
-                        'The 6 stage process really makes a difference. Stains are gone.',
-                        'https://i.pravatar.cc/150?u=rahul',
+                      const SizedBox(height: 12),
+                      Text(
+                        'Why Choose Us',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: isMobile ? 32 : 48,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
                       ),
-                      _buildTestimonialCard(
-                        'Priya S.',
-                        'Delhi',
-                        5,
-                        'Great app experience and very professional staff.',
-                        'https://i.pravatar.cc/150?u=priya',
+                      const SizedBox(height: 12),
+                      Text(
+                        'We provide the highest standards of care for your beloved garments.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: isMobile ? 16 : 18,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
-                )
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTestimonialCard(
-                        'Sarah J.',
-                        'Mumbai',
-                        5,
-                        'Absolutely love the service! My clothes have never looked better. The pickup and delivery is super convenient.',
-                        'https://i.pravatar.cc/150?u=sarah',
-                      ),
+                  const SizedBox(height: 30),
+                  if (isMobile)
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
+                      childAspectRatio: 0.65,
+                      children: items.map((item) {
+                        return _WhyChooseCard(
+                          icon: _getIconData(item.iconUrl),
+                          title: item.title,
+                          subtitle: item.description,
+                          color: _getWhyChooseColor(item.title),
+                        );
+                      }).toList(),
+                    )
+                  else
+                    Row(
+                      children: items.map((item) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: _WhyChooseCard(
+                              icon: _getIconData(item.iconUrl),
+                              title: item.title,
+                              subtitle: item.description,
+                              color: _getWhyChooseColor(item.title),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    const SizedBox(width: 32),
-                    Expanded(
-                      child: _buildTestimonialCard(
-                        'Rahul M.',
-                        'Bangalore',
-                        5,
-                        'The 6 stage process really makes a difference. Stains I thought were permanent are gone. Highly recommended!',
-                        'https://i.pravatar.cc/150?u=rahul',
-                      ),
-                    ),
-                    const SizedBox(width: 32),
-                    Expanded(
-                      child: _buildTestimonialCard(
-                        'Priya S.',
-                        'Delhi',
-                        5,
-                        'Great app experience and very professional staff. The real-time tracking helps me plan my day better.',
-                        'https://i.pravatar.cc/150?u=priya',
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
+    );
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'verified_user_rounded':
+        return Icons.verified_user_rounded;
+      case 'timer_rounded':
+        return Icons.timer_rounded;
+      case 'eco_rounded':
+        return Icons.eco_rounded;
+      case 'payments_rounded':
+        return Icons.payments_rounded;
+      case 'local_shipping_rounded':
+        return Icons.local_shipping_rounded;
+      case 'support_agent_rounded':
+        return Icons.support_agent_rounded;
+      case 'shopping_basket_rounded':
+        return Icons.shopping_basket_rounded;
+      case 'star_rounded':
+        return Icons.star_rounded;
+      default:
+        return Icons.star_rounded;
+    }
+  }
+
+  Color _getWhyChooseColor(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('quality')) return const Color(0xFF6366F1);
+    if (t.contains('time') || t.contains('delivery')) {
+      return const Color(0xFFEC4899);
+    }
+    if (t.contains('eco') || t.contains('friendly')) {
+      return const Color(0xFF14B8A6);
+    }
+    if (t.contains('price') || t.contains('fair')) {
+      return const Color(0xFFF59E0B);
+    }
+    return const Color(0xFF6366F1);
+  }
+
+  Widget _buildTestimonialsSection(
+    BuildContext context,
+    AsyncValue<List<TestimonialModel>> testimonialsAsync,
+  ) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 1000;
+
+    return testimonialsAsync.when(
+      data: (items) {
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 30 : 50,
+            horizontal: isMobile ? 20 : 40,
+          ),
+          color: const Color(0xFFF8FAFC),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1300),
+              child: Column(
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        'REVIEWS',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF6366F1),
+                          letterSpacing: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'What Our Customers Say',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: isMobile ? 32 : 48,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  if (isMobile)
+                    SizedBox(
+                      height: 300,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: items.map((t) {
+                          return _buildTestimonialCard(
+                            t.name,
+                            t.role,
+                            t.rating.toInt(),
+                            t.message,
+                            t.imageUrl,
+                          );
+                        }).toList(),
+                      ),
+                    )
+                  else
+                    Row(
+                      children: items.take(3).map((t) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: _buildTestimonialCard(
+                              t.name,
+                              t.role,
+                              t.rating.toInt(),
+                              t.message,
+                              t.imageUrl,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 
@@ -1710,84 +1741,97 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     );
   }
 
-  Widget _buildStatsAndDownloadSection(BuildContext context) {
+  Widget _buildStatsAndDownloadSection(
+    BuildContext context,
+    AsyncValue<StatsModel?> statsAsync,
+  ) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
 
-    final stats = [
-      {
-        'value': '50K+',
-        'label': 'Happy Customers',
-        'icon': Icons.people_alt_rounded,
-      },
-      {
-        'value': '1000+',
-        'label': 'Verified Pros',
-        'icon': Icons.verified_user_rounded,
-      },
-      {
-        'value': '20+',
-        'label': 'Cities Presence',
-        'icon': Icons.location_on_rounded,
-      },
-      {'value': '4.8', 'label': 'Average Rating', 'icon': Icons.star_rounded},
-    ];
+    return statsAsync.when(
+      data: (statsData) {
+        final statsItems = [
+          {
+            'value': statsData?.happyClients ?? '50K+',
+            'label': 'Happy Customers',
+            'icon': Icons.people_alt_rounded,
+          },
+          {
+            'value': statsData?.totalBranches ?? '1000+',
+            'label': 'Verified Pros',
+            'icon': Icons.verified_user_rounded,
+          },
+          {
+            'value': statsData?.totalCities ?? '20+',
+            'label': 'Cities Presence',
+            'icon': Icons.location_on_rounded,
+          },
+          {
+            'value': statsData?.totalOrders ?? '100K+',
+            'label': 'Total Orders',
+            'icon': Icons.shopping_basket_rounded,
+          },
+        ];
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 30 : 50,
-        horizontal: isMobile ? 20 : 40,
-      ),
-      decoration: const BoxDecoration(color: Colors.white),
-      child: Column(
-        children: [
-          // Stats Row
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1300),
-              child: isMobile
-                  ? GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 30,
-                      crossAxisSpacing: 20,
-                      children: stats
-                          .map((s) => _buildStatItem(s, isMobile))
-                          .toList(),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: stats
-                          .map((s) => _buildStatItem(s, isMobile))
-                          .toList(),
-                    ),
-            ),
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 30 : 50,
+            horizontal: isMobile ? 20 : 40,
           ),
-          SizedBox(height: isMobile ? 80 : 100),
-          // App Download UI
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: isMobile
-                  ? Column(
-                      children: [
-                        _buildDownloadContent(isMobile),
-                        const SizedBox(height: 60),
-                        _buildDownloadAppMockup(isMobile),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(child: _buildDownloadContent(isMobile)),
-                        const SizedBox(width: 100),
-                        _buildDownloadAppMockup(isMobile),
-                      ],
-                    ),
-            ),
+          decoration: const BoxDecoration(color: Colors.white),
+          child: Column(
+            children: [
+              // Stats Row
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1300),
+                  child: isMobile
+                      ? GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 30,
+                          crossAxisSpacing: 20,
+                          children: statsItems
+                              .map((s) => _buildStatItem(s, isMobile))
+                              .toList(),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: statsItems
+                              .map((s) => _buildStatItem(s, isMobile))
+                              .toList(),
+                        ),
+                ),
+              ),
+              SizedBox(height: isMobile ? 80 : 100),
+              // App Download UI
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: isMobile
+                      ? Column(
+                          children: [
+                            _buildDownloadContent(isMobile),
+                            const SizedBox(height: 60),
+                            _buildDownloadAppMockup(isMobile),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(child: _buildDownloadContent(isMobile)),
+                            const SizedBox(width: 100),
+                            _buildDownloadAppMockup(isMobile),
+                          ],
+                        ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
     );
   }
 
@@ -1798,7 +1842,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         Container(
           padding: EdgeInsets.all(isMobile ? 12 : 16),
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withOpacity(0.08),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -1901,7 +1945,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           width: isMobile ? 280 : 400,
           height: isMobile ? 280 : 400,
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withOpacity(0.05),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.05),
             shape: BoxShape.circle,
           ),
         ),
@@ -1914,7 +1958,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             borderRadius: BorderRadius.circular(isMobile ? 36 : 48),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 40,
                 offset: const Offset(0, 20),
               ),
@@ -1922,9 +1966,14 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(isMobile ? 24 : 36),
-            child: Image.network(
-              'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=800&auto=format&fit=crop',
+            child: CachedNetworkImage(
+              imageUrl:
+                  'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=800&auto=format&fit=crop',
               fit: BoxFit.cover,
+              placeholder: (_, __) =>
+                  const Center(child: CircularProgressIndicator()),
+              errorWidget: (_, __, ___) =>
+                  const Icon(Icons.image, color: Colors.white),
             ),
           ),
         ),
@@ -1946,27 +1995,6 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
 }
 
 // Helper Widgets
-class _FeatureBadge extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _FeatureBadge({required this.icon, required this.text});
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: AppTheme.primary),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _TrendingTag extends StatelessWidget {
   final String text;
@@ -1987,7 +2015,7 @@ class _TrendingTag extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withOpacity(0.3),
+              color: AppTheme.primary.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -2060,7 +2088,7 @@ class _CategoryCardState extends State<_CategoryCard> {
             boxShadow: isHovered
                 ? [
                     BoxShadow(
-                      color: Colors.purple.withOpacity(0.1),
+                      color: Colors.purple.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -2167,15 +2195,15 @@ class _CategoryItemState extends State<_CategoryItem> {
             boxShadow: [
               BoxShadow(
                 color: isHovered
-                    ? widget.iconColor.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.04),
+                    ? widget.iconColor.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.04),
                 blurRadius: isHovered ? 25 : 15,
                 offset: Offset(0, isHovered ? 12 : 6),
               ),
             ],
             border: Border.all(
               color: isHovered
-                  ? widget.iconColor.withOpacity(0.2)
+                  ? widget.iconColor.withValues(alpha: 0.2)
                   : Colors.transparent,
               width: 1.5,
             ),
@@ -2191,17 +2219,19 @@ class _CategoryItemState extends State<_CategoryItem> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isHovered
-                      ? widget.iconColor.withOpacity(0.3)
-                      : widget.iconColor.withOpacity(0.15),
+                      ? widget.iconColor.withValues(alpha: 0.3)
+                      : widget.iconColor.withValues(alpha: 0.15),
                 ),
                 child: Center(
                   child: widget.imagePath != null
-                      ? Image.network(
-                          widget.imagePath!,
+                      ? CachedNetworkImage(
+                          imageUrl: widget.imagePath!,
                           width: 48,
                           height: 48,
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
+                          placeholder: (_, __) =>
+                              const CircularProgressIndicator(strokeWidth: 2),
+                          errorWidget: (context, error, stackTrace) {
                             return Icon(
                               widget.icon,
                               size: 34,
@@ -2303,13 +2333,15 @@ class _SpotlightCardState extends State<_SpotlightCard>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                widget.baseColor.withOpacity(0.95),
+                widget.baseColor.withValues(alpha: 0.95),
                 widget.baseColor.withAlpha(200),
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: widget.baseColor.withOpacity(_isHovered ? 0.4 : 0.1),
+                color: widget.baseColor.withValues(
+                  alpha: _isHovered ? 0.4 : 0.1,
+                ),
                 blurRadius: _isHovered ? 30 : 15,
                 offset: Offset(0, _isHovered ? 15 : 5),
               ),
@@ -2343,7 +2375,7 @@ class _SpotlightCardState extends State<_SpotlightCard>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -2374,7 +2406,7 @@ class _SpotlightCardState extends State<_SpotlightCard>
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: widget.textColor.withOpacity(0.7),
+                        color: widget.textColor.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -2505,15 +2537,15 @@ class _ProcessStepCardState extends State<_ProcessStepCard> {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: _isHovered
-                ? widget.color.withOpacity(0.3)
+                ? widget.color.withValues(alpha: 0.3)
                 : Colors.transparent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
               color: _isHovered
-                  ? widget.color.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.03),
+                  ? widget.color.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.03),
               blurRadius: _isHovered ? 25 : 15,
               offset: Offset(0, _isHovered ? 12 : 6),
             ),
@@ -2531,7 +2563,7 @@ class _ProcessStepCardState extends State<_ProcessStepCard> {
                   decoration: BoxDecoration(
                     color: _isHovered
                         ? widget.color
-                        : widget.color.withOpacity(0.1),
+                        : widget.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Center(
@@ -2548,7 +2580,7 @@ class _ProcessStepCardState extends State<_ProcessStepCard> {
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: widget.color.withOpacity(0.15),
+                    color: widget.color.withValues(alpha: 0.15),
                   ),
                 ),
               ],
@@ -2637,7 +2669,7 @@ class _ValueReasonCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -2648,7 +2680,7 @@ class _ValueReasonCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 24),
@@ -2678,7 +2710,7 @@ class _ValueReasonCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -2795,7 +2827,7 @@ class _TestimonialCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -2856,7 +2888,7 @@ class _BigOfferBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -2874,7 +2906,7 @@ class _BigOfferBanner extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [color, color.withOpacity(0.8)],
+                  colors: [color, color.withValues(alpha: 0.8)],
                 ),
               ),
               child: Column(
@@ -2950,11 +2982,15 @@ class _BigOfferBanner extends StatelessWidget {
           // Right Side: Image
           Expanded(
             flex: 2,
-            child: Image.network(
-              imageUrl,
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
               height: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              placeholder: (_, __) => Container(
+                color: Colors.white24,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (_, __, ___) => Container(
                 color: Colors.white24,
                 child: const Icon(Icons.image, color: Colors.white),
               ),
@@ -2996,9 +3032,9 @@ class _AppStoreBadge extends StatelessWidget {
           vertical: isMobile ? 8 : 12,
         ),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.8),
+          color: Colors.black.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -3012,7 +3048,7 @@ class _AppStoreBadge extends StatelessWidget {
                 Text(
                   subtext,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: isMobile ? 9 : 10,
                     fontWeight: FontWeight.w500,
                   ),
@@ -3089,7 +3125,7 @@ class _AnimatedBubbleState extends State<_AnimatedBubble>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [widget.color, widget.color.withOpacity(0)],
+                colors: [widget.color, widget.color.withValues(alpha: 0)],
               ),
             ),
           ),
@@ -3115,11 +3151,11 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -3171,7 +3207,7 @@ class _ShiningStars extends StatelessWidget {
         const SizedBox(width: 8),
         Icon(
           Icons.auto_awesome,
-          color: const Color(0xFFFFB100).withOpacity(0.6),
+          color: const Color(0xFFFFB100).withValues(alpha: 0.6),
           size: 24,
         ),
       ],
@@ -3195,17 +3231,26 @@ class _RoundedImage extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
         ],
-        image: DecorationImage(
-          image: NetworkImage(imageUrl),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
           fit: BoxFit.cover,
+          placeholder: (_, __) => Container(
+            color: Colors.grey.shade100,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+          errorWidget: (_, __, ___) => const Icon(Icons.image),
         ),
       ),
     );
@@ -3281,88 +3326,96 @@ class _OfferHeroBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 1000;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        image: DecorationImage(
-          image: NetworkImage(imageUrl),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(isMobile ? 20 : 50),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Colors.white.withOpacity(0.9),
-              Colors.white.withOpacity(0.4),
-              Colors.transparent,
-            ],
-            stops: const [0.0, 0.4, 1.0],
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                color: Colors.grey.shade100,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              tagline,
-              style: GoogleFonts.inter(
-                fontSize: isMobile ? 12 : 16,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E3A5F),
-                letterSpacing: 2,
-              ),
+        Container(
+          padding: EdgeInsets.all(isMobile ? 20 : 50),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.9),
+                Colors.white.withValues(alpha: 0.4),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.4, 1.0],
             ),
-            SizedBox(height: isMobile ? 12 : 24),
-            Text(
-              title,
-              style: GoogleFonts.playfairDisplay(
-                fontSize: isMobile ? 28 : 52,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E293B),
-                height: 1.1,
-              ),
-            ),
-            SizedBox(height: isMobile ? 12 : 24),
-            Text(
-              priceText,
-              style: GoogleFonts.inter(
-                fontSize: isMobile ? 13 : 16,
-                color: Colors.grey.shade700,
-                height: 1.5,
-              ),
-            ),
-            SizedBox(height: isMobile ? 24 : 48),
-            ElevatedButton(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF134E4A),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 20 : 40,
-                  vertical: isMobile ? 12 : 22,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                btnText,
-                style: TextStyle(
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                tagline,
+                style: GoogleFonts.inter(
+                  fontSize: isMobile ? 12 : 16,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                  fontSize: isMobile ? 12 : 14,
+                  color: const Color(0xFF1E3A5F),
+                  letterSpacing: 2,
                 ),
               ),
-            ),
-          ],
+              SizedBox(height: isMobile ? 12 : 24),
+              Text(
+                title,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: isMobile ? 28 : 52,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                  height: 1.1,
+                ),
+              ),
+              SizedBox(height: isMobile ? 12 : 24),
+              Text(
+                priceText,
+                style: GoogleFonts.inter(
+                  fontSize: isMobile ? 13 : 16,
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: isMobile ? 24 : 48),
+              ElevatedButton(
+                onPressed: onTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF134E4A),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 20 : 40,
+                    vertical: isMobile ? 12 : 22,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  btnText,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                    fontSize: isMobile ? 12 : 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -3388,85 +3441,99 @@ class _SmallOfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-        image: DecorationImage(
-          image: NetworkImage(imageUrl),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withOpacity(isDark ? 0.3 : 0.0),
-              Colors.black.withOpacity(isDark ? 0.6 : 0.1),
-            ],
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                color: color,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (_, __, ___) => Container(color: color),
+            ),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (discount != null) ...[
-              Text(
-                'upto',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
-                  fontSize: 12,
-                ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.transparent, // Image is behind
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: isDark ? 0.3 : 0.0),
+                  Colors.black.withValues(alpha: isDark ? 0.6 : 0.1),
+                ],
               ),
-              Text(
-                discount!,
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
-            if (desc != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                desc!,
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
-            ],
-            if (title != null) ...[
-              Text(
-                title!,
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                  letterSpacing: 1,
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  subtitle!,
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 16,
-                    fontStyle: FontStyle.italic,
-                    color: isDark ? Colors.white70 : Colors.black54,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (discount != null) ...[
+                  Text(
+                    'upto',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
+                  Text(
+                    discount!,
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+                if (desc != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    desc!,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 16,
+                        fontStyle: FontStyle.italic,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                  ],
+                ],
               ],
-            ],
-          ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -3511,7 +3578,7 @@ class _MostBookedServiceCardState extends State<_MostBookedServiceCard> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(_isHovered ? 0.12 : 0.05),
+                color: Colors.black.withValues(alpha: _isHovered ? 0.12 : 0.05),
                 blurRadius: _isHovered ? 30 : 20,
                 offset: Offset(0, _isHovered ? 15 : 10),
               ),
@@ -3528,11 +3595,17 @@ class _MostBookedServiceCardState extends State<_MostBookedServiceCard> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(24),
                     ),
-                    child: Image.network(
-                      widget.imageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: widget.imageUrl,
                       height: 220,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        height: 220,
+                        color: Colors.grey.shade100,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (_, __, ___) => const Icon(Icons.image),
                     ),
                   ),
                   Positioned(
@@ -3711,8 +3784,8 @@ class _WhyChooseCardState extends State<_WhyChooseCard> {
           boxShadow: [
             BoxShadow(
               color: _isHovered
-                  ? widget.color.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.02),
+                  ? widget.color.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.02),
               blurRadius: _isHovered ? 30 : 15,
               offset: Offset(0, _isHovered ? 12 : 6),
             ),
@@ -3727,7 +3800,7 @@ class _WhyChooseCardState extends State<_WhyChooseCard> {
               decoration: BoxDecoration(
                 color: _isHovered
                     ? widget.color
-                    : widget.color.withOpacity(0.08),
+                    : widget.color.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -3784,10 +3857,10 @@ class _PremiumTestimonialCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -3800,7 +3873,7 @@ class _PremiumTestimonialCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 25,
-                backgroundImage: NetworkImage(avatarUrl),
+                backgroundImage: CachedNetworkImageProvider(avatarUrl),
               ),
               const SizedBox(width: 16),
               Column(

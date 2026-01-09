@@ -190,7 +190,7 @@ class WebLayout extends ConsumerWidget {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.05),
+                color: AppTheme.primary.withValues(alpha: 0.05),
               ),
               child: Center(
                 child: Image.asset(

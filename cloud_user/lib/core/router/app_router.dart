@@ -41,7 +41,7 @@ GoRouter goRouter(GoRouterRef ref) {
 
   // Use Web Router for both Web and Mobile to ensure consistent responsive design
   return GoRouter(
-    initialLocation: kIsWeb ? '/register' : '/onboarding',
+    initialLocation: kIsWeb ? '/' : '/onboarding',
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) async {
@@ -54,13 +54,13 @@ GoRouter goRouter(GoRouterRef ref) {
 
       if (isAuthenticated) {
         // If logged in and trying to access auth pages, go to home
-        if (isAuthRoute || isOnboarding) {
+        if (isAuthRoute) {
           return '/';
         }
       } else {
         // Not authenticated
         if (!kIsWeb) {
-          // Mobile Check
+          // Mobile: Keep onboarding flow
           final prefs = await SharedPreferences.getInstance();
           final onboardingComplete =
               prefs.getBool('onboarding_complete') ?? false;
@@ -69,11 +69,10 @@ GoRouter goRouter(GoRouterRef ref) {
             // Force onboarding if not complete
             if (!isOnboarding) return '/onboarding';
           } else {
-            // Onboarding complete, prevent going back to it
-            if (isOnboarding) return '/register';
-
+            // Onboarding complete
             // If not on auth/public route, go to register
             if (!isAuthRoute &&
+                state.uri.path != '/' &&
                 state.uri.path != '/services' &&
                 state.uri.path != '/about' &&
                 state.uri.path != '/contact' &&
@@ -82,17 +81,9 @@ GoRouter goRouter(GoRouterRef ref) {
               return '/register';
             }
           }
-        } else {
-          // Web: Just ensure auth/public routes
-          if (!isAuthRoute &&
-              state.uri.path != '/services' &&
-              state.uri.path != '/about' &&
-              state.uri.path != '/contact' &&
-              !state.uri.path.startsWith('/category') &&
-              !state.uri.path.startsWith('/services-list')) {
-            return '/register';
-          }
         }
+        // Web: Allow browsing without authentication
+        // No redirect needed - users can browse freely
       }
       return null;
     },

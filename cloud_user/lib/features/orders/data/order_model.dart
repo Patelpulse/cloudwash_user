@@ -61,23 +61,46 @@ class OrderModel {
       paymentStatus: json['paymentStatus'] ?? 'pending',
       status: json['status'] ?? 'pending',
       scheduledDate: json['scheduledDate'] != null
-          ? DateTime.parse(json['scheduledDate'])
+          ? _parseDateTime(json['scheduledDate'])
           : null,
       completedAt: json['completedAt'] != null
-          ? DateTime.parse(json['completedAt'])
+          ? _parseDateTime(json['completedAt'])
           : null,
       cancelledAt: json['cancelledAt'] != null
-          ? DateTime.parse(json['cancelledAt'])
+          ? _parseDateTime(json['cancelledAt'])
           : null,
       cancellationReason: json['cancellationReason'],
       notes: json['notes'],
-      createdAt: DateTime.parse(
+      createdAt: _parseDateTime(
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),
-      updatedAt: DateTime.parse(
+      updatedAt: _parseDateTime(
         json['updatedAt'] ?? DateTime.now().toIso8601String(),
       ),
     );
+  }
+
+  // Helper method to parse both Firestore Timestamp and ISO String dates
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+
+    // If it's a Firestore Timestamp
+    if (value is Map && value.containsKey('_seconds')) {
+      final seconds = value['_seconds'] as int;
+      final nanoseconds = value['_nanoseconds'] as int? ?? 0;
+      return DateTime.fromMillisecondsSinceEpoch(
+        seconds * 1000 + (nanoseconds / 1000000).floor(),
+      );
+    }
+
+    // If it's already a DateTime
+    if (value is DateTime) return value;
+
+    // If it's a String (ISO format)
+    if (value is String) return DateTime.parse(value);
+
+    // Fallback
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {

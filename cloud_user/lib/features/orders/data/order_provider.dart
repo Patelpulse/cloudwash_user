@@ -51,11 +51,14 @@ class UserOrders extends _$UserOrders {
     }
   }
 
-  // Cancel order
+  // Cancel order (Firebase)
   Future<void> cancelOrder(String orderId, String reason) async {
     try {
-      await ref.read(orderRepositoryProvider).cancelOrder(orderId, reason);
-      // Refresh orders list
+      // Use Firebase-only cancellation
+      await ref
+          .read(orderRepositoryProvider)
+          .cancelOrderFirebase(orderId, reason);
+      // Refresh orders list (though real-time should auto-update)
       ref.invalidateSelf();
     } catch (e) {
       rethrow;

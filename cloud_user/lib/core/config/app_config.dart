@@ -3,7 +3,7 @@ class AppConfig {
   static const String prodBaseUrl = 'https://cloudwashapi.onrender.com/api/';
 
   // Toggle this to switch environments
-  static const bool isProduction = false;
+  static const bool isProduction = true;
 
   static String get baseUrl => isProduction ? prodBaseUrl : devBaseUrl;
 }

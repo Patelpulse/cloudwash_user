@@ -2,22 +2,24 @@ import 'package:cloud_user/core/models/banner_model.dart';
 import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
-import 'package:cloud_user/features/home/data/hero_provider.dart';
-import 'package:cloud_user/features/home/data/home_repository.dart';
+import 'package:cloud_user/features/home/data/firebase_home_repository.dart';
+import 'package:cloud_user/features/home/data/hero_section_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'home_providers.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<CategoryModel>> categories(CategoriesRef ref) {
-  return ref.watch(homeRepositoryProvider).getCategories();
+  return ref.watch(firebaseHomeRepositoryProvider).getCategories();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<SubCategoryModel>> subCategories(SubCategoriesRef ref) async {
-  final data = await ref.watch(homeRepositoryProvider).getSubCategories();
+  final data = await ref
+      .watch(firebaseHomeRepositoryProvider)
+      .getSubCategories();
   if (data.isEmpty) {
-    // Return mock data if API is empty
+    // Return mock data ONLY if Firestore is completely empty
     return [
       SubCategoryModel(
         id: '1',
@@ -37,38 +39,54 @@ Future<List<SubCategoryModel>> subCategories(SubCategoriesRef ref) async {
         price: 19,
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/2954/2954930.png',
       ),
-      SubCategoryModel(
-        id: '4',
-        name: 'Shoe Laundry',
-        price: 149,
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/5400/5400782.png',
-      ),
     ];
   }
-  return data.map((e) => SubCategoryModel.fromJson(e)).toList();
+  return data;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
+Future<List<SubCategoryModel>> subCategoriesByCategory(
+  SubCategoriesByCategoryRef ref,
+  String categoryId,
+) async {
+  return ref
+      .watch(firebaseHomeRepositoryProvider)
+      .getSubCategories(categoryId: categoryId);
+}
+
+@Riverpod(keepAlive: true)
 Future<List<BannerModel>> homeBanners(HomeBannersRef ref) {
-  return ref.watch(homeRepositoryProvider).getBanners();
+  return ref.watch(firebaseHomeRepositoryProvider).getBanners();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<ServiceModel>> spotlightServices(SpotlightServicesRef ref) async {
-  final services = await ref.watch(homeRepositoryProvider).getAllServices();
-  // For now, just take the first 5 or any with high rating
-  return services.take(5).toList();
+  final services = await ref
+      .watch(firebaseHomeRepositoryProvider)
+      .getServices();
+  return services.take(8).toList();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<ServiceModel>> topServices(TopServicesRef ref) async {
-  final services = await ref.watch(homeRepositoryProvider).getAllServices();
-  // Shuffle and take 6
-  final list = List<ServiceModel>.from(services)..shuffle();
-  return list.take(6).toList();
+  final services = await ref
+      .watch(firebaseHomeRepositoryProvider)
+      .getServices();
+  return services.take(10).toList();
 }
 
-@riverpod
-Future<Map<String, dynamic>?> heroSection(HeroSectionRef ref) {
-  return ref.watch(homeRepositoryProvider).getHeroSection();
+@Riverpod(keepAlive: true)
+Future<List<ServiceModel>> services(
+  ServicesRef ref, {
+  String? categoryId,
+  String? subCategoryId,
+}) async {
+  return ref
+      .watch(firebaseHomeRepositoryProvider)
+      .getServices(categoryId: categoryId, subCategoryId: subCategoryId);
+}
+
+@Riverpod(keepAlive: true)
+Future<HeroSectionModel?> heroSection(HeroSectionRef ref) {
+  return ref.watch(firebaseHomeRepositoryProvider).getHeroSection();
 }

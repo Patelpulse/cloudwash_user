@@ -12,6 +12,7 @@ class SubCategoryModel {
   final String imageUrl;
   final bool isActive;
   final dynamic category;
+  final String? mongoId;
 
   SubCategoryModel({
     required this.id,
@@ -21,6 +22,7 @@ class SubCategoryModel {
     required this.imageUrl,
     this.isActive = true,
     this.category,
+    this.mongoId,
   });
 
   factory SubCategoryModel.fromJson(Map<String, dynamic> json) =>

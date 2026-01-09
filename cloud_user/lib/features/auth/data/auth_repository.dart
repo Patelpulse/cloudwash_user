@@ -108,18 +108,22 @@ class AuthRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      final data = {
+        'firebaseUid': uid,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'role': 'user',
+      };
+      if (profileImage != null) {
+        data['profileImage'] = profileImage;
+      }
+
+      print('🚀 Registering with payload: $data');
+
       // 2. Update MongoDB (Backend)
-      final response = await _dio.post(
-        'user/register',
-        data: {
-          'firebaseUid': uid,
-          'name': name,
-          'email': email,
-          'phone': phone,
-          'password': password,
-          'profileImage': profileImage,
-        },
-      );
+      final response = await _dio.post('user/register', data: data);
 
       if (response.data['token'] != null) {
         await _tokenStorage.saveToken(response.data['token']);
