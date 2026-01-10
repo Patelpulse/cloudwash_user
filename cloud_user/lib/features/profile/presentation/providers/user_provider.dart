@@ -16,6 +16,19 @@ class UserProfile extends _$UserProfile {
     final user = auth.currentUser;
 
     if (user == null) {
+      // If Firebase user is null, check if we have a backend token
+      final isAuthenticated = await ref
+          .read(authRepositoryProvider)
+          .isAuthenticated();
+      if (isAuthenticated) {
+        try {
+          // If we have a token, fetch profile from API
+          final profile = await ref.read(authRepositoryProvider).getProfile();
+          return profile;
+        } catch (e) {
+          print('⚠️ Failed to fetch profile from API: $e');
+        }
+      }
       _subscription?.cancel();
       return null;
     }
@@ -66,19 +79,28 @@ class UserProfile extends _$UserProfile {
       _subscription?.cancel();
     });
 
-    // Return the current data as initial state
-    final initialDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
+    // Return the current data as initial state from Firestore if possible
+    try {
+      final initialDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
-    final initialData = initialDoc.data();
-    if (initialData != null && initialData['createdAt'] is Timestamp) {
-      initialData['createdAt'] = (initialData['createdAt'] as Timestamp)
-          .toDate()
-          .toIso8601String();
+      final initialData = initialDoc.data();
+      if (initialData != null) {
+        if (initialData['createdAt'] is Timestamp) {
+          initialData['createdAt'] = (initialData['createdAt'] as Timestamp)
+              .toDate()
+              .toIso8601String();
+        }
+        return initialData;
+      }
+    } catch (e) {
+      print('⚠️ Error getting initial Firestore doc: $e');
     }
-    return initialData;
+
+    // Fallback to API if Firestore fails or is empty
+    return await ref.read(authRepositoryProvider).getProfile();
   }
 
   Future<void> updateProfile({

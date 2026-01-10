@@ -1,7 +1,9 @@
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/cart/data/addons_provider.dart';
 import 'package:cloud_user/features/cart/data/cart_provider.dart';
+import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -98,6 +100,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'paymentMethod': _selectedPaymentMethod,
         'scheduledDate': scheduledDateTime.toIso8601String(),
         'notes': 'Please handle with care',
+        // Add explicit User ID from profile provider to avoid guest fallback
+        'userId': ref
+            .read(userProfileProvider)
+            .whenOrNull(
+              data: (user) =>
+                  user?['_id'] ?? FirebaseAuth.instance.currentUser?.uid,
+            ),
       };
 
       print('📦 Order Data being sent:');

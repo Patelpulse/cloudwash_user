@@ -24,8 +24,18 @@ class OrderRepository {
     Map<String, dynamic> orderData,
   ) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      String uid;
+      if (_auth.currentUser != null) {
+        uid = _auth.currentUser!.uid;
+      } else {
+        // Fallback: If no Firebase user, check if we have a backend ID passed in the data
+        // This handles cases where Firebase Auth failed/not synced but user is logged in via backend
+        uid =
+            orderData['userId'] ??
+            orderData['_id'] ??
+            'guest_${DateTime.now().millisecondsSinceEpoch}';
+        print('⚠️ No Firebase User found. Using ID: $uid for order creation.');
+      }
 
       // Generate order number and OTP
       final orderNumber = 'ORD${DateTime.now().millisecondsSinceEpoch}';
@@ -37,7 +47,7 @@ class OrderRepository {
         ...orderData,
         'orderNumber': orderNumber,
         'otp': otp,
-        'userId': user.uid,
+        'userId': uid,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -49,7 +59,7 @@ class OrderRepository {
         '_id': docRef.id, // ✅ Include the document ID
         'orderNumber': orderNumber,
         'otp': otp,
-        'userId': user.uid,
+        'userId': uid,
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -61,7 +71,7 @@ class OrderRepository {
       // Add to user's orders subcollection with the ID included
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .collection('orders')
           .doc(docRef.id)
           .set(orderDoc);
@@ -151,10 +161,14 @@ class OrderRepository {
   }
 
   // Cancel order in Firebase ONLY
-  Future<void> cancelOrderFirebase(String orderId, String reason) async {
+  Future<void> cancelOrderFirebase(
+    String orderId,
+    String reason, {
+    String? userId,
+  }) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      final uid = userId ?? _auth.currentUser?.uid;
+      if (uid == null) throw Exception('User not authenticated');
 
       final updates = {
         'status': 'cancelled',
@@ -169,7 +183,7 @@ class OrderRepository {
       // Update in user's orders subcollection
       await _firestore
           .collection('users')
-          .doc(user.uid)
+          .doc(uid)
           .collection('orders')
           .doc(orderId)
           .update(updates);
@@ -225,13 +239,13 @@ class OrderRepository {
   }
 
   // Listen to user's orders real-time from Firebase
-  Stream<List<OrderModel>> listenToUserOrders() {
-    final user = _auth.currentUser;
-    if (user == null) return Stream.value([]);
+  Stream<List<OrderModel>> listenToUserOrders({String? userId}) {
+    final uid = userId ?? _auth.currentUser?.uid;
+    if (uid == null) return Stream.value([]);
 
     return _firestore
         .collection('users')
-        .doc(user.uid)
+        .doc(uid)
         .collection('orders')
         .snapshots()
         .map((snapshot) {

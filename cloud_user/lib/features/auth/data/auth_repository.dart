@@ -108,6 +108,18 @@ class AuthRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // 2. IMPORTANT: Update Firebase Auth Password
+      // This allows them to login with Email/Password later
+      final user = _auth.currentUser;
+      if (user != null) {
+        try {
+          await user.updatePassword(password);
+          print('✅ Firebase Auth: Password updated/set for $email');
+        } catch (authError) {
+          print('⚠️ Firebase Auth: Password update failed: $authError');
+        }
+      }
+
       final data = {
         'firebaseUid': uid,
         'name': name,
@@ -122,14 +134,14 @@ class AuthRepository {
 
       print('🚀 Registering with payload: $data');
 
-      // 2. Update MongoDB (Backend)
+      // 3. Update MongoDB (Backend)
       final response = await _dio.post('user/register', data: data);
 
       if (response.data['token'] != null) {
         await _tokenStorage.saveToken(response.data['token']);
       }
 
-      // 3. Save returning data back to Firebase
+      // 4. Save returning data back to Firebase
       final mongoId = response.data['_id'];
       final cloudinaryUrl = response.data['profileImage'];
 
@@ -152,6 +164,22 @@ class AuthRepository {
     required String password,
   }) async {
     try {
+      // 1. Attempt to sign in to Firebase Auth
+      bool firebaseSuccess = false;
+      try {
+        await _auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        firebaseSuccess = true;
+        print('✅ Firebase Auth sign-in successful');
+      } catch (firebaseError) {
+        print(
+          '⚠️ Firebase Auth sign-in failed (might not exist yet): $firebaseError',
+        );
+      }
+
+      // 2. Sign in to Backend
       final response = await _dio.post(
         'user/login',
         data: {'email': email, 'password': password},
@@ -162,7 +190,32 @@ class AuthRepository {
       if (response.data['token'] != null) {
         await _tokenStorage.saveToken(response.data['token']);
 
-        // Sync MongoDB ID to Firestore
+        // 3. If Backend login is OK but Firebase failed, try to CREATE Firebase user
+        if (!firebaseSuccess || _auth.currentUser == null) {
+          try {
+            await _auth.createUserWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+            print(
+              '✅ Firebase Auth: Account created/synced after backend login',
+            );
+          } catch (createError) {
+            print(
+              '⚠️ Firebase Auth: Sync failed (might already exist): $createError',
+            );
+            // If it already exists but we couldn't sign in, it might be a password mismatch
+            // from old records. We try one last sign-in just in case.
+            try {
+              await _auth.signInWithEmailAndPassword(
+                email: email,
+                password: password,
+              );
+            } catch (_) {}
+          }
+        }
+
+        // 4. Sync MongoDB ID and info to Firestore
         final firebaseUser = _auth.currentUser;
         if (firebaseUser != null) {
           await _firestore.collection('users').doc(firebaseUser.uid).set({
@@ -171,6 +224,7 @@ class AuthRepository {
             'email': response.data['email'],
             'phone': response.data['phone'],
             'profileImage': response.data['profileImage'],
+            'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
       }
