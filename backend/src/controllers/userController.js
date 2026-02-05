@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const User = require('../models/User'); // Restart trigger
 const jwt = require('jsonwebtoken');
 const { uploadToCloudinary } = require('../utils/cloudinary');
 
@@ -10,6 +10,7 @@ const generateToken = (id) => {
 };
 
 const registerUser = async (req, res) => {
+    console.log('📝 Register Request:', req.body);
     try {
         const { firebaseUid, name, email, phone, password, profileImage } = req.body;
 
@@ -19,9 +20,10 @@ const registerUser = async (req, res) => {
         });
 
         if (userExists) {
+            console.log('❌ User exists:', userExists.email, userExists.phone);
             return res.status(400).json({ message: 'User already exists with this email, phone, or Firebase UID' });
         }
-
+        // ... rest of registerUser
         let cloudinaryImageUrl = profileImage;
         if (profileImage && (profileImage.startsWith('http') || profileImage.startsWith('data:image'))) {
             cloudinaryImageUrl = await uploadToCloudinary(profileImage);
@@ -37,6 +39,7 @@ const registerUser = async (req, res) => {
         });
 
         if (user) {
+            console.log('✅ User created:', user._id);
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
@@ -49,41 +52,46 @@ const registerUser = async (req, res) => {
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {
-        console.error(error);
+        console.error('❌ Register Error:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
 const loginUser = async (req, res) => {
+    console.log('🔑 Login Request:', req.body);
     try {
+        // ... rest of loginUser
         const { email, password, phone, firebaseUid } = req.body;
 
         let user;
         if (firebaseUid) {
-            // Firebase UID login (for Google Sign-In)
             user = await User.findOne({ firebaseUid });
             if (!user) {
+                console.log('⚠️ Login: User not found for UID', firebaseUid);
                 return res.status(401).json({ message: 'User not found. Please complete registration.' });
             }
         } else if (email && password) {
-            // Email/Password login
             user = await User.findOne({ email });
             if (!user) {
+                console.log('⚠️ Login: User not found for email', email);
                 return res.status(401).json({ message: 'Invalid email or password' });
             }
             const isMatch = await user.comparePassword(password);
             if (!isMatch) {
+                console.log('⚠️ Login: Password mismatch for', email);
                 return res.status(401).json({ message: 'Invalid email or password' });
             }
         } else if (phone) {
-            // Phone-only login (OTP flow fallback)
             user = await User.findOne({ phone });
             if (!user) {
+                console.log('⚠️ Login: User not found for phone', phone);
                 return res.status(401).json({ message: 'User not found' });
             }
         } else {
             return res.status(400).json({ message: 'Please provide firebaseUid, email/password, or phone' });
         }
+
+        console.log('✅ Login success:', user.email);
 
         res.json({
             _id: user._id,
@@ -94,10 +102,14 @@ const loginUser = async (req, res) => {
             token: generateToken(user._id)
         });
     } catch (error) {
-        console.error(error);
+        console.error('❌ Login Error:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+
+// ... other functions ...
+
+
 
 const getProfile = async (req, res) => {
     try {
@@ -190,6 +202,26 @@ const deleteUser = async (req, res) => {
     }
 };
 
+const deleteUserProfile = async (req, res) => {
+    console.log('🗑️ Delete Profile Request for User:', req.user._id);
+    try {
+        // User is attached by protectUser middleware
+        // Use findByIdAndDelete for clarity and robustness
+        const user = await User.findByIdAndDelete(req.user._id);
+
+        if (user) {
+            console.log('✅ User deleted:', user._id);
+            res.json({ message: 'User profile deleted successfully' });
+        } else {
+            console.log('⚠️ Delete: User not found in DB');
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('❌ Delete Error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -197,5 +229,6 @@ module.exports = {
     updateProfile,
     getAllUsers,
     getUserById,
-    deleteUser
+    deleteUser,
+    deleteUserProfile
 };
