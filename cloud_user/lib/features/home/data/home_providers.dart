@@ -86,12 +86,48 @@ Future<List<ServiceModel>> services(
 
 @Riverpod(keepAlive: true)
 Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
+  HeroSectionModel? apiHero;
+  HeroSectionModel? firebaseHero;
+
   try {
-    final apiHero = await ref.watch(homeRepositoryProvider).getHeroSection();
-    if (apiHero != null) {
-      return HeroSectionModel.fromJson(apiHero);
+    final apiHeroJson =
+        await ref.watch(homeRepositoryProvider).getHeroSection();
+    if (apiHeroJson != null) {
+      apiHero = HeroSectionModel.fromJson(apiHeroJson);
     }
   } catch (_) {}
 
-  return ref.watch(firebaseHomeRepositoryProvider).getHeroSection();
+  try {
+    firebaseHero =
+        await ref.watch(firebaseHomeRepositoryProvider).getHeroSection();
+  } catch (_) {}
+
+  final baseHero =
+      _hasCoreHeroContent(apiHero) ? apiHero : (firebaseHero ?? apiHero);
+  if (baseHero == null) return null;
+
+  // Firestore `web_landing/hero.logoUrl` is treated as source of truth for logo,
+  // so website shows the same logo uploaded from admin even if API lags behind.
+  final firebaseLogo = (firebaseHero?.logoUrl ?? '').trim();
+  if (firebaseLogo.isEmpty) return baseHero;
+
+  return HeroSectionModel(
+    id: baseHero.id,
+    tagline: baseHero.tagline,
+    mainTitle: baseHero.mainTitle,
+    description: baseHero.description,
+    buttonText: baseHero.buttonText,
+    imageUrl: baseHero.imageUrl,
+    logoUrl: firebaseLogo,
+    youtubeUrl: baseHero.youtubeUrl,
+    isActive: baseHero.isActive,
+  );
+}
+
+bool _hasCoreHeroContent(HeroSectionModel? hero) {
+  if (hero == null) return false;
+  return hero.mainTitle.trim().isNotEmpty ||
+      hero.description.trim().isNotEmpty ||
+      hero.tagline.trim().isNotEmpty ||
+      hero.imageUrl.trim().isNotEmpty;
 }
