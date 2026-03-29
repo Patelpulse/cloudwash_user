@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_footer.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_navbar.dart';
@@ -187,7 +190,10 @@ class WebLayout extends ConsumerWidget {
   }
 
   Widget _buildMobileDrawer(BuildContext context, String? logoUrl) {
-    final bool hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
+    final trimmedLogoUrl = (logoUrl ?? '').trim();
+    final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
+    final hasNetworkLogo =
+        trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
     return Drawer(
       child: Container(
         color: Colors.white,
@@ -198,9 +204,15 @@ class WebLayout extends ConsumerWidget {
                 color: AppTheme.primary.withValues(alpha: 0.05),
               ),
               child: Center(
-                child: hasNetworkLogo
+                child: embeddedLogoBytes != null
+                    ? Image.memory(
+                        embeddedLogoBytes,
+                        height: 140,
+                        fit: BoxFit.contain,
+                      )
+                    : hasNetworkLogo
                     ? Image.network(
-                        logoUrl,
+                        trimmedLogoUrl,
                         height: 140,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Image.asset(
@@ -250,6 +262,17 @@ class WebLayout extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Uint8List? _decodeDataImage(String imageUrl) {
+    if (!imageUrl.startsWith('data:image')) return null;
+    final commaIndex = imageUrl.indexOf(',');
+    if (commaIndex == -1 || commaIndex >= imageUrl.length - 1) return null;
+    try {
+      return base64Decode(imageUrl.substring(commaIndex + 1));
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _drawerTile(

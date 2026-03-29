@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/core/models/sub_category_model.dart';
@@ -84,6 +87,17 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
       // but for simplicity and reliability with this iframe based player:
       _initializeController();
     });
+  }
+
+  Uint8List? _decodeDataImage(String imageUrl) {
+    if (!imageUrl.startsWith('data:image')) return null;
+    final commaIndex = imageUrl.indexOf(',');
+    if (commaIndex == -1 || commaIndex >= imageUrl.length - 1) return null;
+    try {
+      return base64Decode(imageUrl.substring(commaIndex + 1));
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -264,10 +278,12 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                             IgnorePointer(
                               child: heroAsync.when(
                                 data: (hero) {
-                                  final logoUrl = hero?.logoUrl ?? '';
-                                  if (logoUrl.trim().isEmpty) {
+                                  final logoUrl = (hero?.logoUrl ?? '').trim();
+                                  if (logoUrl.isEmpty) {
                                     return const SizedBox.shrink();
                                   }
+                                  final embeddedLogoBytes =
+                                      _decodeDataImage(logoUrl);
                                   return TweenAnimationBuilder<double>(
                                     tween: Tween(begin: 0.92, end: 1.0),
                                     duration: const Duration(milliseconds: 550),
@@ -287,12 +303,17 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                         ),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: Image.network(
-                                        logoUrl,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (_, __, ___) =>
-                                            const SizedBox.shrink(),
-                                      ),
+                                      child: embeddedLogoBytes != null
+                                          ? Image.memory(
+                                              embeddedLogoBytes,
+                                              fit: BoxFit.contain,
+                                            )
+                                          : Image.network(
+                                              logoUrl,
+                                              fit: BoxFit.contain,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const SizedBox.shrink(),
+                                            ),
                                     ),
                                   );
                                 },

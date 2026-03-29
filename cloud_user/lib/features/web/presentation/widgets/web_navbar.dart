@@ -1,5 +1,7 @@
 import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -440,10 +442,20 @@ class WebNavBar extends ConsumerWidget {
     required double height,
     required double textSize,
   }) {
-    final bool hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
-    return hasNetworkLogo
+    final trimmedLogoUrl = (logoUrl ?? '').trim();
+    final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
+    final hasNetworkLogo =
+        trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
+
+    return embeddedLogoBytes != null
+        ? Image.memory(
+            embeddedLogoBytes,
+            height: height,
+            fit: BoxFit.contain,
+          )
+        : hasNetworkLogo
         ? CachedNetworkImage(
-            imageUrl: logoUrl,
+            imageUrl: trimmedLogoUrl,
             height: height,
             fit: BoxFit.contain,
             errorWidget: (_, __, ___) => Image.asset(
@@ -466,6 +478,17 @@ class WebNavBar extends ConsumerWidget {
               ),
             ),
           );
+  }
+
+  Uint8List? _decodeDataImage(String imageUrl) {
+    if (!imageUrl.startsWith('data:image')) return null;
+    final commaIndex = imageUrl.indexOf(',');
+    if (commaIndex == -1 || commaIndex >= imageUrl.length - 1) return null;
+    try {
+      return base64Decode(imageUrl.substring(commaIndex + 1));
+    } catch (_) {
+      return null;
+    }
   }
 }
 

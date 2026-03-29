@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
@@ -119,7 +122,10 @@ class WebFooter extends ConsumerWidget {
   }
 
   Widget _buildBrandColumn(bool isMobile, String? logoUrl) {
-    final hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
+    final trimmedLogoUrl = (logoUrl ?? '').trim();
+    final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
+    final hasNetworkLogo =
+        trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -127,9 +133,15 @@ class WebFooter extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            hasNetworkLogo
+            embeddedLogoBytes != null
+                ? Image.memory(
+                    embeddedLogoBytes,
+                    height: isMobile ? 100 : 140,
+                    fit: BoxFit.contain,
+                  )
+                : hasNetworkLogo
                 ? Image.network(
-                    logoUrl,
+                    trimmedLogoUrl,
                     height: isMobile ? 100 : 140,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => Image.asset(
@@ -182,6 +194,17 @@ class WebFooter extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Uint8List? _decodeDataImage(String imageUrl) {
+    if (!imageUrl.startsWith('data:image')) return null;
+    final commaIndex = imageUrl.indexOf(',');
+    if (commaIndex == -1 || commaIndex >= imageUrl.length - 1) return null;
+    try {
+      return base64Decode(imageUrl.substring(commaIndex + 1));
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _buildFooterGrid(bool isMobile) {

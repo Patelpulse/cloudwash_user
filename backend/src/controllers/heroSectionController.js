@@ -27,6 +27,30 @@ const uploadFromBuffer = (buffer) => {
     });
 };
 
+const toDataUrlFromFile = (file) => {
+    const mimeType = file?.mimetype || 'image/png';
+    const base64 = file?.buffer?.toString('base64') || '';
+    return `data:${mimeType};base64,${base64}`;
+};
+
+const uploadImageWithFallback = async (
+    file,
+    { allowDataUrlFallback = false, fieldName = 'image' } = {}
+) => {
+    try {
+        return await uploadFromBuffer(file.buffer);
+    } catch (error) {
+        if (!allowDataUrlFallback) {
+            throw error;
+        }
+
+        console.warn(
+            `⚠️ Cloudinary upload failed for ${fieldName}. Using data URL fallback: ${error.message}`
+        );
+        return { secure_url: toDataUrlFromFile(file) };
+    }
+};
+
 const syncHeroSectionToFirestore = async (heroSection) => {
     if (!admin.firestore) return;
 
@@ -108,13 +132,18 @@ const updateHeroSection = async (req, res) => {
 
         // Upload new hero image if provided
         if (heroImageFile) {
-            const result = await uploadFromBuffer(heroImageFile.buffer);
+            const result = await uploadImageWithFallback(heroImageFile, {
+                fieldName: 'hero image',
+            });
             heroSection.imageUrl = result.secure_url;
         }
 
         // Upload new logo if provided
         if (logoImageFile) {
-            const result = await uploadFromBuffer(logoImageFile.buffer);
+            const result = await uploadImageWithFallback(logoImageFile, {
+                allowDataUrlFallback: true,
+                fieldName: 'logo',
+            });
             heroSection.logoUrl = result.secure_url;
         }
 
