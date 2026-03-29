@@ -1,10 +1,11 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 const connectDB = require('./config/db');
 
 // Load env vars
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Connect to database
 connectDB();
@@ -96,6 +97,10 @@ app.use('/api/why-choose-us', whyChooseUsRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/orders', orderRoutes);
+
+app.get('/', (req, res) => {
+    res.send('Cloudwash API is running...');
+});
 
 const PORT = process.env.PORT || 5000;
 
