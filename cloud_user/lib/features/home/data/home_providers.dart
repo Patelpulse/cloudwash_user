@@ -4,6 +4,7 @@ import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/features/home/data/firebase_home_repository.dart';
 import 'package:cloud_user/features/home/data/hero_section_model.dart';
+import 'package:cloud_user/features/home/data/home_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'home_providers.g.dart';
@@ -15,9 +16,8 @@ Future<List<CategoryModel>> categories(CategoriesRef ref) {
 
 @Riverpod(keepAlive: true)
 Future<List<SubCategoryModel>> subCategories(SubCategoriesRef ref) async {
-  final data = await ref
-      .watch(firebaseHomeRepositoryProvider)
-      .getSubCategories();
+  final data =
+      await ref.watch(firebaseHomeRepositoryProvider).getSubCategories();
   if (data.isEmpty) {
     // Return mock data ONLY if Firestore is completely empty
     return [
@@ -61,17 +61,15 @@ Future<List<BannerModel>> homeBanners(HomeBannersRef ref) {
 
 @Riverpod(keepAlive: true)
 Future<List<ServiceModel>> spotlightServices(SpotlightServicesRef ref) async {
-  final services = await ref
-      .watch(firebaseHomeRepositoryProvider)
-      .getServices();
+  final services =
+      await ref.watch(firebaseHomeRepositoryProvider).getServices();
   return services.take(8).toList();
 }
 
 @Riverpod(keepAlive: true)
 Future<List<ServiceModel>> topServices(TopServicesRef ref) async {
-  final services = await ref
-      .watch(firebaseHomeRepositoryProvider)
-      .getServices();
+  final services =
+      await ref.watch(firebaseHomeRepositoryProvider).getServices();
   return services.take(10).toList();
 }
 
@@ -87,6 +85,13 @@ Future<List<ServiceModel>> services(
 }
 
 @Riverpod(keepAlive: true)
-Future<HeroSectionModel?> heroSection(HeroSectionRef ref) {
+Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
+  try {
+    final apiHero = await ref.watch(homeRepositoryProvider).getHeroSection();
+    if (apiHero != null) {
+      return HeroSectionModel.fromJson(apiHero);
+    }
+  } catch (_) {}
+
   return ref.watch(firebaseHomeRepositoryProvider).getHeroSection();
 }

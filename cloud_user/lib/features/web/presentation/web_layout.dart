@@ -1,6 +1,7 @@
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_footer.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_navbar.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:cloud_user/features/orders/data/order_provider.dart';
 import 'package:cloud_user/features/orders/data/order_model.dart';
@@ -25,6 +26,9 @@ class WebLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final heroAsync = ref.watch(heroSectionProvider);
+    final logoUrl = heroAsync.valueOrNull?.logoUrl;
+
     // Listen for real-time order status updates from Firebase
     ref.listen(userOrdersRealtimeProvider, (previous, next) {
       if (previous != null &&
@@ -151,7 +155,7 @@ class WebLayout extends ConsumerWidget {
     return Scaffold(
       key: effectiveScaffoldKey,
       backgroundColor: const Color(0xFFF7F8FA),
-      drawer: isMobile ? _buildMobileDrawer(context) : null,
+      drawer: isMobile ? _buildMobileDrawer(context, logoUrl) : null,
       endDrawer: endDrawer,
       body: Stack(
         children: [
@@ -182,7 +186,8 @@ class WebLayout extends ConsumerWidget {
     );
   }
 
-  Widget _buildMobileDrawer(BuildContext context) {
+  Widget _buildMobileDrawer(BuildContext context, String? logoUrl) {
+    final bool hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
     return Drawer(
       child: Container(
         color: Colors.white,
@@ -193,14 +198,29 @@ class WebLayout extends ConsumerWidget {
                 color: AppTheme.primary.withValues(alpha: 0.05),
               ),
               child: Center(
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 140,
-                  errorBuilder: (_, __, ___) => const Text(
-                    'CLINOWASH',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32),
-                  ),
-                ),
+                child: hasNetworkLogo
+                    ? Image.network(
+                        logoUrl,
+                        height: 140,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/logo.png',
+                          height: 140,
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/logo.png',
+                        height: 140,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Text(
+                          'CLINOWASH',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
+                          ),
+                        ),
+                      ),
               ),
             ),
             _drawerTile(context, 'Home', '/', Icons.home_outlined),

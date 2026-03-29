@@ -89,6 +89,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(userProfileProvider);
+    final heroAsync = ref.watch(heroSectionProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final bannersAsync = ref.watch(homeBannersProvider);
     final spotlightAsync = ref.watch(spotlightServicesProvider);
@@ -163,94 +164,140 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                           horizontal: 20,
                           vertical: 10,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Stack(
+                          alignment: Alignment.center,
                           children: [
-                            // Profile Section (Avatar + Name)
-                            userAsync.when(
-                              data: (user) => GestureDetector(
-                                onTap: () => context.push('/profile'),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 20,
-                                      backgroundImage: NetworkImage(
-                                        user?['profileImage'] ??
-                                            'https://i.pravatar.cc/150?u=user',
-                                      ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Profile Section (Avatar + Name)
+                                userAsync.when(
+                                  data: (user) => GestureDetector(
+                                    onTap: () => context.push('/profile'),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 20,
+                                          backgroundImage: NetworkImage(
+                                            user?['profileImage'] ??
+                                                'https://i.pravatar.cc/150?u=user',
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.9,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            user?['name'] ?? 'User',
+                                            style: GoogleFonts.inter(
+                                              color: const Color(0xFF1A1A1A),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
+                                  ),
+                                  loading: () => Row(
+                                    children: [
+                                      const CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: Colors.grey,
                                       ),
+                                      const SizedBox(width: 10),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          'Loading...',
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF1A1A1A),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  error: (_, __) => const CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: Colors.grey,
+                                  ),
+                                ),
+                                // Notification Icon
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: InkWell(
+                                    onTap: () => context.push('/notifications'),
+                                    child: const Icon(
+                                      Icons.notifications_outlined,
+                                      color: Color(0xFF1A1A1A),
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            IgnorePointer(
+                              child: heroAsync.when(
+                                data: (hero) {
+                                  final logoUrl = hero?.logoUrl ?? '';
+                                  if (logoUrl.trim().isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0.92, end: 1.0),
+                                    duration: const Duration(milliseconds: 550),
+                                    curve: Curves.easeOutBack,
+                                    builder: (context, value, child) =>
+                                        Transform.scale(
+                                      scale: value,
+                                      child: child,
+                                    ),
+                                    child: Container(
+                                      width: 78,
+                                      height: 42,
+                                      padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
                                         color: Colors.white.withValues(
                                           alpha: 0.9,
                                         ),
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: Text(
-                                        user?['name'] ?? 'User',
-                                        style: GoogleFonts.inter(
-                                          color: const Color(0xFF1A1A1A),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                      child: Image.network(
+                                        logoUrl,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) =>
+                                            const SizedBox.shrink(),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                              loading: () => Row(
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: Colors.grey,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.9,
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'Loading...',
-                                      style: GoogleFonts.inter(
-                                        color: const Color(0xFF1A1A1A),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              error: (_, __) => const CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.grey,
-                              ),
-                            ),
-                            // Notification Icon
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: InkWell(
-                                onTap: () => context.push('/notifications'),
-                                child: const Icon(
-                                  Icons.notifications_outlined,
-                                  color: Color(0xFF1A1A1A),
-                                  size: 20,
-                                ),
+                                  );
+                                },
+                                loading: () => const SizedBox.shrink(),
+                                error: (_, __) => const SizedBox.shrink(),
                               ),
                             ),
                           ],
@@ -286,7 +333,58 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Title
+                          heroAsync.when(
+                            data: (hero) {
+                              final heroTitle =
+                                  (hero?.mainTitle.isNotEmpty ?? false)
+                                      ? hero!.mainTitle.replaceAll('\\n', '\n')
+                                      : 'Feel Fresh Every Day';
+                              final heroDesc = (hero?.description.isNotEmpty ??
+                                      false)
+                                  ? hero!.description
+                                  : 'Book premium laundry pickup in seconds.';
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 450),
+                                    child: Text(
+                                      heroTitle,
+                                      key: ValueKey(heroTitle),
+                                      style: GoogleFonts.playfairDisplay(
+                                        color: const Color(0xFF111827),
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.1,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 450),
+                                    child: Text(
+                                      heroDesc,
+                                      key: ValueKey(heroDesc),
+                                      style: GoogleFonts.inter(
+                                        color: Colors.black54,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.4,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                            loading: () => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
+
                           const SizedBox(height: 16),
 
                           // Badges
@@ -410,8 +508,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                       String displayName = cat.name.toString().toUpperCase();
                       final words = cat.name.toString().trim().split(' ');
                       if (words.length > 1) {
-                        displayName = '${words[0]} ${words[1][0]}...'
-                            .toUpperCase();
+                        displayName =
+                            '${words[0]} ${words[1][0]}...'.toUpperCase();
                       }
 
                       return GestureDetector(
@@ -490,12 +588,9 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                             children: [
                               for (var item in secondRowItems)
                                 Expanded(child: buildItem(item)),
-
-                              for (
-                                var i = 0;
-                                i < 4 - secondRowItems.length;
-                                i++
-                              )
+                              for (var i = 0;
+                                  i < 4 - secondRowItems.length;
+                                  i++)
                                 const Spacer(),
                             ],
                           ),
@@ -581,10 +676,10 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) =>
                                     Shimmer.fromColors(
-                                      baseColor: Colors.grey[300]!,
-                                      highlightColor: Colors.grey[100]!,
-                                      child: Container(color: Colors.white),
-                                    ),
+                                  baseColor: Colors.grey[300]!,
+                                  highlightColor: Colors.grey[100]!,
+                                  child: Container(color: Colors.white),
+                                ),
                                 errorWidget: (_, __, ___) => const Center(
                                   child: Icon(
                                     Icons.broken_image,
@@ -703,11 +798,11 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.85,
-                            mainAxisSpacing: 15,
-                            crossAxisSpacing: 15,
-                          ),
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.85,
+                        mainAxisSpacing: 15,
+                        crossAxisSpacing: 15,
+                      ),
                       itemCount: services.length,
                       itemBuilder: (context, index) {
                         return _buildServiceGridCard(services[index]);
@@ -767,9 +862,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                         children: [
                           _buildSectionTitle('Our Commitment'),
                           const SizedBox(height: 15),
-                          ...items
-                              .take(3)
-                              .map(
+                          ...items.take(3).map(
                                 (item) =>
                                     _buildWhyItem(item.title, item.description),
                               ),

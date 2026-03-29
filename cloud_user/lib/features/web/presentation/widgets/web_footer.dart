@@ -2,21 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class WebFooter extends StatelessWidget {
+class WebFooter extends ConsumerWidget {
   const WebFooter({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
+    final heroAsync = ref.watch(heroSectionProvider);
+    final logoUrl = heroAsync.valueOrNull?.logoUrl;
 
     return Container(
       color: const Color(0xFFF1F5F9), // Light Slate
       padding: EdgeInsets.symmetric(
-        vertical: isMobile ? 30 : 50, 
-        horizontal: isMobile ? 20 : 40
-      ),
+          vertical: isMobile ? 30 : 50, horizontal: isMobile ? 20 : 40),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1300),
@@ -25,7 +27,7 @@ class WebFooter extends StatelessWidget {
               if (isMobile)
                 Column(
                   children: [
-                    _buildBrandColumn(isMobile),
+                    _buildBrandColumn(isMobile, logoUrl),
                     const SizedBox(height: 60),
                     _buildFooterGrid(isMobile),
                     const SizedBox(height: 60),
@@ -36,16 +38,19 @@ class WebFooter extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 2, child: _buildBrandColumn(isMobile)),
+                    Expanded(
+                        flex: 2, child: _buildBrandColumn(isMobile, logoUrl)),
                     const SizedBox(width: 100),
-                    Expanded(child: _buildFooterColumn('EXPLORE', [
+                    Expanded(
+                        child: _buildFooterColumn('EXPLORE', [
                       {'label': 'Home', 'route': '/'},
                       {'label': 'About Us', 'route': '/about'},
                       {'label': 'Services', 'route': '/services'},
                       {'label': 'Membership', 'route': '/membership'},
                       {'label': 'Blog', 'route': '/blog'},
                     ])),
-                    Expanded(child: _buildFooterColumn('SERVICES', [
+                    Expanded(
+                        child: _buildFooterColumn('SERVICES', [
                       {'label': 'Dry Cleaning', 'route': '/services'},
                       {'label': 'Wash & Fold', 'route': '/services'},
                       {'label': 'Shoe Restoration', 'route': '/services'},
@@ -77,7 +82,8 @@ class WebFooter extends StatelessWidget {
                       children: [
                         _MinimalLink('Privacy Policy', route: '/privacy'),
                         _MinimalLink('Terms of Service', route: '/terms'),
-                        _MinimalLink('Child Protection', route: '/child-protection'),
+                        _MinimalLink('Child Protection',
+                            route: '/child-protection'),
                         _MinimalLink('Sitemap', route: '/'),
                       ],
                     ),
@@ -97,7 +103,8 @@ class WebFooter extends StatelessWidget {
                         const SizedBox(width: 32),
                         _MinimalLink('Terms of Service', route: '/terms'),
                         const SizedBox(width: 32),
-                        _MinimalLink('Child Protection', route: '/child-protection'),
+                        _MinimalLink('Child Protection',
+                            route: '/child-protection'),
                         const SizedBox(width: 32),
                         _MinimalLink('Sitemap', route: '/'),
                       ],
@@ -111,27 +118,47 @@ class WebFooter extends StatelessWidget {
     );
   }
 
-  Widget _buildBrandColumn(bool isMobile) {
+  Widget _buildBrandColumn(bool isMobile, String? logoUrl) {
+    final hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
     return Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-             Image.asset(
-               'assets/images/logo.png',
-               height: isMobile ? 100 : 140,
-               fit: BoxFit.contain,
-               errorBuilder: (_, __, ___) => Text(
-                 'CLINOWASH',
-                 style: GoogleFonts.poppins(
-                   fontWeight: FontWeight.bold,
-                   fontSize: isMobile ? 32 : 44,
-                   color: AppTheme.primary,
-                   letterSpacing: 1.5,
-                 ),
-               ),
-             ),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.92, end: 1.0),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutBack,
+              builder: (context, value, child) =>
+                  Transform.scale(scale: value, child: child),
+              child: hasNetworkLogo
+                  ? Image.network(
+                      logoUrl,
+                      height: isMobile ? 100 : 140,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/images/logo.png',
+                        height: isMobile ? 100 : 140,
+                        fit: BoxFit.contain,
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/images/logo.png',
+                      height: isMobile ? 100 : 140,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Text(
+                        'CLINOWASH',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isMobile ? 32 : 44,
+                          color: AppTheme.primary,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+            ),
           ],
         ),
         const SizedBox(height: 32),
@@ -146,13 +173,18 @@ class WebFooter extends StatelessWidget {
         ),
         const SizedBox(height: 48),
         Row(
-          mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisAlignment:
+              isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
-            _SocialButton(icon: Icons.facebook_rounded, color: const Color(0xFF3B82F6)),
+            _SocialButton(
+                icon: Icons.facebook_rounded, color: const Color(0xFF3B82F6)),
             const SizedBox(width: 12),
-            _SocialButton(icon: Icons.camera_alt_rounded, color: const Color(0xFFEC4899)),
+            _SocialButton(
+                icon: Icons.camera_alt_rounded, color: const Color(0xFFEC4899)),
             const SizedBox(width: 12),
-            _SocialButton(icon: Icons.alternate_email_rounded, color: const Color(0xFF10B981)),
+            _SocialButton(
+                icon: Icons.alternate_email_rounded,
+                color: const Color(0xFF10B981)),
           ],
         ),
       ],
@@ -164,30 +196,38 @@ class WebFooter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _buildFooterColumn('EXPLORE', [
-            {'label': 'Home', 'route': '/'},
-            {'label': 'About Us', 'route': '/about'},
-            {'label': 'Services', 'route': '/services'},
-            {'label': 'Membership', 'route': '/membership'},
-            {'label': 'Blog', 'route': '/blog'},
-          ], isCenter: isMobile),
+          child: _buildFooterColumn(
+              'EXPLORE',
+              [
+                {'label': 'Home', 'route': '/'},
+                {'label': 'About Us', 'route': '/about'},
+                {'label': 'Services', 'route': '/services'},
+                {'label': 'Membership', 'route': '/membership'},
+                {'label': 'Blog', 'route': '/blog'},
+              ],
+              isCenter: isMobile),
         ),
         Expanded(
-          child: _buildFooterColumn('SERVICES', [
-            {'label': 'Dry Cleaning', 'route': '/services'},
-            {'label': 'Wash & Fold', 'route': '/services'},
-            {'label': 'Shoe Restoration', 'route': '/services'},
-            {'label': 'Leather Care', 'route': '/services'},
-            {'label': 'Steam Ironing', 'route': '/services'},
-          ], isCenter: isMobile),
+          child: _buildFooterColumn(
+              'SERVICES',
+              [
+                {'label': 'Dry Cleaning', 'route': '/services'},
+                {'label': 'Wash & Fold', 'route': '/services'},
+                {'label': 'Shoe Restoration', 'route': '/services'},
+                {'label': 'Leather Care', 'route': '/services'},
+                {'label': 'Steam Ironing', 'route': '/services'},
+              ],
+              isCenter: isMobile),
         ),
       ],
     );
   }
 
-  Widget _buildFooterColumn(String title, List<Map<String, String>> links, {bool isCenter = false}) {
+  Widget _buildFooterColumn(String title, List<Map<String, String>> links,
+      {bool isCenter = false}) {
     return Column(
-      crossAxisAlignment: isCenter ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isCenter ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
           title,
@@ -199,17 +239,20 @@ class WebFooter extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        ...links.map((link) => Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: _FooterLink(link['label']!),
-        )).toList(),
+        ...links
+            .map((link) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _FooterLink(link['label']!),
+                ))
+            .toList(),
       ],
     );
   }
 
   Widget _buildContactColumn(bool isMobile) {
     return Column(
-      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
           'CONTACT',
@@ -226,7 +269,7 @@ class WebFooter extends StatelessWidget {
         _buildContactItem(Icons.email_rounded, 'hello@cloudwash.com', isMobile),
         const SizedBox(height: 20),
         _buildContactItem(
-          Icons.location_on_rounded, 
+          Icons.location_on_rounded,
           'Suite 402, Laundry Lane,\nBangalore, KA 560001',
           isMobile,
         ),
@@ -245,7 +288,8 @@ class WebFooter extends StatelessWidget {
           child: Text(
             text,
             textAlign: isMobile ? TextAlign.center : TextAlign.start,
-            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5),
+            style: const TextStyle(
+                color: Color(0xFF475569), fontSize: 15, height: 1.5),
           ),
         ),
       ],
@@ -303,7 +347,8 @@ class _SocialButtonState extends State<_SocialButton> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _isHovered ? widget.color : Colors.black.withValues(alpha: 0.05),
+          color:
+              _isHovered ? widget.color : Colors.black.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
