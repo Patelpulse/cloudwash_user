@@ -21,7 +21,6 @@ import 'package:go_router/go_router.dart';
 import 'dart:math' as math;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:async';
 
 class WebHomeScreen extends ConsumerStatefulWidget {
   const WebHomeScreen({super.key});
@@ -1724,7 +1723,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _AnimatedOrb extends StatefulWidget {
+class _AnimatedOrb extends StatelessWidget {
   final double size;
   final List<Color> colors;
   final double delay;
@@ -1736,123 +1735,51 @@ class _AnimatedOrb extends StatefulWidget {
   });
 
   @override
-  State<_AnimatedOrb> createState() => _AnimatedOrbState();
-}
-
-class _AnimatedOrbState extends State<_AnimatedOrb>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    );
-    Future.delayed(Duration(milliseconds: (widget.delay * 1000).toInt()), () {
-      if (mounted) _controller.repeat(reverse: true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) => Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              ...widget.colors.map(
-                (c) => c.withOpacity(0.15 + _controller.value * 0.05),
-              ),
-              Colors.transparent,
-            ],
-          ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            ...colors.map((c) => c.withOpacity(0.18)),
+            Colors.transparent,
+          ],
         ),
       ),
     );
   }
 }
 
-class _PulseButton extends StatefulWidget {
+class _PulseButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _PulseButton({required this.onTap});
 
   @override
-  State<_PulseButton> createState() => _PulseButtonState();
-}
-
-class _PulseButtonState extends State<_PulseButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) => Container(
-              width: 64 + (_controller.value * 20),
-              height: 64 + (_controller.value * 20),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(
-                  0xFF6366F1,
-                ).withOpacity(0.3 - _controller.value * 0.3),
-              ),
+      onTap: onTap,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-          ),
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.play_arrow_rounded,
-              color: Color(0xFF6366F1),
-              size: 32,
-            ),
-          ),
-        ],
+          ],
+        ),
+        child: const Icon(
+          Icons.play_arrow_rounded,
+          color: Color(0xFF6366F1),
+          size: 32,
+        ),
       ),
     );
   }
@@ -1895,9 +1822,7 @@ class _EnhancedCategoryCardState extends State<_EnhancedCategoryCard> {
       },
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          transform: Matrix4.translationValues(0, isHovered ? -8 : 0, 0),
+        child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1950,7 +1875,7 @@ class _EnhancedCategoryCardState extends State<_EnhancedCategoryCard> {
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
-                  color: isHovered ? Colors.white : Color(0xFF1E293B),
+                  color: isHovered ? Colors.white : const Color(0xFF1E293B),
                 ),
               ),
               const SizedBox(height: 8),
@@ -1962,7 +1887,7 @@ class _EnhancedCategoryCardState extends State<_EnhancedCategoryCard> {
                   fontWeight: FontWeight.w600,
                   color: isHovered
                       ? Colors.white.withOpacity(0.9)
-                      : Color(0xFF64748B),
+                      : const Color(0xFF64748B),
                 ),
               ),
             ],
@@ -2008,9 +1933,7 @@ class _EnhancedSpotlightCardState extends State<_EnhancedSpotlightCard> {
       },
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          transform: Matrix4.translationValues(0, isHovered ? -10 : 0, 0),
+        child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             image: DecorationImage(
@@ -2236,9 +2159,7 @@ class _EnhancedServiceCardState extends State<_EnhancedServiceCard> {
       },
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          transform: Matrix4.translationValues(0, isHovered ? -8 : 0, 0),
+        child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -2640,80 +2561,32 @@ class _FloatingStatsCard extends StatelessWidget {
   }
 }
 
-class _AnimatedCounter extends StatefulWidget {
+class _AnimatedCounter extends StatelessWidget {
   final String value;
   final TextStyle style;
   const _AnimatedCounter({required this.value, required this.style});
 
   @override
-  State<_AnimatedCounter> createState() => _AnimatedCounterState();
-}
+  Widget build(BuildContext context) {
+    String suffix = '';
+    String cleanValue = value;
 
-class _AnimatedCounterState extends State<_AnimatedCounter>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  late double _targetValue;
-  late String _suffix;
-  late String _prefix;
-  bool _isDecimal = false;
-  bool _hasAnimated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _parseValue();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
-    _animation = Tween<double>(begin: 0, end: _targetValue).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn),
-    );
-  }
-
-  void _parseValue() {
-    _suffix = '';
-    _prefix = '';
-    String cleanValue = widget.value;
-
-    // Extract suffix (K, +, etc)
     final suffixRegExp = RegExp(r'[Kk\+]+$');
     final suffixMatch = suffixRegExp.firstMatch(cleanValue);
     if (suffixMatch != null) {
-      _suffix = suffixMatch.group(0)!;
-      cleanValue = cleanValue.substring(0, cleanValue.length - _suffix.length);
+      suffix = suffixMatch.group(0)!;
+      cleanValue = cleanValue.substring(0, cleanValue.length - suffix.length);
     }
 
-    _isDecimal = cleanValue.contains('.');
-    _targetValue = double.tryParse(cleanValue) ?? 0;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_hasAnimated) {
-      _controller.forward();
-      _hasAnimated = true;
+    final targetValue = double.tryParse(cleanValue) ?? 0;
+    String displayValue;
+    if (cleanValue.contains('.')) {
+      displayValue = targetValue.toStringAsFixed(1);
+    } else {
+      displayValue = targetValue.toInt().toString();
     }
 
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        String displayValue;
-        if (_isDecimal) {
-          displayValue = _animation.value.toStringAsFixed(1);
-        } else {
-          displayValue = _animation.value.toInt().toString();
-        }
-        return Text('$_prefix$displayValue$_suffix', style: widget.style);
-      },
-    );
+    return Text('$displayValue$suffix', style: style);
   }
 }
 
@@ -2784,37 +2657,15 @@ class _OffersCarousel extends StatefulWidget {
 class _OffersCarouselState extends State<_OffersCarousel> {
   late PageController _pageController;
   int _currentPage = 0;
-  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _startAutoPlay();
-  }
-
-  void _startAutoPlay() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!mounted) return;
-      if (_currentPage < widget.banners.length - 1) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -2852,8 +2703,7 @@ class _OffersCarouselState extends State<_OffersCarousel> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             widget.banners.length,
-            (index) => AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+            (index) => Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               width: _currentPage == index ? 32 : 8,
               height: 8,

@@ -127,38 +127,31 @@ class WebFooter extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.92, end: 1.0),
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeOutBack,
-              builder: (context, value, child) =>
-                  Transform.scale(scale: value, child: child),
-              child: hasNetworkLogo
-                  ? Image.network(
-                      logoUrl,
-                      height: isMobile ? 100 : 140,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/images/logo.png',
-                        height: isMobile ? 100 : 140,
-                        fit: BoxFit.contain,
-                      ),
-                    )
-                  : Image.asset(
+            hasNetworkLogo
+                ? Image.network(
+                    logoUrl,
+                    height: isMobile ? 100 : 140,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Image.asset(
                       'assets/images/logo.png',
                       height: isMobile ? 100 : 140,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Text(
-                        'CLINOWASH',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: isMobile ? 32 : 44,
-                          color: AppTheme.primary,
-                          letterSpacing: 1.5,
-                        ),
+                    ),
+                  )
+                : Image.asset(
+                    'assets/images/logo.png',
+                    height: isMobile ? 100 : 140,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Text(
+                      'CLINOWASH',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: isMobile ? 32 : 44,
+                        color: AppTheme.primary,
+                        letterSpacing: 1.5,
                       ),
                     ),
-            ),
+                  ),
           ],
         ),
         const SizedBox(height: 32),
@@ -313,14 +306,13 @@ class _FooterLinkState extends State<_FooterLink> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 200),
+      child: Text(
+        widget.label,
         style: TextStyle(
           color: _isHovered ? const Color(0xFF818CF8) : const Color(0xFF64748B),
           fontSize: 15,
           fontWeight: _isHovered ? FontWeight.bold : FontWeight.normal,
         ),
-        child: Text(widget.label),
       ),
     );
   }
@@ -343,8 +335,7 @@ class _SocialButtonState extends State<_SocialButton> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+      child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color:
