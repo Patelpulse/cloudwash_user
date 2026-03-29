@@ -66,7 +66,7 @@ class WebNavBar extends ConsumerWidget {
                         alignment: Alignment.center,
                         child: InkWell(
                           onTap: () => context.go('/'),
-                          child: _buildAnimatedLogo(
+                          child: _buildLogo(
                             logoUrl: logoUrl,
                             height: 48,
                             textSize: 24,
@@ -97,7 +97,7 @@ class WebNavBar extends ConsumerWidget {
                               onTap: () => context.go('/'),
                               child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: _buildAnimatedLogo(
+                                child: _buildLogo(
                                   logoUrl: logoUrl,
                                   height: 80,
                                   textSize: 36,
@@ -435,13 +435,13 @@ class WebNavBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildAnimatedLogo({
+  Widget _buildLogo({
     required String? logoUrl,
     required double height,
     required double textSize,
   }) {
     final bool hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
-    final Widget logo = hasNetworkLogo
+    return hasNetworkLogo
         ? CachedNetworkImage(
             imageUrl: logoUrl,
             height: height,
@@ -466,16 +466,6 @@ class WebNavBar extends ConsumerWidget {
               ),
             ),
           );
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.94, end: 1.0),
-      duration: const Duration(milliseconds: 550),
-      curve: Curves.easeOutBack,
-      child: logo,
-      builder: (context, value, child) {
-        return Transform.scale(scale: value, child: child);
-      },
-    );
   }
 }
 
@@ -488,8 +478,7 @@ class _NavLink extends StatefulWidget {
   State<_NavLink> createState() => _NavLinkState();
 }
 
-class _NavLinkState extends State<_NavLink>
-    with SingleTickerProviderStateMixin {
+class _NavLinkState extends State<_NavLink> {
   bool _isHovered = false;
 
   @override
@@ -505,8 +494,8 @@ class _NavLinkState extends State<_NavLink>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+              Text(
+                widget.label,
                 style: GoogleFonts.inter(
                   fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w500,
                   fontSize: 15,
@@ -514,11 +503,9 @@ class _NavLinkState extends State<_NavLink>
                       ? AppTheme.primary
                       : AppTheme.textPrimary.withValues(alpha: 0.8),
                 ),
-                child: Text(widget.label),
               ),
               const SizedBox(height: 4),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+              Container(
                 height: 2,
                 width: _isHovered ? 20 : 0,
                 decoration: BoxDecoration(
@@ -555,8 +542,7 @@ class _NavActionButtonState extends State<_NavActionButton> {
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         hoverColor: AppTheme.primary.withValues(alpha: 0.05),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: _isHovered
@@ -594,8 +580,7 @@ class _NotificationButtonState extends State<_NotificationButton> {
       child: InkWell(
         onTap: () => context.push('/notifications'),
         borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: _isHovered
@@ -615,45 +600,33 @@ class _NotificationButtonState extends State<_NotificationButton> {
                 Positioned(
                   top: -2,
                   right: -1,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.elasticOut,
-                    builder: (context, value, child) {
-                      return Transform.scale(
-                        scale: value,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
-                          ),
-                          child: Text(
-                            widget.unreadCount > 9
-                                ? '9+'
-                                : '${widget.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          spreadRadius: 1,
                         ),
-                      );
-                    },
+                      ],
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      widget.unreadCount > 9 ? '9+' : '${widget.unreadCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
             ],
