@@ -10,20 +10,43 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+const getErrorMessage = (error) => {
+    if (!error) return 'Unknown upload error';
+    if (typeof error === 'string') return error;
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'object' && error.message) return error.message;
+    try {
+        return JSON.stringify(error);
+    } catch (_) {
+        return String(error);
+    }
+};
+
 // Helper to upload to Cloudinary
 const uploadFromBuffer = (buffer) => {
     return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
+        if (!buffer) {
+            reject(new Error('Missing file buffer'));
+            return;
+        }
+
+        const cld_upload_stream = cloudinary.uploader.upload_stream(
             { folder: "cloudwash/hero" },
             (error, result) => {
-                if (result) {
+                if (result?.secure_url) {
                     resolve(result);
                 } else {
-                    reject(error);
+                    reject(
+                        error || new Error('Cloudinary upload failed without result')
+                    );
                 }
             }
         );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
+
+        const readStream = streamifier.createReadStream(buffer);
+        readStream.on('error', reject);
+        cld_upload_stream.on('error', reject);
+        readStream.pipe(cld_upload_stream);
     });
 };
 
@@ -44,8 +67,9 @@ const uploadImageWithFallback = async (
             throw error;
         }
 
+        const errorMessage = getErrorMessage(error);
         console.warn(
-            `⚠️ Cloudinary upload failed for ${fieldName}. Using data URL fallback: ${error.message}`
+            `⚠️ Cloudinary upload failed for ${fieldName}. Using data URL fallback: ${errorMessage}`
         );
         return { secure_url: toDataUrlFromFile(file) };
     }
@@ -152,7 +176,7 @@ const updateHeroSection = async (req, res) => {
         res.json(updatedHeroSection);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        res.status(500).json({ message: 'Server Error', error: getErrorMessage(error) });
     }
 };
 
