@@ -26,6 +26,11 @@ const heroSectionSchema = new mongoose.Schema({
         required: true,
         default: 'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png'
     },
+    logoUrl: {
+        type: String,
+        required: false,
+        default: ''
+    },
     youtubeUrl: {
         type: String,
         required: false,

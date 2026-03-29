@@ -1,4 +1,5 @@
 import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'dart:ui';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,8 @@ class WebNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
+    final heroAsync = ref.watch(heroSectionProvider);
+    final logoUrl = heroAsync.valueOrNull?.logoUrl;
 
     // Watch Notifications
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
@@ -63,18 +66,10 @@ class WebNavBar extends ConsumerWidget {
                         alignment: Alignment.center,
                         child: InkWell(
                           onTap: () => context.go('/'),
-                          child: Image.asset(
-                            'assets/images/logo.png',
+                          child: _buildAnimatedLogo(
+                            logoUrl: logoUrl,
                             height: 48,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Text(
-                              'CLINOWASH',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
-                                color: AppTheme.primary,
-                              ),
-                            ),
+                            textSize: 24,
                           ),
                         ),
                       ),
@@ -102,19 +97,10 @@ class WebNavBar extends ConsumerWidget {
                               onTap: () => context.go('/'),
                               child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: Image.asset(
-                                  'assets/images/logo.png',
+                                child: _buildAnimatedLogo(
+                                  logoUrl: logoUrl,
                                   height: 80,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Text(
-                                    'CLINOWASH',
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 36,
-                                      color: AppTheme.primary,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
+                                  textSize: 36,
                                 ),
                               ),
                             ),
@@ -164,9 +150,7 @@ class WebNavBar extends ConsumerWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   // Mobile Action Group
-                                  ref
-                                      .watch(authStateProvider)
-                                      .when(
+                                  ref.watch(authStateProvider).when(
                                         data: (isAuthenticated) {
                                           if (isAuthenticated) {
                                             return Row(
@@ -179,39 +163,41 @@ class WebNavBar extends ConsumerWidget {
                                                 ref
                                                     .watch(userProfileProvider)
                                                     .when(
-                                                      data: (user) =>
-                                                          user != null
+                                                      data: (user) => user !=
+                                                              null
                                                           ? InkWell(
                                                               onTap: () =>
                                                                   context.push(
-                                                                    '/profile',
-                                                                  ),
+                                                                '/profile',
+                                                              ),
                                                               borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    20,
-                                                                  ),
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                20,
+                                                              ),
                                                               child: Padding(
                                                                 padding:
-                                                                    const EdgeInsets.all(
-                                                                      4.0,
-                                                                    ),
-                                                                child: CircleAvatar(
+                                                                    const EdgeInsets
+                                                                        .all(
+                                                                  4.0,
+                                                                ),
+                                                                child:
+                                                                    CircleAvatar(
                                                                   radius: 14,
                                                                   backgroundColor:
                                                                       AppTheme
                                                                           .primary
                                                                           .withOpacity(
-                                                                            0.1,
-                                                                          ),
+                                                                    0.1,
+                                                                  ),
                                                                   backgroundImage:
                                                                       user['profileImage'] !=
-                                                                          null
-                                                                      ? CachedNetworkImageProvider(
-                                                                          user['profileImage'],
-                                                                        )
-                                                                      : null,
-                                                                  child:
-                                                                      user['profileImage'] ==
+                                                                              null
+                                                                          ? CachedNetworkImageProvider(
+                                                                              user['profileImage'],
+                                                                            )
+                                                                          : null,
+                                                                  child: user['profileImage'] ==
                                                                           null
                                                                       ? const Icon(
                                                                           Icons
@@ -234,15 +220,16 @@ class WebNavBar extends ConsumerWidget {
                                                               ),
                                                               onPressed: () =>
                                                                   context.push(
-                                                                    '/profile',
-                                                                  ),
+                                                                '/profile',
+                                                              ),
                                                             ),
                                                       loading: () =>
-                                                          const SizedBox.shrink(),
+                                                          const SizedBox
+                                                              .shrink(),
                                                       error: (_, __) =>
                                                           const Icon(
-                                                            Icons.error,
-                                                          ),
+                                                        Icons.error,
+                                                      ),
                                                     ),
                                               ],
                                             );
@@ -271,9 +258,7 @@ class WebNavBar extends ConsumerWidget {
                                 flex: 2,
                                 child: Align(
                                   alignment: Alignment.centerRight,
-                                  child: ref
-                                      .watch(authStateProvider)
-                                      .when(
+                                  child: ref.watch(authStateProvider).when(
                                         data: (isAuthenticated) {
                                           if (isAuthenticated) {
                                             return Row(
@@ -286,25 +271,25 @@ class WebNavBar extends ConsumerWidget {
                                                 ref
                                                     .watch(userProfileProvider)
                                                     .when(
-                                                      data: (user) =>
-                                                          user != null
+                                                      data: (user) => user !=
+                                                              null
                                                           ? InkWell(
                                                               onTap: () =>
                                                                   context.push(
-                                                                    '/profile',
-                                                                  ),
+                                                                '/profile',
+                                                              ),
                                                               borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    12,
-                                                                  ),
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                12,
+                                                              ),
                                                               child: Padding(
                                                                 padding:
-                                                                    const EdgeInsets.symmetric(
-                                                                      horizontal:
-                                                                          8,
-                                                                      vertical:
-                                                                          4,
-                                                                    ),
+                                                                    const EdgeInsets
+                                                                        .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4,
+                                                                ),
                                                                 child: Row(
                                                                   children: [
                                                                     CircleAvatar(
@@ -313,17 +298,15 @@ class WebNavBar extends ConsumerWidget {
                                                                       backgroundColor: AppTheme
                                                                           .primary
                                                                           .withOpacity(
-                                                                            0.1,
-                                                                          ),
-                                                                      backgroundImage:
-                                                                          user['profileImage'] !=
+                                                                        0.1,
+                                                                      ),
+                                                                      backgroundImage: user['profileImage'] !=
                                                                               null
                                                                           ? CachedNetworkImageProvider(
                                                                               user['profileImage'],
                                                                             )
                                                                           : null,
-                                                                      child:
-                                                                          user['profileImage'] ==
+                                                                      child: user['profileImage'] ==
                                                                               null
                                                                           ? const Icon(
                                                                               Icons.person,
@@ -336,11 +319,13 @@ class WebNavBar extends ConsumerWidget {
                                                                       width: 8,
                                                                     ),
                                                                     Text(
-                                                                      user['name']?.split(
+                                                                      user['name']
+                                                                              ?.split(
                                                                             ' ',
                                                                           )[0] ??
                                                                           'User',
-                                                                      style: GoogleFonts.inter(
+                                                                      style: GoogleFonts
+                                                                          .inter(
                                                                         fontWeight:
                                                                             FontWeight.w600,
                                                                         color: AppTheme
@@ -358,15 +343,16 @@ class WebNavBar extends ConsumerWidget {
                                                                   .account_circle_outlined,
                                                               onTap: () =>
                                                                   context.push(
-                                                                    '/profile',
-                                                                  ),
+                                                                '/profile',
+                                                              ),
                                                             ),
                                                       loading: () =>
-                                                          const SizedBox.shrink(),
+                                                          const SizedBox
+                                                              .shrink(),
                                                       error: (_, __) =>
                                                           const Icon(
-                                                            Icons.error,
-                                                          ),
+                                                        Icons.error,
+                                                      ),
                                                     ),
                                               ],
                                             );
@@ -378,10 +364,10 @@ class WebNavBar extends ConsumerWidget {
                                                   onPressed: () =>
                                                       context.push('/login'),
                                                   style: TextButton.styleFrom(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                        ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 8,
+                                                    ),
                                                   ),
                                                   child: Text(
                                                     'Login',
@@ -398,23 +384,25 @@ class WebNavBar extends ConsumerWidget {
                                                 ElevatedButton(
                                                   onPressed: () =>
                                                       context.push('/register'),
-                                                  style: ElevatedButton.styleFrom(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
                                                     backgroundColor:
                                                         AppTheme.primary,
                                                     foregroundColor:
                                                         Colors.white,
                                                     elevation: 0,
-                                                    shape: RoundedRectangleBorder(
+                                                    shape:
+                                                        RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            10,
-                                                          ),
+                                                        10,
+                                                      ),
                                                     ),
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 14,
-                                                          vertical: 10,
-                                                        ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 14,
+                                                      vertical: 10,
+                                                    ),
                                                   ),
                                                   child: Text(
                                                     'Register',
@@ -444,6 +432,49 @@ class WebNavBar extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnimatedLogo({
+    required String? logoUrl,
+    required double height,
+    required double textSize,
+  }) {
+    final bool hasNetworkLogo = logoUrl != null && logoUrl.trim().isNotEmpty;
+    final Widget logo = hasNetworkLogo
+        ? CachedNetworkImage(
+            imageUrl: logoUrl,
+            height: height,
+            fit: BoxFit.contain,
+            errorWidget: (_, __, ___) => Image.asset(
+              'assets/images/logo.png',
+              height: height,
+              fit: BoxFit.contain,
+            ),
+          )
+        : Image.asset(
+            'assets/images/logo.png',
+            height: height,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Text(
+              'CLINOWASH',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                fontSize: textSize,
+                color: AppTheme.primary,
+                letterSpacing: 1.5,
+              ),
+            ),
+          );
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.94, end: 1.0),
+      duration: const Duration(milliseconds: 550),
+      curve: Curves.easeOutBack,
+      child: logo,
+      builder: (context, value, child) {
+        return Transform.scale(scale: value, child: child);
+      },
     );
   }
 }

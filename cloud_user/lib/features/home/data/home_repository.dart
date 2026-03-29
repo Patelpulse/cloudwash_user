@@ -93,7 +93,7 @@ class HomeRepository {
 
   Future<Map<String, dynamic>?> getHeroSection() async {
     try {
-      final response = await _dio.get('hero-section');
+      final response = await _dio.get('hero');
       return response.data as Map<String, dynamic>;
     } catch (e) {
       return {

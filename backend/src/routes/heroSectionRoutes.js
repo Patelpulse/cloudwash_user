@@ -8,6 +8,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.route('/')
     .get(getHeroSection)
-    .put(upload.single('image'), updateHeroSection);
+    .put(
+        upload.fields([
+            { name: 'image', maxCount: 1 },
+            { name: 'logo', maxCount: 1 },
+        ]),
+        updateHeroSection
+    );
 
 module.exports = router;

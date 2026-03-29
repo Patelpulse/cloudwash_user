@@ -1,6 +1,7 @@
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
 const HeroSection = require('../models/HeroSection');
+const admin = require('../config/firebase');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -26,6 +27,34 @@ const uploadFromBuffer = (buffer) => {
     });
 };
 
+const syncHeroSectionToFirestore = async (heroSection) => {
+    if (!admin.firestore) return;
+
+    try {
+        await admin
+            .firestore()
+            .collection('web_landing')
+            .doc('hero')
+            .set(
+                {
+                    tagline: heroSection.tagline,
+                    mainTitle: heroSection.mainTitle,
+                    description: heroSection.description,
+                    buttonText: heroSection.buttonText,
+                    imageUrl: heroSection.imageUrl,
+                    logoUrl: heroSection.logoUrl || '',
+                    youtubeUrl: heroSection.youtubeUrl || '',
+                    isActive: heroSection.isActive,
+                    mongoId: heroSection._id.toString(),
+                    updatedAt: new Date().toISOString(),
+                },
+                { merge: true }
+            );
+    } catch (error) {
+        console.error('⚠️ Hero Firestore sync failed:', error.message);
+    }
+};
+
 // Get hero section (returns first/only document or creates one)
 const getHeroSection = async (req, res) => {
     try {
@@ -39,9 +68,12 @@ const getHeroSection = async (req, res) => {
                 description: 'Experience the epitome of cleanliness with Clino. We provide top-notch cleaning services tailored to your needs, ensuring your spaces shine with perfection.',
                 buttonText: 'Our Services',
                 imageUrl: 'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png',
+                logoUrl: '',
                 youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 isActive: true
             });
+
+            await syncHeroSectionToFirestore(heroSection);
         }
 
         res.json(heroSection);
@@ -54,7 +86,7 @@ const getHeroSection = async (req, res) => {
 // Update hero section
 const updateHeroSection = async (req, res) => {
     try {
-        const { tagline, mainTitle, description, buttonText, youtubeUrl, isActive } = req.body;
+        const { tagline, mainTitle, description, buttonText, youtubeUrl, logoUrl, isActive } = req.body;
 
         let heroSection = await HeroSection.findOne({});
 
@@ -67,16 +99,27 @@ const updateHeroSection = async (req, res) => {
         heroSection.mainTitle = mainTitle || heroSection.mainTitle;
         heroSection.description = description || heroSection.description;
         heroSection.buttonText = buttonText || heroSection.buttonText;
+        if (logoUrl !== undefined) heroSection.logoUrl = logoUrl;
         if (youtubeUrl !== undefined) heroSection.youtubeUrl = youtubeUrl;
         heroSection.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : heroSection.isActive);
 
-        // Upload new image if provided
-        if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
+        const heroImageFile = req.files?.image?.[0] || req.file;
+        const logoImageFile = req.files?.logo?.[0];
+
+        // Upload new hero image if provided
+        if (heroImageFile) {
+            const result = await uploadFromBuffer(heroImageFile.buffer);
             heroSection.imageUrl = result.secure_url;
         }
 
+        // Upload new logo if provided
+        if (logoImageFile) {
+            const result = await uploadFromBuffer(logoImageFile.buffer);
+            heroSection.logoUrl = result.secure_url;
+        }
+
         const updatedHeroSection = await heroSection.save();
+        await syncHeroSectionToFirestore(updatedHeroSection);
         res.json(updatedHeroSection);
     } catch (error) {
         console.error(error);
