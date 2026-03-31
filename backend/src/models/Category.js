@@ -21,6 +21,11 @@ const categorySchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    displayOrder: {
+        type: Number,
+        default: 100000,
+        index: true,
     }
 }, {
     timestamps: true

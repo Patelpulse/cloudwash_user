@@ -21,6 +21,22 @@ const getErrorMessage = (error) => {
     }
 };
 
+const parseCategoryPrice = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseBooleanString = (value, fallback) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return fallback;
+};
+
+const parseDisplayOrder = (value, fallback = 100000) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 // Helper to upload to Cloudinary using stream
 const uploadFromBuffer = (buffer) => {
     return new Promise((resolve, reject) => {
@@ -76,26 +92,62 @@ const uploadImageWithFallback = async (
     }
 };
 
+const resolveCategoryImageUrl = async (
+    file,
+    { fieldName = 'image' } = {}
+) => {
+    if (!file) return '';
+
+    try {
+        const result = await uploadImageWithFallback(file, {
+            allowDataUrlFallback: true,
+            fieldName,
+        });
+        const secureUrl = result?.secure_url?.toString().trim();
+        if (secureUrl) return secureUrl;
+    } catch (error) {
+        const errorMessage = getErrorMessage(error);
+        console.warn(
+            `⚠️ Upload failed for ${fieldName}. Falling back to inline data URL: ${errorMessage}`
+        );
+    }
+
+    return toDataUrlFromFile(file);
+};
+
 const createCategory = async (req, res) => {
     try {
-        const { name, description, price, isActive } = req.body;
+        const { name, description, price, isActive, displayOrder } = req.body;
+        const parsedPrice = parseCategoryPrice(price);
+        const parsedOrder = parseDisplayOrder(displayOrder);
+
+        if (!name || !name.toString().trim()) {
+            return res.status(400).json({ message: 'Category name is required' });
+        }
+
+        if (!description || !description.toString().trim()) {
+            return res.status(400).json({ message: 'Category description is required' });
+        }
+
+        if (parsedPrice === null) {
+            return res.status(400).json({ message: 'Price must be a valid number' });
+        }
 
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload an image' });
         }
 
-        // Upload image to Cloudinary, fallback to data URL if Cloudinary is unavailable.
-        const result = await uploadImageWithFallback(req.file, {
-            allowDataUrlFallback: true,
+        const imageUrl = await resolveCategoryImageUrl(req.file, {
             fieldName: 'category image',
         });
 
         const category = await Category.create({
-            name,
-            description,
-            price,
-            imageUrl: result.secure_url,
-            isActive: isActive === 'true' // FormData sends boolean as string
+            name: name.toString().trim(),
+            description: description.toString().trim(),
+            price: parsedPrice,
+            imageUrl,
+            isActive: parseBooleanString(isActive, true),
+            displayOrder: parsedOrder,
         });
 
         res.status(201).json(category);
@@ -108,7 +160,13 @@ const createCategory = async (req, res) => {
 const getCategories = async (req, res) => {
     try {
         const categories = await Category.find({});
-        res.json(categories);
+        const sorted = categories.sort((a, b) => {
+            const aOrder = a.displayOrder ?? 100000;
+            const bOrder = b.displayOrder ?? 100000;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        });
+        res.json(sorted);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -132,24 +190,38 @@ const deleteCategory = async (req, res) => {
 
 const updateCategory = async (req, res) => {
     try {
-        const { name, description, price, isActive } = req.body;
+        const { name, description, price, isActive, displayOrder } = req.body;
         const category = await Category.findById(req.params.id);
 
         if (!category) {
             return res.status(404).json({ message: 'Category not found' });
         }
 
-        category.name = name || category.name;
-        category.description = description || category.description;
-        category.price = price || category.price;
-        category.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : category.isActive);
+        if (name !== undefined && name.toString().trim()) {
+            category.name = name.toString().trim();
+        }
+
+        if (description !== undefined && description.toString().trim()) {
+            category.description = description.toString().trim();
+        }
+
+        if (price !== undefined && price !== '') {
+            const parsedPrice = parseCategoryPrice(price);
+            if (parsedPrice === null) {
+                return res.status(400).json({ message: 'Price must be a valid number' });
+            }
+            category.price = parsedPrice;
+        }
+
+        category.isActive = parseBooleanString(isActive, category.isActive);
+        if (displayOrder !== undefined && displayOrder !== '') {
+            category.displayOrder = parseDisplayOrder(displayOrder, category.displayOrder);
+        }
 
         if (req.file) {
-            const result = await uploadImageWithFallback(req.file, {
-                allowDataUrlFallback: true,
+            category.imageUrl = await resolveCategoryImageUrl(req.file, {
                 fieldName: 'category image',
             });
-            category.imageUrl = result.secure_url;
         }
 
         const updatedCategory = await category.save();

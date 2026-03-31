@@ -30,7 +30,7 @@ const uploadFromBuffer = (buffer) => {
 
 const createSubCategory = async (req, res) => {
     try {
-        const { name, category, description, price, isActive } = req.body;
+        const { name, category, description, price, isActive, displayOrder } = req.body;
 
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload an image' });
@@ -45,7 +45,10 @@ const createSubCategory = async (req, res) => {
             description,
             price,
             imageUrl: result.secure_url,
-            isActive: isActive === 'true'
+            isActive: isActive === 'true',
+            displayOrder: Number.isFinite(Number(displayOrder))
+                ? Number(displayOrder)
+                : 100000,
         });
 
         res.status(201).json(subCategory);
@@ -64,7 +67,13 @@ const getSubCategories = async (req, res) => {
         // Populate specific fields from the 'category' reference using just the path 'category'
         // Mongoose will look up the model 'Category' because we defined ref: 'Category' in the schema
         const subCategories = await SubCategory.find(query).populate('category', 'name');
-        res.json(subCategories);
+        const sorted = subCategories.sort((a, b) => {
+            const aOrder = a.displayOrder ?? 100000;
+            const bOrder = b.displayOrder ?? 100000;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        });
+        res.json(sorted);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -89,7 +98,7 @@ const deleteSubCategory = async (req, res) => {
 
 const updateSubCategory = async (req, res) => {
     try {
-        const { name, category, description, price, isActive } = req.body;
+        const { name, category, description, price, isActive, displayOrder } = req.body;
         const subCategory = await SubCategory.findById(req.params.id);
 
         if (!subCategory) {
@@ -101,6 +110,11 @@ const updateSubCategory = async (req, res) => {
         subCategory.description = description || subCategory.description;
         subCategory.price = price || subCategory.price;
         subCategory.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : subCategory.isActive);
+        if (displayOrder !== undefined && displayOrder !== '') {
+          subCategory.displayOrder = Number.isFinite(Number(displayOrder))
+              ? Number(displayOrder)
+              : subCategory.displayOrder;
+        }
 
         if (req.file) {
             const result = await uploadFromBuffer(req.file.buffer);

@@ -29,7 +29,7 @@ const uploadFromBuffer = (buffer) => {
 
 const createService = async (req, res) => {
     try {
-        const { name, category, subCategory, price, duration, description, isActive } = req.body;
+        const { name, category, subCategory, price, duration, description, isActive, displayOrder } = req.body;
 
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload an image' });
@@ -45,7 +45,10 @@ const createService = async (req, res) => {
             duration,
             description,
             imageUrl: result.secure_url,
-            isActive: isActive === 'true'
+            isActive: isActive === 'true',
+            displayOrder: Number.isFinite(Number(displayOrder))
+                ? Number(displayOrder)
+                : 100000,
         });
 
         res.status(201).json(service);
@@ -70,6 +73,14 @@ const getServices = async (req, res) => {
         const services = await Service.find(query)
             .populate('category', 'name')
             .populate('subCategory', 'name'); // Also populate subCategory
+
+        services.sort((a, b) => {
+            const aOrder = a.displayOrder ?? 100000;
+            const bOrder = b.displayOrder ?? 100000;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        });
+
         res.json(services);
     } catch (error) {
         console.error(error);
@@ -95,7 +106,7 @@ const deleteService = async (req, res) => {
 
 const updateService = async (req, res) => {
     try {
-        const { name, category, subCategory, price, duration, description, isActive } = req.body;
+        const { name, category, subCategory, price, duration, description, isActive, displayOrder } = req.body;
         const service = await Service.findById(req.params.id);
 
         if (!service) {
@@ -108,6 +119,12 @@ const updateService = async (req, res) => {
         service.price = price || service.price;
         service.duration = duration || service.duration;
         service.description = description || service.description;
+        if (displayOrder !== undefined && displayOrder !== '') {
+            const parsedOrder = Number(displayOrder);
+            if (Number.isFinite(parsedOrder)) {
+                service.displayOrder = parsedOrder;
+            }
+        }
 
         // Handle boolean update logic properly
         if (isActive !== undefined) {

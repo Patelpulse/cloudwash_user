@@ -27,6 +27,11 @@ const subCategorySchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    displayOrder: {
+        type: Number,
+        default: 100000,
+        index: true,
+    },
 }, {
     timestamps: true,
 });
