@@ -12,6 +12,7 @@ class SubCategoryModel {
   final String imageUrl;
   final bool isActive;
   final dynamic category;
+  final int displayOrder;
   final String? mongoId;
 
   SubCategoryModel({
@@ -22,6 +23,7 @@ class SubCategoryModel {
     required this.imageUrl,
     this.isActive = true,
     this.category,
+    this.displayOrder = 100000,
     this.mongoId,
   });
 

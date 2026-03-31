@@ -11,6 +11,7 @@ class CategoryModel {
   final double price;
   final String imageUrl;
   final bool isActive;
+  final int displayOrder;
   final String? mongoId;
 
   CategoryModel({
@@ -20,6 +21,7 @@ class CategoryModel {
     required this.price,
     required this.imageUrl,
     this.isActive = true,
+    this.displayOrder = 100000,
     this.mongoId,
   });
 

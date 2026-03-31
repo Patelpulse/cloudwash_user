@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/image_data_utils.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:flutter/material.dart';
@@ -342,6 +343,10 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 1000;
+    final normalizedImageUrl = widget.imageUrl.trim();
+    final embeddedImageBytes = decodeDataImage(normalizedImageUrl);
+    final hasNetworkImage =
+        normalizedImageUrl.isNotEmpty && embeddedImageBytes == null;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -375,32 +380,48 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
                   color: widget.bgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: widget.imageUrl.isNotEmpty
+                child: normalizedImageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: widget.imageUrl,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: widget.bgColor,
-                            child: Icon(
-                              widget.icon,
-                              size: 32,
-                              color: HSLColor.fromColor(widget.bgColor)
-                                  .withLightness(0.5) // Darker for visibility
-                                  .toColor(),
-                            ),
-                          ),
-                          errorWidget: (_, __, ___) => Icon(
-                            widget.icon,
-                            size: 32,
-                            color: HSLColor.fromColor(
-                              widget.bgColor,
-                            ).withLightness(0.3).toColor(),
-                          ),
-                        ),
+                        child: embeddedImageBytes != null
+                            ? Image.memory(
+                                embeddedImageBytes,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              )
+                            : hasNetworkImage
+                                ? CachedNetworkImage(
+                                    imageUrl: normalizedImageUrl,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      color: widget.bgColor,
+                                      child: Icon(
+                                        widget.icon,
+                                        size: 32,
+                                        color:
+                                            HSLColor.fromColor(widget.bgColor)
+                                                .withLightness(0.5)
+                                                .toColor(),
+                                      ),
+                                    ),
+                                    errorWidget: (_, __, ___) => Icon(
+                                      widget.icon,
+                                      size: 32,
+                                      color: HSLColor.fromColor(
+                                        widget.bgColor,
+                                      ).withLightness(0.3).toColor(),
+                                    ),
+                                  )
+                                : Icon(
+                                    widget.icon,
+                                    size: 32,
+                                    color: HSLColor.fromColor(
+                                      widget.bgColor,
+                                    ).withLightness(0.3).toColor(),
+                                  ),
                       )
                     : Icon(
                         widget.icon,

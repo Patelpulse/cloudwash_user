@@ -14,6 +14,8 @@ CategoryModel _$CategoryModelFromJson(Map<String, dynamic> json) =>
       price: (json['price'] as num).toDouble(),
       imageUrl: json['imageUrl'] as String,
       isActive: json['isActive'] as bool? ?? true,
+      displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 100000,
+      mongoId: json['mongoId'] as String?,
     );
 
 Map<String, dynamic> _$CategoryModelToJson(CategoryModel instance) =>
@@ -24,4 +26,6 @@ Map<String, dynamic> _$CategoryModelToJson(CategoryModel instance) =>
       'price': instance.price,
       'imageUrl': instance.imageUrl,
       'isActive': instance.isActive,
+      'displayOrder': instance.displayOrder,
+      'mongoId': instance.mongoId,
     };

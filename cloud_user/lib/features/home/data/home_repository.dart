@@ -24,7 +24,14 @@ class HomeRepository {
 
       // Backend returns a direct list, not { data: [] }
       final data = response.data as List;
-      return data.map((e) => CategoryModel.fromJson(e)).toList();
+      final categories = data.map((e) => CategoryModel.fromJson(e)).toList();
+      categories.sort((a, b) {
+        if (a.displayOrder != b.displayOrder) {
+          return a.displayOrder.compareTo(b.displayOrder);
+        }
+        return a.name.compareTo(b.name);
+      });
+      return categories;
     } catch (e) {
       if (e is DioException) {
         print('API Error (Categories): ${e.message} - ${e.response?.data}');

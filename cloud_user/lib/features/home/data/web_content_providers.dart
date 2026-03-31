@@ -3,7 +3,9 @@ import 'package:cloud_user/features/home/data/firebase_home_repository.dart';
 import 'package:cloud_user/features/home/data/stats_model.dart';
 import 'package:cloud_user/features/home/data/testimonial_model.dart';
 import 'package:cloud_user/features/home/data/why_choose_us_model.dart';
+import 'package:cloud_user/features/home/data/footer_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'web_content_providers.g.dart';
 
@@ -53,3 +55,7 @@ Future<List<WhyChooseUsModel>> whyChooseUs(WhyChooseUsRef ref) async {
   }
   return data;
 }
+
+final footerProvider = FutureProvider<FooterModel?>(
+  (ref) => ref.watch(firebaseHomeRepositoryProvider).getFooter(),
+);

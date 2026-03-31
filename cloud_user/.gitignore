@@ -47,3 +47,7 @@ app.*.map.json
 
 # Secrets
 *-firebase-adminsdk-*.json
+
+# FVM Version Cache
+.fvm/
+.vercel

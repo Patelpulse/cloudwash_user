@@ -106,8 +106,24 @@ Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
       _hasCoreHeroContent(apiHero) ? apiHero : (firebaseHero ?? apiHero);
   if (baseHero == null) return null;
 
-  // Firestore `web_landing/hero.logoUrl` is treated as source of truth for logo,
-  // so website shows the same logo uploaded from admin even if API lags behind.
+  // API `hero.logoUrl` is treated as source of truth for splash/logo.
+  // Firestore logo remains fallback when API logo is empty.
+  final apiLogo = (apiHero?.logoUrl ?? '').trim();
+  if (apiLogo.isNotEmpty) {
+    return HeroSectionModel(
+      id: baseHero.id,
+      tagline: baseHero.tagline,
+      mainTitle: baseHero.mainTitle,
+      description: baseHero.description,
+      buttonText: baseHero.buttonText,
+      imageUrl: baseHero.imageUrl,
+      logoUrl: apiLogo,
+      logoHeight: baseHero.logoHeight,
+      youtubeUrl: baseHero.youtubeUrl,
+      isActive: baseHero.isActive,
+    );
+  }
+
   final firebaseLogo = (firebaseHero?.logoUrl ?? '').trim();
   if (firebaseLogo.isEmpty) return baseHero;
 
@@ -119,6 +135,7 @@ Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
     buttonText: baseHero.buttonText,
     imageUrl: baseHero.imageUrl,
     logoUrl: firebaseLogo,
+    logoHeight: baseHero.logoHeight,
     youtubeUrl: baseHero.youtubeUrl,
     isActive: baseHero.isActive,
   );

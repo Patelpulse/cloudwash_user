@@ -4,6 +4,7 @@ import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/features/home/data/about_us_model.dart';
+import 'package:cloud_user/features/home/data/footer_model.dart';
 import 'package:cloud_user/features/home/data/hero_section_model.dart';
 import 'package:cloud_user/features/home/data/stats_model.dart';
 import 'package:cloud_user/features/home/data/testimonial_model.dart';
@@ -25,7 +26,7 @@ class FirebaseHomeRepository {
   Future<List<CategoryModel>> getCategories() async {
     try {
       final snapshot = await _firestore.collection('categories').get();
-      return snapshot.docs.map((doc) {
+      final categories = snapshot.docs.map((doc) {
         final data = doc.data();
         return CategoryModel(
           id: doc.id,
@@ -34,9 +35,20 @@ class FirebaseHomeRepository {
           price: (data['price'] ?? 0).toDouble(),
           imageUrl: data['imageUrl'] ?? '',
           isActive: data['isActive'] ?? true,
+          displayOrder: (data['displayOrder'] ?? 100000) is int
+              ? data['displayOrder']
+              : int.tryParse('${data['displayOrder']}') ?? 100000,
           mongoId: data['mongoId'],
         );
       }).toList();
+
+      categories.sort((a, b) {
+        if (a.displayOrder != b.displayOrder) {
+          return a.displayOrder.compareTo(b.displayOrder);
+        }
+        return a.name.compareTo(b.name);
+      });
+      return categories;
     } catch (e) {
       print('Firebase Error (Categories): $e');
       rethrow;
@@ -107,10 +119,18 @@ class FirebaseHomeRepository {
         }
       }
 
-      return docs.map((doc) {
+      final services = docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return ServiceModel.fromJson({'_id': doc.id, ...data});
       }).toList();
+
+      services.sort((a, b) {
+        final aOrder = a.displayOrder;
+        final bOrder = b.displayOrder;
+        if (aOrder != bOrder) return aOrder.compareTo(bOrder);
+        return a.title.compareTo(b.title);
+      });
+      return services;
     } catch (e) {
       print('Firebase Error (Services): $e');
       return [];
@@ -145,7 +165,7 @@ class FirebaseHomeRepository {
         query = query.where('categoryId', isEqualTo: categoryId);
 
       final snapshot = await query.get();
-      return snapshot.docs.map((doc) {
+      final subs = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return SubCategoryModel(
           id: doc.id,
@@ -155,9 +175,20 @@ class FirebaseHomeRepository {
           imageUrl: data['imageUrl'] ?? '',
           isActive: data['isActive'] ?? true,
           category: data['categoryId'],
+          displayOrder: (data['displayOrder'] ?? 100000) is int
+              ? data['displayOrder']
+              : int.tryParse('${data['displayOrder']}') ?? 100000,
           mongoId: data['mongoId'],
         );
       }).toList();
+
+      subs.sort((a, b) {
+        if (a.displayOrder != b.displayOrder) {
+          return a.displayOrder.compareTo(b.displayOrder);
+        }
+        return a.name.compareTo(b.name);
+      });
+      return subs;
     } catch (e) {
       print('Firebase Error (SubCategories): $e');
       return [];
@@ -206,6 +237,19 @@ class FirebaseHomeRepository {
         return StatsModel.fromJson({'_id': snapshot.id, ...snapshot.data()!});
       }
       return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<FooterModel?> getFooter() async {
+    try {
+      final snapshot =
+          await _firestore.collection('web_landing').doc('footer').get();
+      if (!snapshot.exists) return null;
+      final data = snapshot.data();
+      if (data == null) return null;
+      return FooterModel.fromJson({'_id': snapshot.id, ...data});
     } catch (e) {
       return null;
     }

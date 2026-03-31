@@ -15,6 +15,8 @@ SubCategoryModel _$SubCategoryModelFromJson(Map<String, dynamic> json) =>
       imageUrl: json['imageUrl'] as String,
       isActive: json['isActive'] as bool? ?? true,
       category: json['category'],
+      displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 100000,
+      mongoId: json['mongoId'] as String?,
     );
 
 Map<String, dynamic> _$SubCategoryModelToJson(SubCategoryModel instance) =>
@@ -26,4 +28,6 @@ Map<String, dynamic> _$SubCategoryModelToJson(SubCategoryModel instance) =>
       'imageUrl': instance.imageUrl,
       'isActive': instance.isActive,
       'category': instance.category,
+      'displayOrder': instance.displayOrder,
+      'mongoId': instance.mongoId,
     };

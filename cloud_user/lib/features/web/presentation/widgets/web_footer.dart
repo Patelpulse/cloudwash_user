@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'package:cloud_user/features/home/data/web_content_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class WebFooter extends ConsumerWidget {
@@ -17,6 +19,46 @@ class WebFooter extends ConsumerWidget {
     final bool isMobile = screenWidth < 1000;
     final heroAsync = ref.watch(heroSectionProvider);
     final logoUrl = heroAsync.valueOrNull?.logoUrl;
+    final double logoHeight = heroAsync.valueOrNull?.logoHeight ?? 140;
+    final footerAsync = ref.watch(footerProvider);
+    final footer = footerAsync.valueOrNull;
+
+    final exploreLinks = footer?.exploreLinks
+            .map((e) => {'label': e.label, 'route': e.route})
+            .toList() ??
+        [
+          {'label': 'Home', 'route': '/'},
+          {'label': 'About Us', 'route': '/about'},
+          {'label': 'Services', 'route': '/services'},
+          {'label': 'Membership', 'route': '/membership'},
+          {'label': 'Blog', 'route': '/blog'},
+        ];
+
+    final servicesLinks = footer?.serviceLinks
+            .map((e) => {'label': e.label, 'route': e.route})
+            .toList() ??
+        [
+          {'label': 'Dry Cleaning', 'route': '/services'},
+          {'label': 'Wash & Fold', 'route': '/services'},
+          {'label': 'Shoe Restoration', 'route': '/services'},
+          {'label': 'Leather Care', 'route': '/services'},
+          {'label': 'Steam Ironing', 'route': '/services'},
+        ];
+
+    final description = footer?.description ??
+        'Redefining premium garment care with technology and craftsmanship. Your wardrobe deserves nothing but the best.';
+    final phone = footer?.phone ?? '+91 98765 43210';
+    final email = footer?.email ?? 'hello@cloudwash.com';
+    final address = footer?.address ??
+        'Suite 402, Laundry Lane,\nBangalore, KA 560001';
+    final copyrightText = footer?.copyright ??
+        '© ${DateTime.now().year} Cloud Wash. Crafted with precision.';
+    final socialLinks = footer?.socialLinks ??
+        {
+          'facebook': '',
+          'instagram': '',
+          'email': '',
+        };
 
     return Container(
       color: const Color(0xFFF1F5F9), // Light Slate
@@ -30,11 +72,14 @@ class WebFooter extends ConsumerWidget {
               if (isMobile)
                 Column(
                   children: [
-                    _buildBrandColumn(isMobile, logoUrl),
+                    _buildBrandColumn(
+                        isMobile, logoUrl, description, socialLinks, logoHeight),
                     const SizedBox(height: 60),
-                    _buildFooterGrid(isMobile),
+                    _buildFooterGrid(
+                        isMobile, exploreLinks, servicesLinks),
                     const SizedBox(height: 60),
-                    _buildContactColumn(isMobile),
+                    _buildContactColumn(
+                        isMobile, phone, email, address),
                   ],
                 )
               else
@@ -42,25 +87,18 @@ class WebFooter extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                        flex: 2, child: _buildBrandColumn(isMobile, logoUrl)),
+                        flex: 2,
+                        child: _buildBrandColumn(
+                            isMobile, logoUrl, description, socialLinks, logoHeight)),
                     const SizedBox(width: 100),
                     Expanded(
-                        child: _buildFooterColumn('EXPLORE', [
-                      {'label': 'Home', 'route': '/'},
-                      {'label': 'About Us', 'route': '/about'},
-                      {'label': 'Services', 'route': '/services'},
-                      {'label': 'Membership', 'route': '/membership'},
-                      {'label': 'Blog', 'route': '/blog'},
-                    ])),
+                        child: _buildFooterColumn('EXPLORE', exploreLinks)),
                     Expanded(
-                        child: _buildFooterColumn('SERVICES', [
-                      {'label': 'Dry Cleaning', 'route': '/services'},
-                      {'label': 'Wash & Fold', 'route': '/services'},
-                      {'label': 'Shoe Restoration', 'route': '/services'},
-                      {'label': 'Leather Care', 'route': '/services'},
-                      {'label': 'Steam Ironing', 'route': '/services'},
-                    ])),
-                    Expanded(flex: 1, child: _buildContactColumn(isMobile)),
+                        child: _buildFooterColumn('SERVICES', servicesLinks)),
+                    Expanded(
+                        flex: 1,
+                        child: _buildContactColumn(
+                            isMobile, phone, email, address)),
                   ],
                 ),
               const SizedBox(height: 60),
@@ -73,9 +111,10 @@ class WebFooter extends ConsumerWidget {
               if (isMobile)
                 Column(
                   children: [
-                    const Text(
-                      '© 2025 Cloud Wash. Crafted with precision.',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                    Text(
+                      copyrightText,
+                      style:
+                          const TextStyle(color: Color(0xFF64748B), fontSize: 14),
                     ),
                     const SizedBox(height: 24),
                     Wrap(
@@ -96,9 +135,10 @@ class WebFooter extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      '© 2025 Cloud Wash. Crafted with precision.',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                    Text(
+                      copyrightText,
+                      style:
+                          const TextStyle(color: Color(0xFF64748B), fontSize: 14),
                     ),
                     Row(
                       children: [
@@ -121,11 +161,14 @@ class WebFooter extends ConsumerWidget {
     );
   }
 
-  Widget _buildBrandColumn(bool isMobile, String? logoUrl) {
+  Widget _buildBrandColumn(bool isMobile, String? logoUrl, String description,
+      Map<String, String>? socialLinks, double logoHeight) {
     final trimmedLogoUrl = (logoUrl ?? '').trim();
     final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
     final hasNetworkLogo =
         trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
+    final double targetHeight =
+        (isMobile ? logoHeight * 0.7 : logoHeight).clamp(60, 220);
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -136,39 +179,39 @@ class WebFooter extends ConsumerWidget {
             embeddedLogoBytes != null
                 ? Image.memory(
                     embeddedLogoBytes,
-                    height: isMobile ? 100 : 140,
+                    height: targetHeight,
                     fit: BoxFit.contain,
                   )
                 : hasNetworkLogo
-                ? Image.network(
-                    trimmedLogoUrl,
-                    height: isMobile ? 100 : 140,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/images/logo.png',
-                      height: isMobile ? 100 : 140,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                : Image.asset(
-                    'assets/images/logo.png',
-                    height: isMobile ? 100 : 140,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Text(
-                      'CLINOWASH',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: isMobile ? 32 : 44,
-                        color: AppTheme.primary,
-                        letterSpacing: 1.5,
+                    ? Image.network(
+                        withLogoCacheBust(trimmedLogoUrl),
+                        height: targetHeight,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/logo.png',
+                          height: targetHeight,
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/logo.png',
+                        height: targetHeight,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Text(
+                          'CLINOWASH',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: isMobile ? 32 : 44,
+                            color: AppTheme.primary,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
           ],
         ),
         const SizedBox(height: 32),
         Text(
-          'Redefining premium garment care with technology and craftsmanship. Your wardrobe deserves nothing but the best.',
+          description,
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
           style: const TextStyle(
             color: Color(0xFF475569),
@@ -177,21 +220,30 @@ class WebFooter extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 48),
-        Row(
-          mainAxisAlignment:
-              isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
-          children: [
-            _SocialButton(
-                icon: Icons.facebook_rounded, color: const Color(0xFF3B82F6)),
-            const SizedBox(width: 12),
-            _SocialButton(
-                icon: Icons.camera_alt_rounded, color: const Color(0xFFEC4899)),
-            const SizedBox(width: 12),
-            _SocialButton(
-                icon: Icons.alternate_email_rounded,
-                color: const Color(0xFF10B981)),
-          ],
-        ),
+        if ((socialLinks ?? {}).isNotEmpty)
+          Row(
+            mainAxisAlignment:
+                isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              if ((socialLinks?['facebook'] ?? '').isNotEmpty) ...[
+                _SocialButton(
+                    icon: Icons.facebook_rounded,
+                    color: const Color(0xFF3B82F6)),
+                const SizedBox(width: 12),
+              ],
+              if ((socialLinks?['instagram'] ?? '').isNotEmpty) ...[
+                _SocialButton(
+                    icon: Icons.camera_alt_rounded,
+                    color: const Color(0xFFEC4899)),
+                const SizedBox(width: 12),
+              ],
+              if ((socialLinks?['mail'] ?? '').isNotEmpty ||
+                  (socialLinks?['email'] ?? '').isNotEmpty)
+                _SocialButton(
+                    icon: Icons.alternate_email_rounded,
+                    color: const Color(0xFF0EA5E9)),
+            ],
+          ),
       ],
     );
   }
@@ -207,32 +259,21 @@ class WebFooter extends ConsumerWidget {
     }
   }
 
-  Widget _buildFooterGrid(bool isMobile) {
+  Widget _buildFooterGrid(
+      bool isMobile, List<Map<String, String>> explore, List<Map<String, String>> services) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: _buildFooterColumn(
               'EXPLORE',
-              [
-                {'label': 'Home', 'route': '/'},
-                {'label': 'About Us', 'route': '/about'},
-                {'label': 'Services', 'route': '/services'},
-                {'label': 'Membership', 'route': '/membership'},
-                {'label': 'Blog', 'route': '/blog'},
-              ],
+              explore,
               isCenter: isMobile),
         ),
         Expanded(
           child: _buildFooterColumn(
               'SERVICES',
-              [
-                {'label': 'Dry Cleaning', 'route': '/services'},
-                {'label': 'Wash & Fold', 'route': '/services'},
-                {'label': 'Shoe Restoration', 'route': '/services'},
-                {'label': 'Leather Care', 'route': '/services'},
-                {'label': 'Steam Ironing', 'route': '/services'},
-              ],
+              services,
               isCenter: isMobile),
         ),
       ],
@@ -258,14 +299,18 @@ class WebFooter extends ConsumerWidget {
         ...links
             .map((link) => Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: _FooterLink(link['label']!),
+                  child: _FooterLink(
+                    label: link['label'] ?? '',
+                    route: link['route'] ?? '/',
+                  ),
                 ))
             .toList(),
       ],
     );
   }
 
-  Widget _buildContactColumn(bool isMobile) {
+  Widget _buildContactColumn(
+      bool isMobile, String phone, String email, String address) {
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -280,13 +325,13 @@ class WebFooter extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 32),
-        _buildContactItem(Icons.phone_rounded, '+91 98765 43210', isMobile),
+        _buildContactItem(Icons.phone_rounded, phone, isMobile),
         const SizedBox(height: 20),
-        _buildContactItem(Icons.email_rounded, 'hello@cloudwash.com', isMobile),
+        _buildContactItem(Icons.email_rounded, email, isMobile),
         const SizedBox(height: 20),
         _buildContactItem(
           Icons.location_on_rounded,
-          'Suite 402, Laundry Lane,\nBangalore, KA 560001',
+          address,
           isMobile,
         ),
       ],
@@ -298,7 +343,7 @@ class WebFooter extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: const Color(0xFF818CF8), size: 20),
+        Icon(icon, color: const Color(0xFF3B82F6), size: 20),
         const SizedBox(width: 16),
         Flexible(
           child: Text(
@@ -315,7 +360,8 @@ class WebFooter extends ConsumerWidget {
 
 class _FooterLink extends StatefulWidget {
   final String label;
-  const _FooterLink(this.label);
+  final String route;
+  const _FooterLink({required this.label, required this.route});
 
   @override
   State<_FooterLink> createState() => _FooterLinkState();
@@ -329,12 +375,16 @@ class _FooterLinkState extends State<_FooterLink> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Text(
-        widget.label,
-        style: TextStyle(
-          color: _isHovered ? const Color(0xFF818CF8) : const Color(0xFF64748B),
-          fontSize: 15,
-          fontWeight: _isHovered ? FontWeight.bold : FontWeight.normal,
+      child: GestureDetector(
+        onTap: () => context.go(widget.route),
+        child: Text(
+          widget.label,
+          style: TextStyle(
+            color:
+                _isHovered ? const Color(0xFF3B82F6) : const Color(0xFF64748B),
+            fontSize: 15,
+            fontWeight: _isHovered ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );

@@ -15,6 +15,7 @@ class ServiceModel {
   final int? duration; // in minutes
   final double? rating;
   final int? reviewCount;
+  final int displayOrder;
 
   ServiceModel({
     required this.id,
@@ -27,6 +28,7 @@ class ServiceModel {
     this.duration,
     this.rating,
     this.reviewCount,
+    this.displayOrder = 100000,
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,13 @@ class ServiceModel {
       subCatId = json['subCategory'];
     }
 
+    int parseOrder(dynamic value) {
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 100000;
+      return 100000;
+    }
+
     return ServiceModel(
       id: json['_id'] ?? '',
       title: json['name'] ?? '',
@@ -57,6 +66,7 @@ class ServiceModel {
       duration: json['duration'],
       rating: (json['rating'] ?? 0).toDouble(),
       reviewCount: json['reviewCount'],
+      displayOrder: parseOrder(json['displayOrder']),
     );
   }
 

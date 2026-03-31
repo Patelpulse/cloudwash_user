@@ -1,4 +1,5 @@
 import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -22,6 +23,10 @@ class WebNavBar extends ConsumerWidget {
     final bool isMobile = screenWidth < 1000;
     final heroAsync = ref.watch(heroSectionProvider);
     final logoUrl = heroAsync.valueOrNull?.logoUrl;
+    final double baseLogoHeight = heroAsync.valueOrNull?.logoHeight ?? 140;
+    final double navLogoHeight = isMobile
+        ? (baseLogoHeight * 0.6).clamp(36, 120)
+        : baseLogoHeight.clamp(60, 200);
 
     // Watch Notifications
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
@@ -70,7 +75,7 @@ class WebNavBar extends ConsumerWidget {
                           onTap: () => context.go('/'),
                           child: _buildLogo(
                             logoUrl: logoUrl,
-                            height: 48,
+                            height: navLogoHeight,
                             textSize: 24,
                           ),
                         ),
@@ -95,13 +100,13 @@ class WebNavBar extends ConsumerWidget {
                           // Desktop Logo
                           Expanded(
                             flex: 1,
-                            child: InkWell(
+                          child: InkWell(
                               onTap: () => context.go('/'),
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: _buildLogo(
                                   logoUrl: logoUrl,
-                                  height: 80,
+                                  height: navLogoHeight,
                                   textSize: 36,
                                 ),
                               ),
@@ -454,30 +459,30 @@ class WebNavBar extends ConsumerWidget {
             fit: BoxFit.contain,
           )
         : hasNetworkLogo
-        ? CachedNetworkImage(
-            imageUrl: trimmedLogoUrl,
-            height: height,
-            fit: BoxFit.contain,
-            errorWidget: (_, __, ___) => Image.asset(
-              'assets/images/logo.png',
-              height: height,
-              fit: BoxFit.contain,
-            ),
-          )
-        : Image.asset(
-            'assets/images/logo.png',
-            height: height,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Text(
-              'CLINOWASH',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: textSize,
-                color: AppTheme.primary,
-                letterSpacing: 1.5,
-              ),
-            ),
-          );
+            ? CachedNetworkImage(
+                imageUrl: withLogoCacheBust(trimmedLogoUrl),
+                height: height,
+                fit: BoxFit.contain,
+                errorWidget: (_, __, ___) => Image.asset(
+                  'assets/images/logo.png',
+                  height: height,
+                  fit: BoxFit.contain,
+                ),
+              )
+            : Image.asset(
+                'assets/images/logo.png',
+                height: height,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Text(
+                  'CLINOWASH',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: textSize,
+                    color: AppTheme.primary,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              );
   }
 
   Uint8List? _decodeDataImage(String imageUrl) {

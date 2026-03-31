@@ -44,11 +44,13 @@ class _CloudUserAppState extends ConsumerState<CloudUserApp> {
   @override
   Widget build(BuildContext context) {
     if (_showSplash) {
+      final heroLogoUrl = ref.watch(heroSectionProvider).valueOrNull?.logoUrl;
       return MaterialApp(
         title: 'Cloud Wash',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
         home: AnimatedSplashScreen(
+          dynamicLogoUrl: heroLogoUrl,
           onAnimationComplete: () {
             setState(() {
               _showSplash = false;
@@ -69,6 +71,7 @@ class _CloudUserAppState extends ConsumerState<CloudUserApp> {
               ref.read(aboutUsProvider.future),
               ref.read(statsProvider.future),
               ref.read(testimonialsProvider.future),
+              ref.read(footerProvider.future),
             ]);
           },
         ),
