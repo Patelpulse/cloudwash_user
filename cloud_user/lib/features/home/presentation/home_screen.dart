@@ -1,5 +1,6 @@
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:cloud_user/core/utils/image_data_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -653,6 +654,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _VisualCategory(String title, String img) {
+    final embeddedCategoryBytes = decodeDataImage(img);
     return Column(
       children: [
         // Image Card
@@ -670,11 +672,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                img,
-                fit: BoxFit.cover,
-                width: double.infinity,
-              ),
+              child: embeddedCategoryBytes != null
+                  ? Image.memory(
+                      embeddedCategoryBytes,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    )
+                  : Image.network(
+                      img,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
             ),
           ),
         ),

@@ -1,14 +1,23 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+// Brand colors pulled from the CloudWash logo palette
+const _brandPrimary = Color(0xFF3B82F6); // vivid blue
+const _brandSecondary = Color(0xFF22D3EE); // cyan accent
 
 class AnimatedSplashScreen extends StatefulWidget {
   final VoidCallback onAnimationComplete;
   final Future<void> Function()? loadData;
+  final String? dynamicLogoUrl;
 
   const AnimatedSplashScreen({
     super.key,
     required this.onAnimationComplete,
     this.loadData,
+    this.dynamicLogoUrl,
   });
 
   @override
@@ -128,26 +137,20 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
                               borderRadius: BorderRadius.circular(30),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(
-                                    0xFF6C63FF,
-                                  ).withOpacity(0.2),
+                                  color: _brandPrimary.withValues(alpha: 0.18),
                                   blurRadius: 30,
                                   spreadRadius: 5,
                                 ),
                               ],
                             ),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              width: 150,
-                              height: 150,
-                              fit: BoxFit.contain,
-                            ),
+                            child: _buildSplashLogo(),
                           ),
                           const SizedBox(height: 30),
                           ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [Color(0xFF6C63FF), Color(0xFF4ECDC4)],
-                            ).createShader(bounds),
+                            shaderCallback: (bounds) =>
+                                const LinearGradient(
+                                  colors: [_brandPrimary, _brandSecondary],
+                                ).createShader(bounds),
                             child: const Text(
                               'CloudWash',
                               style: TextStyle(
@@ -186,20 +189,20 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
               builder: (context, child) {
                 return Opacity(
                   opacity: _logoOpacity.value,
-                  child: Column(
+                  child: const Column(
                     children: [
                       SizedBox(
                         width: 40,
                         height: 40,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF6C63FF),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _brandPrimary,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
+                      SizedBox(height: 16),
+                      Text(
                         'Loading...',
                         style: TextStyle(
                           color: Color(0xFF9E9E9E),
@@ -214,6 +217,46 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Uint8List? _decodeDataImage(String imageUrl) {
+    if (!imageUrl.startsWith('data:image')) return null;
+    final commaIndex = imageUrl.indexOf(',');
+    if (commaIndex == -1 || commaIndex >= imageUrl.length - 1) return null;
+    try {
+      return base64Decode(imageUrl.substring(commaIndex + 1));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildSplashLogo() {
+    final logoUrl = (widget.dynamicLogoUrl ?? '').trim();
+    if (logoUrl.isEmpty) {
+      return _buildDefaultLogo();
+    }
+
+    final bytes = _decodeDataImage(logoUrl);
+    if (bytes != null) {
+      return Image.memory(bytes, width: 150, height: 150, fit: BoxFit.contain);
+    }
+
+    return Image.network(
+      withLogoCacheBust(logoUrl),
+      width: 200,
+      height: 200,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _buildDefaultLogo(),
+    );
+  }
+
+  Widget _buildDefaultLogo() {
+    return Image.asset(
+      'assets/images/logo.png',
+      width: 200,
+      height: 200,
+      fit: BoxFit.contain,
     );
   }
 }
@@ -235,7 +278,7 @@ class ParticlePainter extends CustomPainter {
       final offset = (animationValue + i / 30) % 1.0;
 
       final opacity = (math.sin(offset * math.pi * 2) * 0.3 + 0.2);
-      paint.color = Color(0xFF6C63FF).withOpacity(opacity);
+      paint.color = _brandPrimary.withValues(alpha: opacity);
 
       final radius = 2.0 + random.nextDouble() * 3.0;
       final particleY = y + (math.sin(offset * math.pi * 2) * 20);

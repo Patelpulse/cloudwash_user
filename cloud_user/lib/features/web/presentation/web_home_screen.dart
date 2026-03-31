@@ -5,6 +5,7 @@
 import 'package:cloud_user/core/models/banner_model.dart';
 import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
+import 'package:cloud_user/core/utils/image_data_utils.dart';
 
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/home/data/hero_section_model.dart';
@@ -150,7 +151,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             left: -100,
             child: _AnimatedOrb(
               size: isMobile ? 200 : 350,
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
             ),
           ),
           Positioned(
@@ -175,12 +176,10 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     final tagline = hero?.tagline ?? '✨ We Are Clino';
                     final title =
                         hero?.mainTitle ?? 'Feel Your Way For\nFreshness';
-                    final desc =
-                        hero?.description ??
+                    final desc = hero?.description ??
                         'Experience the epitome of cleanliness with Clino...';
                     final btnText = hero?.buttonText ?? 'Our Services';
-                    final imageUrl =
-                        hero?.imageUrl ??
+                    final imageUrl = hero?.imageUrl ??
                         'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png';
 
                     return isMobile
@@ -253,9 +252,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     HeroSectionModel? hero,
   ) {
     return Column(
-      crossAxisAlignment: isMobile
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
@@ -263,13 +261,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFF6366F1).withOpacity(0.1),
-                Color(0xFF8B5CF6).withOpacity(0.1),
+                Color(0xFF3B82F6).withOpacity(0.1),
+                Color(0xFF0EA5E9).withOpacity(0.1),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: Color(0xFF6366F1).withOpacity(0.3),
+              color: Color(0xFF3B82F6).withOpacity(0.3),
               width: 1.5,
             ),
           ),
@@ -280,7 +278,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Color(0xFF6366F1),
+                  color: Color(0xFF3B82F6),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -288,7 +286,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
               Text(
                 tagline,
                 style: GoogleFonts.inter(
-                  color: Color(0xFF6366F1),
+                  color: Color(0xFF3B82F6),
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
@@ -326,19 +324,18 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         ),
         SizedBox(height: isMobile ? 32 : 40),
         Row(
-          mainAxisAlignment: isMobile
-              ? MainAxisAlignment.center
-              : MainAxisAlignment.start,
+          mainAxisAlignment:
+              isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
                 ),
                 borderRadius: BorderRadius.circular(50),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF6366F1).withOpacity(0.4),
+                    color: Color(0xFF3B82F6).withOpacity(0.4),
                     blurRadius: 20,
                     offset: Offset(0, 10),
                   ),
@@ -386,9 +383,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         ),
         SizedBox(height: isMobile ? 40 : 50),
         Row(
-          mainAxisAlignment: isMobile
-              ? MainAxisAlignment.center
-              : MainAxisAlignment.start,
+          mainAxisAlignment:
+              isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
             SizedBox(
               width: 120,
@@ -413,8 +409,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                       child: CircleAvatar(
                         radius: 22,
                         backgroundColor: [
-                          Color(0xFF6366F1),
-                          Color(0xFF8B5CF6),
+                          Color(0xFF3B82F6),
+                          Color(0xFF0EA5E9),
                           Color(0xFF14B8A6),
                           Color(0xFFF59E0B),
                         ][i],
@@ -477,7 +473,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
-                  Color(0xFF6366F1).withOpacity(0.08),
+                  Color(0xFF3B82F6).withOpacity(0.08),
                   Colors.transparent,
                 ],
               ),
@@ -489,7 +485,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Color(0xFF6366F1).withOpacity(0.2),
+                color: Color(0xFF3B82F6).withOpacity(0.2),
                 blurRadius: 60,
                 offset: Offset(0, 30),
               ),
@@ -508,7 +504,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                   borderRadius: BorderRadius.circular(32),
                 ),
                 child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+                  child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
                 ),
               ),
               errorWidget: (_, __, ___) => Container(
@@ -521,7 +517,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                   child: Icon(
                     Icons.cleaning_services,
                     size: 100,
-                    color: Color(0xFF6366F1),
+                    color: Color(0xFF3B82F6),
                   ),
                 ),
               ),
@@ -573,12 +569,12 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     );
 
                   final List<Color> gradients = [
-                    [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                    [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
                     [Color(0xFFF59E0B), Color(0xFFEF4444)],
                     [Color(0xFF14B8A6), Color(0xFF06B6D4)],
                     [Color(0xFFEC4899), Color(0xFFF43F5E)],
-                    [Color(0xFF8B5CF6), Color(0xFFEC4899)],
-                    [Color(0xFF06B6D4), Color(0xFF6366F1)],
+                    [Color(0xFF0EA5E9), Color(0xFFEC4899)],
+                    [Color(0xFF06B6D4), Color(0xFF3B82F6)],
                   ].expand((x) => x).toList();
 
                   if (isMobile) {
@@ -587,11 +583,11 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.85,
-                          ),
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.85,
+                      ),
                       itemCount: categories.length,
                       itemBuilder: (context, index) {
                         final category = categories[index];
@@ -733,7 +729,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     );
 
                   final List<List<Color>> gradients = [
-                    [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                    [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
                     [Color(0xFFF59E0B), Color(0xFFEF4444)],
                     [Color(0xFF14B8A6), Color(0xFF06B6D4)],
                     [Color(0xFFEC4899), Color(0xFFF43F5E)],
@@ -771,11 +767,11 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 24,
-                            mainAxisSpacing: 24,
-                            childAspectRatio: 0.85,
-                          ),
+                        crossAxisCount: 4,
+                        crossAxisSpacing: 24,
+                        mainAxisSpacing: 24,
+                        childAspectRatio: 0.85,
+                      ),
                       itemCount: services.length,
                       itemBuilder: (context, index) {
                         final service = services[index];
@@ -876,11 +872,11 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 24,
-                            mainAxisSpacing: 24,
-                            childAspectRatio: 0.85,
-                          ),
+                        crossAxisCount: 4,
+                        crossAxisSpacing: 24,
+                        mainAxisSpacing: 24,
+                        childAspectRatio: 0.85,
+                      ),
                       itemCount: math.min(services.length, 8),
                       itemBuilder: (context, index) {
                         final service = services[index];
@@ -916,7 +912,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF6366F1),
+            color: Color(0xFF3B82F6),
             letterSpacing: 2,
           ),
         ),
@@ -938,12 +934,12 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
         ),
         borderRadius: BorderRadius.circular(50),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF6366F1).withOpacity(0.3),
+            color: Color(0xFF3B82F6).withOpacity(0.3),
             blurRadius: 15,
             offset: Offset(0, 8),
           ),
@@ -1034,7 +1030,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    Color(0xFF6366F1).withOpacity(0.08),
+                    Color(0xFF3B82F6).withOpacity(0.08),
                     Colors.transparent,
                   ],
                 ),
@@ -1074,9 +1070,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     AboutUsModel? aboutUs,
   }) {
     return Column(
-      crossAxisAlignment: isMobile
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -1249,11 +1244,11 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
 
   Color _getWhyChooseColor(String title) {
     final t = title.toLowerCase();
-    if (t.contains('quality')) return Color(0xFF6366F1);
+    if (t.contains('quality')) return Color(0xFF3B82F6);
     if (t.contains('time') || t.contains('delivery')) return Color(0xFFEC4899);
     if (t.contains('eco') || t.contains('friendly')) return Color(0xFF14B8A6);
     if (t.contains('price') || t.contains('fair')) return Color(0xFFF59E0B);
-    return Color(0xFF6366F1);
+    return Color(0xFF3B82F6);
   }
 
   Widget _buildTestimonialsSection(
@@ -1373,7 +1368,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             'value': statsData?.happyClients ?? '50K+',
             'label': 'Happy Customers',
             'icon': Icons.people_alt_rounded,
-            'color': Color(0xFF6366F1),
+            'color': Color(0xFF3B82F6),
           },
           {
             'value': statsData?.totalBranches ?? '1000+',
@@ -1508,20 +1503,19 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
 
   Widget _buildDownloadContent(bool isMobile) {
     return Column(
-      crossAxisAlignment: isMobile
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
             ),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Color(0xFF6366F1).withOpacity(0.3),
+                color: Color(0xFF3B82F6).withOpacity(0.3),
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),
@@ -1593,7 +1587,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [Color(0xFF6366F1).withOpacity(0.1), Colors.transparent],
+              colors: [Color(0xFF3B82F6).withOpacity(0.1), Colors.transparent],
             ),
           ),
         ),
@@ -1677,20 +1671,20 @@ class _SectionHeader extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFF6366F1).withOpacity(0.1),
-                Color(0xFF8B5CF6).withOpacity(0.1),
+                Color(0xFF3B82F6).withOpacity(0.1),
+                Color(0xFF0EA5E9).withOpacity(0.1),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: Color(0xFF6366F1).withOpacity(0.3),
+              color: Color(0xFF3B82F6).withOpacity(0.3),
               width: 1.5,
             ),
           ),
           child: Text(
             subtitle,
             style: GoogleFonts.inter(
-              color: Color(0xFF6366F1),
+              color: Color(0xFF3B82F6),
               fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: 2,
@@ -1777,7 +1771,7 @@ class _PulseButton extends StatelessWidget {
         ),
         child: const Icon(
           Icons.play_arrow_rounded,
-          color: Color(0xFF6366F1),
+          color: Color(0xFF3B82F6),
           size: 32,
         ),
       ),
@@ -1813,6 +1807,8 @@ class _EnhancedCategoryCardState extends State<_EnhancedCategoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedImagePath = (widget.imagePath ?? '').trim();
+    final embeddedImageBytes = decodeDataImage(normalizedImagePath);
     return MouseRegion(
       onEnter: (_) {
         if (mounted) setState(() => isHovered = true);
@@ -1844,9 +1840,16 @@ class _EnhancedCategoryCardState extends State<_EnhancedCategoryCard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (widget.imagePath != null)
+              if (embeddedImageBytes != null)
+                Image.memory(
+                  embeddedImageBytes,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.contain,
+                )
+              else if (normalizedImagePath.isNotEmpty)
                 CachedNetworkImage(
-                  imageUrl: widget.imagePath!,
+                  imageUrl: normalizedImagePath,
                   width: 64,
                   height: 64,
                   fit: BoxFit.contain,
@@ -2248,14 +2251,14 @@ class _EnhancedServiceCardState extends State<_EnhancedServiceCard> {
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: const Color(0xFF6366F1),
+                            color: const Color(0xFF3B82F6),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isHovered
-                                ? const Color(0xFF6366F1)
+                                ? const Color(0xFF3B82F6)
                                 : const Color(0xFFF1F5F9),
                             shape: BoxShape.circle,
                           ),
@@ -2264,7 +2267,7 @@ class _EnhancedServiceCardState extends State<_EnhancedServiceCard> {
                             size: 16,
                             color: isHovered
                                 ? Colors.white
-                                : const Color(0xFF6366F1),
+                                : const Color(0xFF3B82F6),
                           ),
                         ),
                       ],
@@ -2709,7 +2712,7 @@ class _OffersCarouselState extends State<_OffersCarousel> {
               height: 8,
               decoration: BoxDecoration(
                 color: _currentPage == index
-                    ? const Color(0xFF6366F1)
+                    ? const Color(0xFF3B82F6)
                     : const Color(0xFFCBD5E1),
                 borderRadius: BorderRadius.circular(4),
               ),

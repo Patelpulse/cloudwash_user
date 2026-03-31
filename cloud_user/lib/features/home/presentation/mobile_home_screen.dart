@@ -5,6 +5,8 @@ import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/image_data_utils.dart';
+import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/home/data/web_content_providers.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
@@ -309,7 +311,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                               fit: BoxFit.contain,
                                             )
                                           : Image.network(
-                                              logoUrl,
+                                              withLogoCacheBust(logoUrl),
                                               fit: BoxFit.contain,
                                               errorBuilder: (_, __, ___) =>
                                                   const SizedBox.shrink(),
@@ -532,6 +534,10 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                         displayName =
                             '${words[0]} ${words[1][0]}...'.toUpperCase();
                       }
+                      final embeddedCategoryBytes = decodeDataImage(
+                        cat.imageUrl,
+                      );
+                      final hasEmbeddedImage = embeddedCategoryBytes != null;
 
                       return GestureDetector(
                         onTap: () => context.push(
@@ -556,14 +562,19 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                   ),
                                 ],
                               ),
-                              child: Image.network(
-                                cat.imageUrl,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.category,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                              child: hasEmbeddedImage
+                                  ? Image.memory(
+                                      embeddedCategoryBytes!,
+                                      fit: BoxFit.contain,
+                                    )
+                                  : Image.network(
+                                      cat.imageUrl,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.category,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                             ),
                             const SizedBox(height: 8),
                             Text(

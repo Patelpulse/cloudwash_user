@@ -252,7 +252,7 @@ class _BookingCard extends StatelessWidget {
       case 'confirmed':
         return const Color(0xFF3B82F6);
       case 'in-progress':
-        return const Color(0xFF8B5CF6);
+        return const Color(0xFF0EA5E9);
       case 'completed':
         return const Color(0xFF10B981);
       case 'cancelled':

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_footer.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_navbar.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
@@ -31,6 +32,7 @@ class WebLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final heroAsync = ref.watch(heroSectionProvider);
     final logoUrl = heroAsync.valueOrNull?.logoUrl;
+    final double logoHeight = heroAsync.valueOrNull?.logoHeight ?? 140;
 
     // Listen for real-time order status updates from Firebase
     ref.listen(userOrdersRealtimeProvider, (previous, next) {
@@ -158,7 +160,8 @@ class WebLayout extends ConsumerWidget {
     return Scaffold(
       key: effectiveScaffoldKey,
       backgroundColor: const Color(0xFFF7F8FA),
-      drawer: isMobile ? _buildMobileDrawer(context, logoUrl) : null,
+      drawer:
+          isMobile ? _buildMobileDrawer(context, logoUrl, logoHeight) : null,
       endDrawer: endDrawer,
       body: Stack(
         children: [
@@ -189,11 +192,13 @@ class WebLayout extends ConsumerWidget {
     );
   }
 
-  Widget _buildMobileDrawer(BuildContext context, String? logoUrl) {
+  Widget _buildMobileDrawer(
+      BuildContext context, String? logoUrl, double logoHeight) {
     final trimmedLogoUrl = (logoUrl ?? '').trim();
     final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
     final hasNetworkLogo =
         trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
+    final double drawerLogoHeight = (logoHeight * 0.7).clamp(50, 180);
     return Drawer(
       child: Container(
         color: Colors.white,
@@ -207,32 +212,32 @@ class WebLayout extends ConsumerWidget {
                 child: embeddedLogoBytes != null
                     ? Image.memory(
                         embeddedLogoBytes,
-                        height: 140,
+                        height: drawerLogoHeight,
                         fit: BoxFit.contain,
                       )
                     : hasNetworkLogo
-                    ? Image.network(
-                        trimmedLogoUrl,
-                        height: 140,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/images/logo.png',
-                          height: 140,
-                          fit: BoxFit.contain,
-                        ),
-                      )
-                    : Image.asset(
-                        'assets/images/logo.png',
-                        height: 140,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Text(
-                          'CLINOWASH',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 32,
+                        ? Image.network(
+                            withLogoCacheBust(trimmedLogoUrl),
+                            height: drawerLogoHeight,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              'assets/images/logo.png',
+                              height: drawerLogoHeight,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : Image.asset(
+                            'assets/images/logo.png',
+                            height: drawerLogoHeight,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Text(
+                              'CLINOWASH',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 32,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
               ),
             ),
             _drawerTile(context, 'Home', '/', Icons.home_outlined),

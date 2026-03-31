@@ -62,7 +62,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             ),
             _buildBlob(
               color: const Color(
-                0xFF6366F1,
+                0xFF3B82F6,
               ).withOpacity(0.06), // Complementary Indigo
               size: 450,
               offset: Offset(

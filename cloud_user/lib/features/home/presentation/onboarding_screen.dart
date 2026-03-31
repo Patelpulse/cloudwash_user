@@ -64,7 +64,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       description:
           'Expert laundry and dry cleaning services delivered right to your doorstep.',
       icon: Icons.local_laundry_service_outlined,
-      color: const Color(0xFF6366F1),
+      color: const Color(0xFF3B82F6),
     ),
     OnboardingData(
       title: 'Smart Scheduling,\nZero Hassle',
