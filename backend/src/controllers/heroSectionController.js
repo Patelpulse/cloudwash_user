@@ -91,6 +91,7 @@ const syncHeroSectionToFirestore = async (heroSection) => {
                     buttonText: heroSection.buttonText,
                     imageUrl: heroSection.imageUrl,
                     logoUrl: heroSection.logoUrl || '',
+                    logoHeight: heroSection.logoHeight || 140,
                     youtubeUrl: heroSection.youtubeUrl || '',
                     isActive: heroSection.isActive,
                     mongoId: heroSection._id.toString(),
@@ -117,6 +118,7 @@ const getHeroSection = async (req, res) => {
                 buttonText: 'Our Services',
                 imageUrl: 'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png',
                 logoUrl: '',
+                logoHeight: 140,
                 youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 isActive: true
             });
@@ -134,7 +136,7 @@ const getHeroSection = async (req, res) => {
 // Update hero section
 const updateHeroSection = async (req, res) => {
     try {
-        const { tagline, mainTitle, description, buttonText, youtubeUrl, logoUrl, isActive } = req.body;
+        const { tagline, mainTitle, description, buttonText, youtubeUrl, logoUrl, logoHeight, isActive } = req.body;
 
         let heroSection = await HeroSection.findOne({});
 
@@ -148,6 +150,12 @@ const updateHeroSection = async (req, res) => {
         heroSection.description = description || heroSection.description;
         heroSection.buttonText = buttonText || heroSection.buttonText;
         if (logoUrl !== undefined) heroSection.logoUrl = logoUrl;
+        if (logoHeight !== undefined && logoHeight !== '') {
+            const parsedHeight = Number(logoHeight);
+            if (Number.isFinite(parsedHeight)) {
+                heroSection.logoHeight = parsedHeight;
+            }
+        }
         if (youtubeUrl !== undefined) heroSection.youtubeUrl = youtubeUrl;
         heroSection.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : heroSection.isActive);
 

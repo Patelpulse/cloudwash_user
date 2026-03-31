@@ -31,6 +31,11 @@ const heroSectionSchema = new mongoose.Schema({
         required: false,
         default: ''
     },
+    logoHeight: {
+        type: Number,
+        required: false,
+        default: 140,
+    },
     youtubeUrl: {
         type: String,
         required: false,
