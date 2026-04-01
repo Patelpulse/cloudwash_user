@@ -51,3 +51,4 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 .vercel
+.env*.local

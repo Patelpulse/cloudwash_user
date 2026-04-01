@@ -1,5 +1,8 @@
 {
     "name": "cloudwash-user",
     "version": "1.0.0",
-    "description": "CloudWash User App"
+    "description": "CloudWash User App",
+    "dependencies": {
+        "vercel": "^50.37.3"
+    }
 }

@@ -1,6 +1,7 @@
 const Admin = require('../models/Admin');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
+const firebaseAdmin = require('../config/firebase');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -38,10 +39,10 @@ const getProfile = async (req, res) => {
             // Seed a default admin if none exists
             admin = await Admin.create({
                 name: 'Master Admin',
-                email: 'admin@cloudwash.com',
-                phone: '+91 98765 43210',
+                email: 'admin@cloudwash.in',
+                password: 'Cloudwash@2026',
+                phone: '1234567890',
                 location: 'New York, USA',
-                password: 'password123', // In production, hash this!
                 role: 'Super Administrator'
             });
         }
@@ -82,6 +83,25 @@ const updateProfile = async (req, res) => {
         }
 
         const updatedAdmin = await admin.save();
+
+        // Sync with Firebase Auth if firebaseAdmin is initialized
+        if (firebaseAdmin && firebaseAdmin.auth) {
+            try {
+                const listUsersResult = await firebaseAdmin.auth().listUsers(1000);
+                const firebaseUser = listUsersResult.users.find(u => u.email === admin.email || u.uid === admin._id.toString());
+                
+                if (firebaseUser) {
+                    await firebaseAdmin.auth().updateUser(firebaseUser.uid, {
+                        email: admin.email,
+                        displayName: admin.name
+                    });
+                    console.log('✅ Updated Firebase Auth user sync');
+                }
+            } catch (fbError) {
+                console.warn('⚠️ Firebase Auth sync failed:', fbError.message);
+            }
+        }
+
         res.json(updatedAdmin);
     } catch (error) {
         console.error(error);
@@ -114,6 +134,31 @@ const updatePassword = async (req, res) => {
         // Simple assignment (Use bcrypt.hash in production)
         admin.password = newPassword;
         await admin.save();
+
+        // Sync with Firebase Auth
+        if (firebaseAdmin && firebaseAdmin.auth) {
+            try {
+                const listUsersResult = await firebaseAdmin.auth().listUsers(1000);
+                const firebaseUser = listUsersResult.users.find(u => u.email === admin.email);
+                
+                if (firebaseUser) {
+                    await firebaseAdmin.auth().updateUser(firebaseUser.uid, {
+                        password: newPassword
+                    });
+                    console.log('✅ Updated Firebase Auth password sync');
+                } else {
+                    // Create if not exists to facilitate "dynamic" change
+                    await firebaseAdmin.auth().createUser({
+                        email: admin.email,
+                        password: newPassword,
+                        displayName: admin.name
+                    });
+                    console.log('✅ Created Firebase Auth user during password sync');
+                }
+            } catch (fbError) {
+                console.warn('⚠️ Firebase Auth sync failed:', fbError.message);
+            }
+        }
 
         res.json({ message: 'Password updated successfully' });
     } catch (error) {
