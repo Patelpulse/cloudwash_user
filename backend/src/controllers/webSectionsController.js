@@ -87,7 +87,13 @@ const getStats = async (req, res) => {
 
 const updateStats = async (req, res) => {
     try {
-        const { happyClients, totalBranches, totalCities, totalOrders, isActive } = req.body;
+        const {
+            happyClients,
+            totalBranches,
+            totalCities,
+            totalOrders,
+            isActive,
+        } = req.body || {};
         let stats = await Stats.findOne({});
         if (!stats) return res.status(404).json({ message: 'Stats not found' });
 

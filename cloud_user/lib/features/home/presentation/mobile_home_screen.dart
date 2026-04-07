@@ -5,6 +5,7 @@ import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/utils/image_data_utils.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
@@ -280,7 +281,10 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                             IgnorePointer(
                               child: heroAsync.when(
                                 data: (hero) {
-                                  final logoUrl = (hero?.logoUrl ?? '').trim();
+                                  final logoUrl = resolveHeroLogoForWidth(
+                                    hero,
+                                    MediaQuery.of(context).size.width,
+                                  );
                                   if (logoUrl.isEmpty) {
                                     return const SizedBox.shrink();
                                   }

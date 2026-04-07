@@ -1,4 +1,5 @@
 import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'dart:convert';
@@ -22,8 +23,9 @@ class WebNavBar extends ConsumerWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
     final heroAsync = ref.watch(heroSectionProvider);
-    final logoUrl = heroAsync.valueOrNull?.logoUrl;
-    final double baseLogoHeight = heroAsync.valueOrNull?.logoHeight ?? 140;
+    final hero = heroAsync.valueOrNull;
+    final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
+    final double baseLogoHeight = hero?.logoHeight ?? 140;
     final double navLogoHeight = isMobile
         ? (baseLogoHeight * 0.6).clamp(36, 120)
         : baseLogoHeight.clamp(60, 200);
@@ -100,7 +102,7 @@ class WebNavBar extends ConsumerWidget {
                           // Desktop Logo
                           Expanded(
                             flex: 1,
-                          child: InkWell(
+                            child: InkWell(
                               onTap: () => context.go('/'),
                               child: Align(
                                 alignment: Alignment.centerLeft,
@@ -453,11 +455,7 @@ class WebNavBar extends ConsumerWidget {
         trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
 
     return embeddedLogoBytes != null
-        ? Image.memory(
-            embeddedLogoBytes,
-            height: height,
-            fit: BoxFit.contain,
-          )
+        ? Image.memory(embeddedLogoBytes, height: height, fit: BoxFit.contain)
         : hasNetworkLogo
             ? CachedNetworkImage(
                 imageUrl: withLogoCacheBust(trimmedLogoUrl),

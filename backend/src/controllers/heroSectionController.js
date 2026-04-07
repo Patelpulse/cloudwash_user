@@ -22,6 +22,51 @@ const getErrorMessage = (error) => {
     }
 };
 
+const DEFAULT_LOGO_BY_DEVICE = {
+    phone: '',
+    tablet: '',
+    website: '',
+};
+
+const normalizeLogoDeviceType = (value) => {
+    const normalized = `${value || ''}`.trim().toLowerCase();
+    if (normalized === 'phone' || normalized === 'mobile') return 'phone';
+    if (normalized === 'tablet' || normalized === 'tab') return 'tablet';
+    if (normalized === 'website' || normalized === 'web' || normalized === 'desktop') {
+        return 'website';
+    }
+    return null;
+};
+
+const getLogoByDevice = (heroSection) => {
+    const raw = heroSection?.logoByDevice || {};
+    const logoByDevice = {
+        phone: `${raw.phone || ''}`.trim(),
+        tablet: `${raw.tablet || ''}`.trim(),
+        website: `${raw.website || ''}`.trim(),
+    };
+    const legacyLogo = `${heroSection?.logoUrl || ''}`.trim();
+    if (legacyLogo && !logoByDevice.website) {
+        logoByDevice.website = legacyLogo;
+    }
+    return logoByDevice;
+};
+
+const applyLogoByDevice = (heroSection, logoByDevice) => {
+    heroSection.logoByDevice = {
+        phone: `${logoByDevice.phone || ''}`.trim(),
+        tablet: `${logoByDevice.tablet || ''}`.trim(),
+        website: `${logoByDevice.website || ''}`.trim(),
+    };
+    heroSection.logoUrl = heroSection.logoByDevice.website || '';
+};
+
+const updateLogoForDevice = (heroSection, deviceType, logoValue) => {
+    const nextLogoByDevice = getLogoByDevice(heroSection);
+    nextLogoByDevice[deviceType] = `${logoValue || ''}`.trim();
+    applyLogoByDevice(heroSection, nextLogoByDevice);
+};
+
 // Helper to upload to Cloudinary
 const uploadFromBuffer = (buffer) => {
     return new Promise((resolve, reject) => {
@@ -79,6 +124,7 @@ const syncHeroSectionToFirestore = async (heroSection) => {
     if (!admin.firestore) return;
 
     try {
+        const logoByDevice = getLogoByDevice(heroSection);
         await admin
             .firestore()
             .collection('web_landing')
@@ -90,7 +136,8 @@ const syncHeroSectionToFirestore = async (heroSection) => {
                     description: heroSection.description,
                     buttonText: heroSection.buttonText,
                     imageUrl: heroSection.imageUrl,
-                    logoUrl: heroSection.logoUrl || '',
+                    logoUrl: logoByDevice.website || '',
+                    logoByDevice,
                     logoHeight: heroSection.logoHeight || 140,
                     youtubeUrl: heroSection.youtubeUrl || '',
                     isActive: heroSection.isActive,
@@ -118,6 +165,7 @@ const getHeroSection = async (req, res) => {
                 buttonText: 'Our Services',
                 imageUrl: 'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png',
                 logoUrl: '',
+                logoByDevice: DEFAULT_LOGO_BY_DEVICE,
                 logoHeight: 140,
                 youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 isActive: true
@@ -136,7 +184,17 @@ const getHeroSection = async (req, res) => {
 // Update hero section
 const updateHeroSection = async (req, res) => {
     try {
-        const { tagline, mainTitle, description, buttonText, youtubeUrl, logoUrl, logoHeight, isActive } = req.body;
+        const {
+            tagline,
+            mainTitle,
+            description,
+            buttonText,
+            youtubeUrl,
+            logoUrl,
+            logoHeight,
+            logoDeviceType,
+            isActive,
+        } = req.body;
 
         let heroSection = await HeroSection.findOne({});
 
@@ -144,12 +202,20 @@ const updateHeroSection = async (req, res) => {
             return res.status(404).json({ message: 'Hero section not found' });
         }
 
+        const normalizedLogoDeviceType = normalizeLogoDeviceType(logoDeviceType);
+
         // Update fields
         heroSection.tagline = tagline || heroSection.tagline;
         heroSection.mainTitle = mainTitle || heroSection.mainTitle;
         heroSection.description = description || heroSection.description;
         heroSection.buttonText = buttonText || heroSection.buttonText;
-        if (logoUrl !== undefined) heroSection.logoUrl = logoUrl;
+        if (logoUrl !== undefined) {
+            if (normalizedLogoDeviceType) {
+                updateLogoForDevice(heroSection, normalizedLogoDeviceType, logoUrl);
+            } else {
+                updateLogoForDevice(heroSection, 'website', logoUrl);
+            }
+        }
         if (logoHeight !== undefined && logoHeight !== '') {
             const parsedHeight = Number(logoHeight);
             if (Number.isFinite(parsedHeight)) {
@@ -176,7 +242,11 @@ const updateHeroSection = async (req, res) => {
                 allowDataUrlFallback: true,
                 fieldName: 'logo',
             });
-            heroSection.logoUrl = result.secure_url;
+            updateLogoForDevice(
+                heroSection,
+                normalizedLogoDeviceType || 'website',
+                result.secure_url
+            );
         }
 
         const updatedHeroSection = await heroSection.save();

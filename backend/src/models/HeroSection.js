@@ -31,6 +31,23 @@ const heroSectionSchema = new mongoose.Schema({
         required: false,
         default: ''
     },
+    logoByDevice: {
+        phone: {
+            type: String,
+            required: false,
+            default: '',
+        },
+        tablet: {
+            type: String,
+            required: false,
+            default: '',
+        },
+        website: {
+            type: String,
+            required: false,
+            default: '',
+        },
+    },
     logoHeight: {
         type: Number,
         required: false,

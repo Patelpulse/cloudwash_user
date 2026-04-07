@@ -11,6 +11,8 @@ router.route('/about')
 
 router.route('/stats')
     .get(getStats)
-    .put(updateStats); // Stats usually don't have images
+    // Admin currently submits stats via multipart form-data.
+    // `upload.none()` parses text fields without expecting files.
+    .put(upload.none(), updateStats);
 
 module.exports = router;
