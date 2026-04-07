@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:go_router/go_router.dart';
@@ -18,8 +19,9 @@ class WebFooter extends ConsumerWidget {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
     final heroAsync = ref.watch(heroSectionProvider);
-    final logoUrl = heroAsync.valueOrNull?.logoUrl;
-    final double logoHeight = heroAsync.valueOrNull?.logoHeight ?? 140;
+    final hero = heroAsync.valueOrNull;
+    final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
+    final double logoHeight = hero?.logoHeight ?? 140;
     final footerAsync = ref.watch(footerProvider);
     final footer = footerAsync.valueOrNull;
 
@@ -49,21 +51,28 @@ class WebFooter extends ConsumerWidget {
         'Redefining premium garment care with technology and craftsmanship. Your wardrobe deserves nothing but the best.';
     final phone = footer?.phone ?? '+91 98765 43210';
     final email = footer?.email ?? 'hello@cloudwash.com';
-    final address = footer?.address ??
-        'Suite 402, Laundry Lane,\nBangalore, KA 560001';
+    final address =
+        footer?.address ?? 'Suite 402, Laundry Lane,\nBangalore, KA 560001';
     final copyrightText = footer?.copyright ??
         '© ${DateTime.now().year} Cloud Wash. Crafted with precision.';
-    final socialLinks = footer?.socialLinks ??
-        {
-          'facebook': '',
-          'instagram': '',
-          'email': '',
-        };
+    final socialLinks =
+        footer?.socialLinks ?? {'facebook': '', 'instagram': '', 'email': ''};
+    final policyLinks = footer?.policyLinks
+            .map((e) => {'label': e.label, 'route': e.route})
+            .toList() ??
+        [
+          {'label': 'Privacy Policy', 'route': '/privacy'},
+          {'label': 'Terms of Service', 'route': '/terms'},
+          {'label': 'Child Protection', 'route': '/child-protection'},
+          {'label': 'Sitemap', 'route': '/'},
+        ];
 
     return Container(
       color: const Color(0xFFF1F5F9), // Light Slate
       padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 30 : 50, horizontal: isMobile ? 20 : 40),
+        vertical: isMobile ? 30 : 50,
+        horizontal: isMobile ? 20 : 40,
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1300),
@@ -73,13 +82,16 @@ class WebFooter extends ConsumerWidget {
                 Column(
                   children: [
                     _buildBrandColumn(
-                        isMobile, logoUrl, description, socialLinks, logoHeight),
+                      isMobile,
+                      logoUrl,
+                      description,
+                      socialLinks,
+                      logoHeight,
+                    ),
                     const SizedBox(height: 60),
-                    _buildFooterGrid(
-                        isMobile, exploreLinks, servicesLinks),
+                    _buildFooterGrid(isMobile, exploreLinks, servicesLinks),
                     const SizedBox(height: 60),
-                    _buildContactColumn(
-                        isMobile, phone, email, address),
+                    _buildContactColumn(isMobile, phone, email, address),
                   ],
                 )
               else
@@ -87,18 +99,31 @@ class WebFooter extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                        flex: 2,
-                        child: _buildBrandColumn(
-                            isMobile, logoUrl, description, socialLinks, logoHeight)),
+                      flex: 2,
+                      child: _buildBrandColumn(
+                        isMobile,
+                        logoUrl,
+                        description,
+                        socialLinks,
+                        logoHeight,
+                      ),
+                    ),
                     const SizedBox(width: 100),
                     Expanded(
-                        child: _buildFooterColumn('EXPLORE', exploreLinks)),
+                      child: _buildFooterColumn('EXPLORE', exploreLinks),
+                    ),
                     Expanded(
-                        child: _buildFooterColumn('SERVICES', servicesLinks)),
+                      child: _buildFooterColumn('SERVICES', servicesLinks),
+                    ),
                     Expanded(
-                        flex: 1,
-                        child: _buildContactColumn(
-                            isMobile, phone, email, address)),
+                      flex: 1,
+                      child: _buildContactColumn(
+                        isMobile,
+                        phone,
+                        email,
+                        address,
+                      ),
+                    ),
                   ],
                 ),
               const SizedBox(height: 60),
@@ -113,22 +138,13 @@ class WebFooter extends ConsumerWidget {
                   children: [
                     Text(
                       copyrightText,
-                      style:
-                          const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 24),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 20,
-                      runSpacing: 10,
-                      children: [
-                        _MinimalLink('Privacy Policy', route: '/privacy'),
-                        _MinimalLink('Terms of Service', route: '/terms'),
-                        _MinimalLink('Child Protection',
-                            route: '/child-protection'),
-                        _MinimalLink('Sitemap', route: '/'),
-                      ],
-                    ),
+                    _buildPolicyLinks(policyLinks, isMobile: true),
                   ],
                 )
               else
@@ -137,21 +153,12 @@ class WebFooter extends ConsumerWidget {
                   children: [
                     Text(
                       copyrightText,
-                      style:
-                          const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
                     ),
-                    Row(
-                      children: [
-                        _MinimalLink('Privacy Policy', route: '/privacy'),
-                        const SizedBox(width: 32),
-                        _MinimalLink('Terms of Service', route: '/terms'),
-                        const SizedBox(width: 32),
-                        _MinimalLink('Child Protection',
-                            route: '/child-protection'),
-                        const SizedBox(width: 32),
-                        _MinimalLink('Sitemap', route: '/'),
-                      ],
-                    ),
+                    _buildPolicyLinks(policyLinks, isMobile: false),
                   ],
                 ),
             ],
@@ -161,8 +168,13 @@ class WebFooter extends ConsumerWidget {
     );
   }
 
-  Widget _buildBrandColumn(bool isMobile, String? logoUrl, String description,
-      Map<String, String>? socialLinks, double logoHeight) {
+  Widget _buildBrandColumn(
+    bool isMobile,
+    String? logoUrl,
+    String description,
+    Map<String, String>? socialLinks,
+    double logoHeight,
+  ) {
     final trimmedLogoUrl = (logoUrl ?? '').trim();
     final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
     final hasNetworkLogo =
@@ -227,21 +239,24 @@ class WebFooter extends ConsumerWidget {
             children: [
               if ((socialLinks?['facebook'] ?? '').isNotEmpty) ...[
                 _SocialButton(
-                    icon: Icons.facebook_rounded,
-                    color: const Color(0xFF3B82F6)),
+                  icon: Icons.facebook_rounded,
+                  color: const Color(0xFF3B82F6),
+                ),
                 const SizedBox(width: 12),
               ],
               if ((socialLinks?['instagram'] ?? '').isNotEmpty) ...[
                 _SocialButton(
-                    icon: Icons.camera_alt_rounded,
-                    color: const Color(0xFFEC4899)),
+                  icon: Icons.camera_alt_rounded,
+                  color: const Color(0xFFEC4899),
+                ),
                 const SizedBox(width: 12),
               ],
               if ((socialLinks?['mail'] ?? '').isNotEmpty ||
                   (socialLinks?['email'] ?? '').isNotEmpty)
                 _SocialButton(
-                    icon: Icons.alternate_email_rounded,
-                    color: const Color(0xFF0EA5E9)),
+                  icon: Icons.alternate_email_rounded,
+                  color: const Color(0xFF0EA5E9),
+                ),
             ],
           ),
       ],
@@ -260,28 +275,28 @@ class WebFooter extends ConsumerWidget {
   }
 
   Widget _buildFooterGrid(
-      bool isMobile, List<Map<String, String>> explore, List<Map<String, String>> services) {
+    bool isMobile,
+    List<Map<String, String>> explore,
+    List<Map<String, String>> services,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _buildFooterColumn(
-              'EXPLORE',
-              explore,
-              isCenter: isMobile),
+          child: _buildFooterColumn('EXPLORE', explore, isCenter: isMobile),
         ),
         Expanded(
-          child: _buildFooterColumn(
-              'SERVICES',
-              services,
-              isCenter: isMobile),
+          child: _buildFooterColumn('SERVICES', services, isCenter: isMobile),
         ),
       ],
     );
   }
 
-  Widget _buildFooterColumn(String title, List<Map<String, String>> links,
-      {bool isCenter = false}) {
+  Widget _buildFooterColumn(
+    String title,
+    List<Map<String, String>> links, {
+    bool isCenter = false,
+  }) {
     return Column(
       crossAxisAlignment:
           isCenter ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -297,20 +312,26 @@ class WebFooter extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         ...links
-            .map((link) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _FooterLink(
-                    label: link['label'] ?? '',
-                    route: link['route'] ?? '/',
-                  ),
-                ))
+            .map(
+              (link) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _FooterLink(
+                  label: link['label'] ?? '',
+                  route: link['route'] ?? '/',
+                ),
+              ),
+            )
             .toList(),
       ],
     );
   }
 
   Widget _buildContactColumn(
-      bool isMobile, String phone, String email, String address) {
+    bool isMobile,
+    String phone,
+    String email,
+    String address,
+  ) {
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -329,11 +350,7 @@ class WebFooter extends ConsumerWidget {
         const SizedBox(height: 20),
         _buildContactItem(Icons.email_rounded, email, isMobile),
         const SizedBox(height: 20),
-        _buildContactItem(
-          Icons.location_on_rounded,
-          address,
-          isMobile,
-        ),
+        _buildContactItem(Icons.location_on_rounded, address, isMobile),
       ],
     );
   }
@@ -350,10 +367,32 @@ class WebFooter extends ConsumerWidget {
             text,
             textAlign: isMobile ? TextAlign.center : TextAlign.start,
             style: const TextStyle(
-                color: Color(0xFF475569), fontSize: 15, height: 1.5),
+              color: Color(0xFF475569),
+              fontSize: 15,
+              height: 1.5,
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPolicyLinks(
+    List<Map<String, String>> links, {
+    required bool isMobile,
+  }) {
+    return Wrap(
+      alignment: isMobile ? WrapAlignment.center : WrapAlignment.end,
+      spacing: isMobile ? 20 : 32,
+      runSpacing: 10,
+      children: links
+          .map(
+            (link) => _MinimalLink(
+              link['label'] ?? '',
+              route: link['route'] ?? '/',
+            ),
+          )
+          .toList(),
     );
   }
 }

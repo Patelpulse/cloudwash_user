@@ -4,6 +4,7 @@ import 'package:cloud_user/features/home/data/web_content_providers.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
 import 'package:cloud_user/core/router/app_router.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/widgets/animated_splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +45,11 @@ class _CloudUserAppState extends ConsumerState<CloudUserApp> {
   @override
   Widget build(BuildContext context) {
     if (_showSplash) {
-      final heroLogoUrl = ref.watch(heroSectionProvider).valueOrNull?.logoUrl;
+      final hero = ref.watch(heroSectionProvider).valueOrNull;
+      final heroLogoUrl = resolveHeroLogoForDevice(
+        hero: hero,
+        deviceType: LogoDeviceType.phone,
+      );
       return MaterialApp(
         title: 'Cloud Wash',
         theme: AppTheme.lightTheme,

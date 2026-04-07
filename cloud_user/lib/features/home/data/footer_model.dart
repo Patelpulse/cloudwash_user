@@ -22,6 +22,7 @@ class FooterModel {
   final String copyright;
   final List<FooterLinkModel> exploreLinks;
   final List<FooterLinkModel> serviceLinks;
+  final List<FooterLinkModel> policyLinks;
   final Map<String, String> socialLinks;
 
   FooterModel({
@@ -32,6 +33,7 @@ class FooterModel {
     required this.copyright,
     required this.exploreLinks,
     required this.serviceLinks,
+    required this.policyLinks,
     required this.socialLinks,
   });
 
@@ -53,6 +55,7 @@ class FooterModel {
       copyright: json['copyright'] ?? '',
       exploreLinks: _parseLinks(json['exploreLinks']),
       serviceLinks: _parseLinks(json['serviceLinks']),
+      policyLinks: _parseLinks(json['policyLinks']),
       socialLinks: (json['socialLinks'] as Map<String, dynamic>?)
               ?.map((key, value) => MapEntry(key, value.toString())) ??
           {},

@@ -2,6 +2,7 @@ import 'package:cloud_user/core/models/banner_model.dart';
 import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/sub_category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
+import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/features/home/data/firebase_home_repository.dart';
 import 'package:cloud_user/features/home/data/hero_section_model.dart';
 import 'package:cloud_user/features/home/data/home_repository.dart';
@@ -106,26 +107,27 @@ Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
       _hasCoreHeroContent(apiHero) ? apiHero : (firebaseHero ?? apiHero);
   if (baseHero == null) return null;
 
-  // API `hero.logoUrl` is treated as source of truth for splash/logo.
-  // Firestore logo remains fallback when API logo is empty.
+  final mergedLogoByDevice = mergeLogoByDeviceMaps([
+    {'website': baseHero.logoUrl.trim()},
+    apiHero?.logoByDevice,
+    firebaseHero?.logoByDevice,
+  ]);
+
   final apiLogo = (apiHero?.logoUrl ?? '').trim();
-  if (apiLogo.isNotEmpty) {
-    return HeroSectionModel(
-      id: baseHero.id,
-      tagline: baseHero.tagline,
-      mainTitle: baseHero.mainTitle,
-      description: baseHero.description,
-      buttonText: baseHero.buttonText,
-      imageUrl: baseHero.imageUrl,
-      logoUrl: apiLogo,
-      logoHeight: baseHero.logoHeight,
-      youtubeUrl: baseHero.youtubeUrl,
-      isActive: baseHero.isActive,
-    );
+  if (apiLogo.isNotEmpty && !mergedLogoByDevice.containsKey('website')) {
+    mergedLogoByDevice['website'] = apiLogo;
+  }
+  final firebaseLogo = (firebaseHero?.logoUrl ?? '').trim();
+  if (firebaseLogo.isNotEmpty && !mergedLogoByDevice.containsKey('website')) {
+    mergedLogoByDevice['website'] = firebaseLogo;
   }
 
-  final firebaseLogo = (firebaseHero?.logoUrl ?? '').trim();
-  if (firebaseLogo.isEmpty) return baseHero;
+  final resolvedWebsiteLogo =
+      (mergedLogoByDevice['website'] ?? '').trim().isNotEmpty
+          ? mergedLogoByDevice['website']!.trim()
+          : (apiLogo.isNotEmpty
+              ? apiLogo
+              : (firebaseLogo.isNotEmpty ? firebaseLogo : baseHero.logoUrl));
 
   return HeroSectionModel(
     id: baseHero.id,
@@ -134,7 +136,8 @@ Future<HeroSectionModel?> heroSection(HeroSectionRef ref) async {
     description: baseHero.description,
     buttonText: baseHero.buttonText,
     imageUrl: baseHero.imageUrl,
-    logoUrl: firebaseLogo,
+    logoUrl: resolvedWebsiteLogo,
+    logoByDevice: mergedLogoByDevice,
     logoHeight: baseHero.logoHeight,
     youtubeUrl: baseHero.youtubeUrl,
     isActive: baseHero.isActive,

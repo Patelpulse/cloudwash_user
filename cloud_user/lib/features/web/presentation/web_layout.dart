@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_footer.dart';
 import 'package:cloud_user/features/web/presentation/widgets/web_navbar.dart';
@@ -30,9 +31,11 @@ class WebLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final heroAsync = ref.watch(heroSectionProvider);
-    final logoUrl = heroAsync.valueOrNull?.logoUrl;
-    final double logoHeight = heroAsync.valueOrNull?.logoHeight ?? 140;
+    final hero = heroAsync.valueOrNull;
+    final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
+    final double logoHeight = hero?.logoHeight ?? 140;
 
     // Listen for real-time order status updates from Firebase
     ref.listen(userOrdersRealtimeProvider, (previous, next) {
@@ -153,7 +156,7 @@ class WebLayout extends ConsumerWidget {
       }
     });
 
-    final bool isMobile = MediaQuery.of(context).size.width < 1000;
+    final bool isMobile = screenWidth < 1000;
     final GlobalKey<ScaffoldState> effectiveScaffoldKey =
         scaffoldKey ?? GlobalKey<ScaffoldState>();
 
@@ -193,7 +196,10 @@ class WebLayout extends ConsumerWidget {
   }
 
   Widget _buildMobileDrawer(
-      BuildContext context, String? logoUrl, double logoHeight) {
+    BuildContext context,
+    String? logoUrl,
+    double logoHeight,
+  ) {
     final trimmedLogoUrl = (logoUrl ?? '').trim();
     final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
     final hasNetworkLogo =
