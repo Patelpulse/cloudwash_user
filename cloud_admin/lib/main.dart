@@ -1,4 +1,5 @@
 import 'package:cloud_admin/core/theme/app_theme.dart';
+import 'package:cloud_admin/core/auth/admin_auth_session.dart';
 import 'package:cloud_admin/core/widgets/socket_listener_wrapper.dart';
 import 'package:cloud_admin/features/addons/screens/add_addon_screen.dart';
 import 'package:cloud_admin/features/addons/screens/addons_screen.dart';
@@ -28,6 +29,7 @@ import 'package:cloud_admin/features/users/screens/users_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_about_us_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_hero_section_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_logo_section_screen.dart';
+import 'package:cloud_admin/features/web_landing/screens/edit_static_pages_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_stats_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_testimonials_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_why_choose_us_screen.dart';
@@ -63,6 +65,7 @@ void main() async {
     );
     final prefs = await SharedPreferences.getInstance();
     isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+    adminAuthSession.value = isLoggedIn;
   } catch (error, stackTrace) {
     startupError = error;
     startupStackTrace = stackTrace;
@@ -71,7 +74,7 @@ void main() async {
   runApp(
     ProviderScope(
       child: startupError == null
-          ? CloudAdminApp(isLoggedIn: isLoggedIn)
+          ? const CloudAdminApp()
           : StartupErrorApp(
               error: startupError.toString(),
               stackTrace: startupStackTrace?.toString(),
@@ -154,8 +157,7 @@ class StartupErrorApp extends StatelessWidget {
 }
 
 class CloudAdminApp extends StatefulWidget {
-  final bool isLoggedIn;
-  const CloudAdminApp({super.key, this.isLoggedIn = false});
+  const CloudAdminApp({super.key});
 
   @override
   State<CloudAdminApp> createState() => _CloudAdminAppState();
@@ -168,7 +170,22 @@ class _CloudAdminAppState extends State<CloudAdminApp> {
   void initState() {
     super.initState();
     _router = GoRouter(
-      initialLocation: widget.isLoggedIn ? '/' : '/login',
+      refreshListenable: adminAuthSession,
+      redirect: (context, state) {
+        final isLoggedIn = adminAuthSession.value;
+        final location = state.uri.path;
+        final isLoginRoute = location == '/login';
+
+        if (!isLoggedIn) {
+          return isLoginRoute ? null : '/login';
+        }
+
+        if (isLoginRoute) {
+          return '/';
+        }
+
+        return null;
+      },
       routes: [
         GoRoute(
           path: '/login',
@@ -212,8 +229,7 @@ class _CloudAdminAppState extends State<CloudAdminApp> {
                 ),
                 GoRoute(
                   path: 'reorder',
-                  builder: (context, state) =>
-                      const ReorderCategoriesScreen(),
+                  builder: (context, state) => const ReorderCategoriesScreen(),
                 ),
               ],
             ),
@@ -350,6 +366,10 @@ class _CloudAdminAppState extends State<CloudAdminApp> {
                 GoRoute(
                   path: 'about',
                   builder: (context, state) => const EditAboutUsScreen(),
+                ),
+                GoRoute(
+                  path: 'static-pages',
+                  builder: (context, state) => const EditStaticPagesScreen(),
                 ),
                 GoRoute(
                   path: 'stats',

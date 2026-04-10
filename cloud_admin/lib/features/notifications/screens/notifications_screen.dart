@@ -26,8 +26,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _fetchNotifications() async {
     setState(() => _isLoading = true);
     try {
-      final baseUrl = AppConfig.apiUrl;
-      final response = await http.get(Uri.parse('$baseUrl/notifications'));
+      final response = await http.get(AppConfig.apiUri('notifications'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -57,9 +56,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _deleteNotification(String id) async {
     try {
-      final baseUrl = AppConfig.apiUrl;
-      final response =
-          await http.delete(Uri.parse('$baseUrl/notifications/$id'));
+      final response = await http.delete(AppConfig.apiUri('notifications/$id'));
 
       if (response.statusCode == 200) {
         if (mounted) {

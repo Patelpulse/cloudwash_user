@@ -8,6 +8,7 @@ import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/utils/image_data_utils.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
+import 'package:cloud_user/features/home/data/hero_section_model.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/home/data/web_content_providers.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
@@ -92,6 +93,41 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     });
   }
 
+  double _heroTitleFontSize(HeroSectionModel? hero) {
+    final base = hero?.titleFontSize ?? 28.0;
+    return base.clamp(18.0, 72.0).toDouble();
+  }
+
+  double _heroDescriptionFontSize(HeroSectionModel? hero) {
+    final base = hero?.descriptionFontSize ?? 13.0;
+    return base.clamp(12.0, 24.0).toDouble();
+  }
+
+  String _heroTitleFontFamily(HeroSectionModel? hero) {
+    final value = (hero?.titleFontFamily ?? '').trim();
+    return value.isNotEmpty ? value : 'Playfair Display';
+  }
+
+  String _heroBodyFontFamily(HeroSectionModel? hero) {
+    final value = (hero?.bodyFontFamily ?? '').trim();
+    return value.isNotEmpty ? value : 'Inter';
+  }
+
+  Color _heroColor(String? value, Color fallback) {
+    final color = (value ?? '').trim();
+    if (color.isEmpty) return fallback;
+    final normalized = color.startsWith('#') ? color.substring(1) : color;
+    if (!RegExp(r'^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$').hasMatch(normalized)) {
+      return fallback;
+    }
+    final buffer = StringBuffer();
+    if (normalized.length == 6) {
+      buffer.write('ff');
+    }
+    buffer.write(normalized);
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+
   Uint8List? _decodeDataImage(String imageUrl) {
     if (!imageUrl.startsWith('data:image')) return null;
     final commaIndex = imageUrl.indexOf(',');
@@ -112,7 +148,6 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     final spotlightAsync = ref.watch(spotlightServicesProvider);
     final topServicesAsync = ref.watch(topServicesProvider);
     final subCategoriesAsync = ref.watch(subCategoriesProvider);
-    final whyChooseUsAsync = ref.watch(whyChooseUsProvider);
 
     // Show Skeleton Loader only on initial load (no data yet)
     if (categoriesAsync.isLoading && !categoriesAsync.hasValue) {
@@ -370,6 +405,14 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                       false)
                                   ? hero!.description
                                   : 'Book premium laundry pickup in seconds.';
+                              final heroTitleColor =
+                                  _heroColor(hero?.titleColor, const Color(0xFF111827));
+                              final heroDescColor =
+                                  _heroColor(hero?.descriptionColor, Colors.black54);
+                              final titleFontFamily =
+                                  _heroTitleFontFamily(hero);
+                              final bodyFontFamily =
+                                  _heroBodyFontFamily(hero);
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,11 +422,14 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                     child: Text(
                                       heroTitle,
                                       key: ValueKey(heroTitle),
-                                      style: GoogleFonts.playfairDisplay(
-                                        color: const Color(0xFF111827),
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w800,
-                                        height: 1.1,
+                                      style: GoogleFonts.getFont(
+                                        titleFontFamily,
+                                        textStyle: TextStyle(
+                                          color: heroTitleColor,
+                                          fontSize: _heroTitleFontSize(hero),
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.1,
+                                        ),
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -395,11 +441,15 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                     child: Text(
                                       heroDesc,
                                       key: ValueKey(heroDesc),
-                                      style: GoogleFonts.inter(
-                                        color: Colors.black54,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.4,
+                                      style: GoogleFonts.getFont(
+                                        bodyFontFamily,
+                                        textStyle: TextStyle(
+                                          color: heroDescColor,
+                                          fontSize:
+                                              _heroDescriptionFontSize(hero),
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.4,
+                                        ),
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -890,23 +940,33 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                     error: (_, __) => const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 30),
-                  whyChooseUsAsync.when(
-                    data: (items) {
-                      if (items.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('Our Commitment'),
-                          const SizedBox(height: 15),
-                          ...items.take(3).map(
-                                (item) =>
-                                    _buildWhyItem(item.title, item.description),
-                              ),
-                        ],
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final whyChooseUsAsync =
+                          ref.watch(liveWhyChooseUsProvider);
+                      return whyChooseUsAsync.when(
+                        data: (items) {
+                          if (items.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('Our Commitment'),
+                              const SizedBox(height: 15),
+                              ...items.take(3).map(
+                                    (item) => _buildWhyItem(
+                                      item.title,
+                                      item.description,
+                                    ),
+                                  ),
+                            ],
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
                       );
                     },
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
                   ),
                 ],
               ),

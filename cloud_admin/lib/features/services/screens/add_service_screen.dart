@@ -226,15 +226,16 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
   Future<Map<String, dynamic>?> _saveToBackend() async {
     try {
-      final baseUrl = AppConfig.apiUrl;
       final isEditing =
           widget.serviceToEdit != null && widget.serviceToEdit!['_id'] != null;
-      final url = isEditing
-          ? '$baseUrl/services/${widget.serviceToEdit!['_id']}'
-          : '$baseUrl/services';
-
-      var uri = Uri.parse(url);
-      var request = http.MultipartRequest(isEditing ? 'PUT' : 'POST', uri);
+      final request = http.MultipartRequest(
+        isEditing ? 'PUT' : 'POST',
+        AppConfig.apiUri(
+          isEditing
+              ? 'services/${widget.serviceToEdit!['_id']}'
+              : 'services',
+        ),
+      );
 
       request.fields['name'] = _nameController.text;
       request.fields['category'] = _selectedCategoryId!;

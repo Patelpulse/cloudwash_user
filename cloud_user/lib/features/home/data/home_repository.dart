@@ -1,7 +1,9 @@
+import 'package:cloud_user/core/config/app_config.dart';
 import 'package:cloud_user/core/models/banner_model.dart';
 import 'package:cloud_user/core/models/category_model.dart';
 import 'package:cloud_user/core/models/service_model.dart';
-import 'package:cloud_user/core/network/api_client.dart';
+import 'package:cloud_user/features/home/data/footer_model.dart';
+import 'package:cloud_user/features/home/data/why_choose_us_model.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -9,7 +11,15 @@ part 'home_repository.g.dart';
 
 @Riverpod(keepAlive: true)
 HomeRepository homeRepository(HomeRepositoryRef ref) {
-  return HomeRepository(ref.watch(apiClientProvider));
+  return HomeRepository(
+    Dio(
+      BaseOptions(
+        baseUrl: AppConfig.baseUrl,
+        connectTimeout: const Duration(seconds: 120),
+        receiveTimeout: const Duration(seconds: 120),
+      ),
+    ),
+  );
 }
 
 class HomeRepository {
@@ -89,6 +99,50 @@ class HomeRepository {
     }
   }
 
+  Future<List<WhyChooseUsModel>> getWhyChooseUs() async {
+    try {
+      final response = await _dio.get(
+        'why-choose-us',
+        queryParameters: {
+          '_ts': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+
+      final data = response.data;
+      if (data is! List) return [];
+
+      return data
+          .whereType<Map>()
+          .map((e) => WhyChooseUsModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (e) {
+      if (e is DioException) {
+        print('API Error (Why Choose Us): ${e.message} - ${e.response?.data}');
+      }
+      return [];
+    }
+  }
+
+  Future<FooterModel?> getFooter() async {
+    try {
+      final response = await _dio.get(
+        'web-content/footer',
+        queryParameters: {
+          '_ts': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+
+      final data = response.data;
+      if (data is! Map) return null;
+      return FooterModel.fromJson(Map<String, dynamic>.from(data));
+    } catch (e) {
+      if (e is DioException) {
+        print('API Error (Footer): ${e.message} - ${e.response?.data}');
+      }
+      return null;
+    }
+  }
+
   Future<List<dynamic>> getSubCategories() async {
     try {
       final response = await _dio.get('sub-categories');
@@ -103,11 +157,64 @@ class HomeRepository {
       final response = await _dio.get('hero');
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      return {
-        'youtubeUrl':
-            'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=1&show_logo=false&bigPlayButton=false',
-        'isActive': true,
-      };
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getAboutUs() async {
+    try {
+      final response = await _dio.get(
+        'web-content/about',
+        queryParameters: {
+          '_ts': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+      final data = response.data;
+      if (data is! Map) return null;
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      if (e is DioException) {
+        print('API Error (About Us): ${e.message} - ${e.response?.data}');
+      }
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStats() async {
+    try {
+      final response = await _dio.get(
+        'web-content/stats',
+        queryParameters: {
+          '_ts': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+      final data = response.data;
+      if (data is! Map) return null;
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      if (e is DioException) {
+        print('API Error (Stats): ${e.message} - ${e.response?.data}');
+      }
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStaticPage(String slug) async {
+    try {
+      final response = await _dio.get(
+        'web-content/pages/$slug',
+        queryParameters: {
+          '_ts': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+      final data = response.data;
+      if (data is! Map) return null;
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      if (e is DioException) {
+        print('API Error (Static Page: $slug): ${e.message} - ${e.response?.data}');
+      }
+      return null;
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_admin/core/auth/admin_auth_session.dart';
 import 'package:cloud_admin/shared/widgets/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -81,6 +82,7 @@ class _DashboardHeaderState extends State<_DashboardHeader> {
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    adminAuthSession.value = false;
     if (mounted) {
       context.go('/login');
     }

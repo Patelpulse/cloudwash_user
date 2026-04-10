@@ -26,6 +26,9 @@ class AnimatedSplashScreen extends StatefulWidget {
 
 class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
     with TickerProviderStateMixin {
+  static const double _logoWidth = 300;
+  static const double _logoHeight = 120;
+
   late AnimationController _logoController;
   late AnimationController _particleController;
   late Animation<double> _logoScale;
@@ -147,10 +150,9 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
                           ),
                           const SizedBox(height: 30),
                           ShaderMask(
-                            shaderCallback: (bounds) =>
-                                const LinearGradient(
-                                  colors: [_brandPrimary, _brandSecondary],
-                                ).createShader(bounds),
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [_brandPrimary, _brandSecondary],
+                            ).createShader(bounds),
                             child: const Text(
                               'CloudWash',
                               style: TextStyle(
@@ -239,24 +241,25 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
 
     final bytes = _decodeDataImage(logoUrl);
     if (bytes != null) {
-      return Image.memory(bytes, width: 150, height: 150, fit: BoxFit.contain);
+      return _buildLogoFrame(Image.memory(bytes, fit: BoxFit.contain));
     }
 
-    return Image.network(
-      withLogoCacheBust(logoUrl),
-      width: 200,
-      height: 200,
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => _buildDefaultLogo(),
+    return _buildLogoFrame(
+      Image.network(
+        withLogoCacheBust(logoUrl),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _buildDefaultLogo(),
+      ),
     );
   }
 
+  Widget _buildLogoFrame(Widget child) {
+    return SizedBox(width: _logoWidth, height: _logoHeight, child: child);
+  }
+
   Widget _buildDefaultLogo() {
-    return Image.asset(
-      'assets/images/logo.png',
-      width: 200,
-      height: 200,
-      fit: BoxFit.contain,
+    return _buildLogoFrame(
+      Image.asset('assets/images/logo.png', fit: BoxFit.contain),
     );
   }
 }

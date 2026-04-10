@@ -1,7 +1,7 @@
 name: cloud_user
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.2+4
 
 environment:
   sdk: ^3.10.3
@@ -67,7 +67,9 @@ dev_dependencies:
   json_serializable: ^6.7.1
   json_annotation: ^4.9.0
   flutter_launcher_icons: ^0.14.4
-  flutter_native_splash: ^2.4.3
+
+dependency_overrides:
+  geolocator_android: 5.0.2
 
 flutter_launcher_icons:
   android: true
@@ -75,15 +77,6 @@ flutter_launcher_icons:
   image_path: "assets/images/logo.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/logo.png"
-
-flutter_native_splash:
-  color: "#FFFFFF"
-  image: assets/images/logo.png
-  android_12:
-    image: assets/images/logo.png
-    color: "#FFFFFF"
-  android: true
-  ios: true
 
 flutter:
   uses-material-design: true

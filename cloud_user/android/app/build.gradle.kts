@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         applicationId = "com.cloudwash.app"
-        minSdk = 36
+        minSdk = 33
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName

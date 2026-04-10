@@ -148,15 +148,16 @@ class _AddTestimonialScreenState extends State<AddTestimonialScreen> {
 
   Future<Map<String, dynamic>?> _saveToBackend() async {
     try {
-      final baseUrl = AppConfig.apiUrl;
       final isEditing = widget.testimonialToEdit != null &&
           widget.testimonialToEdit!['_id'] != null;
-      final url = isEditing
-          ? '$baseUrl/testimonials/${widget.testimonialToEdit!['_id']}'
-          : '$baseUrl/testimonials';
-
-      var uri = Uri.parse(url);
-      var request = http.MultipartRequest(isEditing ? 'PUT' : 'POST', uri);
+      var request = http.MultipartRequest(
+        isEditing ? 'PUT' : 'POST',
+        AppConfig.apiUri(
+          isEditing
+              ? 'testimonials/${widget.testimonialToEdit!['_id']}'
+              : 'testimonials',
+        ),
+      );
 
       request.fields['name'] = _nameController.text;
       request.fields['designation'] = _designationController.text;

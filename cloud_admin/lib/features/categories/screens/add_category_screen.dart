@@ -335,7 +335,6 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   // Save to backend and return response data
   Future<Map<String, dynamic>?> _saveToBackend() async {
     try {
-      final baseUrl = AppConfig.apiUrl;
       final mongoId = _currentMongoId;
       final isEditing = widget.categoryToEdit != null && mongoId != null;
 
@@ -345,11 +344,12 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         return null;
       }
 
-      final url =
-          isEditing ? '$baseUrl/categories/$mongoId' : '$baseUrl/categories';
-
-      var uri = Uri.parse(url);
-      var request = http.MultipartRequest(isEditing ? 'PUT' : 'POST', uri);
+      var request = http.MultipartRequest(
+        isEditing ? 'PUT' : 'POST',
+        AppConfig.apiUri(
+          isEditing ? 'categories/$mongoId' : 'categories',
+        ),
+      );
 
       request.fields['name'] = _nameController.text;
       request.fields['price'] = _priceController.text;

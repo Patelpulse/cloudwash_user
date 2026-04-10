@@ -93,14 +93,13 @@ class _AddBannerScreenState extends State<AddBannerScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final baseUrl = AppConfig.apiUrl;
       final isEditing = widget.bannerToEdit != null;
-      final url = isEditing
-          ? '$baseUrl/banners/${widget.bannerToEdit!['_id']}'
-          : '$baseUrl/banners';
-
-      var uri = Uri.parse(url);
-      var request = http.MultipartRequest(isEditing ? 'PUT' : 'POST', uri);
+      var request = http.MultipartRequest(
+        isEditing ? 'PUT' : 'POST',
+        AppConfig.apiUri(
+          isEditing ? 'banners/${widget.bannerToEdit!['_id']}' : 'banners',
+        ),
+      );
 
       request.fields['title'] = _titleController.text;
       request.fields['description'] = _descriptionController.text;

@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 /// Web Layout wrapper - provides navbar + footer for all web pages
-class WebLayout extends ConsumerWidget {
+class WebLayout extends ConsumerStatefulWidget {
   final Widget child;
   final Widget? endDrawer;
   final GlobalKey<ScaffoldState>? scaffoldKey;
@@ -30,12 +30,34 @@ class WebLayout extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WebLayout> createState() => _WebLayoutState();
+}
+
+class _WebLayoutState extends ConsumerState<WebLayout> {
+  late final ScrollController _scrollController;
+  late final GlobalKey<ScaffoldState> _internalScaffoldKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _internalScaffoldKey = GlobalKey<ScaffoldState>();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final heroAsync = ref.watch(heroSectionProvider);
+    final heroAsync = ref.watch(liveHeroSectionProvider);
     final hero = heroAsync.valueOrNull;
     final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
     final double logoHeight = hero?.logoHeight ?? 140;
+    final effectiveScaffoldKey = widget.scaffoldKey ?? _internalScaffoldKey;
 
     // Listen for real-time order status updates from Firebase
     ref.listen(userOrdersRealtimeProvider, (previous, next) {
@@ -157,39 +179,53 @@ class WebLayout extends ConsumerWidget {
     });
 
     final bool isMobile = screenWidth < 1000;
-    final GlobalKey<ScaffoldState> effectiveScaffoldKey =
-        scaffoldKey ?? GlobalKey<ScaffoldState>();
 
     return Scaffold(
       key: effectiveScaffoldKey,
       backgroundColor: const Color(0xFFF7F8FA),
       drawer:
           isMobile ? _buildMobileDrawer(context, logoUrl, logoHeight) : null,
-      endDrawer: endDrawer,
+      endDrawer: widget.endDrawer,
       body: Stack(
         children: [
           Column(
             children: [
-              WebNavBar(scaffoldKey: effectiveScaffoldKey),
+              WebNavBar(
+                scaffoldKey: effectiveScaffoldKey,
+                logoUrl: logoUrl,
+                logoHeight: logoHeight,
+              ),
 
               // Scrollable Content
               Expanded(
                 child: SingleChildScrollView(
+                  key: const PageStorageKey<String>('web-layout-scroll'),
+                  controller: _scrollController,
+                  primary: false,
                   child: Column(
                     children: [
                       // Main Content
-                      child,
+                      widget.child,
 
                       // Footer
-                      if (!isMobile) const WebFooter(),
+                      if (!isMobile)
+                        WebFooter(
+                          logoUrl: logoUrl,
+                          logoHeight: logoHeight,
+                        ),
                     ],
                   ),
                 ),
               ),
             ],
           ),
-          if (floatingBottomBar != null)
-            Positioned(bottom: 0, left: 0, right: 0, child: floatingBottomBar!),
+          if (widget.floatingBottomBar != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: widget.floatingBottomBar!,
+            ),
         ],
       ),
     );
@@ -204,7 +240,7 @@ class WebLayout extends ConsumerWidget {
     final embeddedLogoBytes = _decodeDataImage(trimmedLogoUrl);
     final hasNetworkLogo =
         trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
-    final double drawerLogoHeight = (logoHeight * 0.7).clamp(50, 180);
+    final double drawerLogoHeight = (logoHeight * 0.7).clamp(24, 180);
     return Drawer(
       child: Container(
         color: Colors.white,

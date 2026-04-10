@@ -202,15 +202,14 @@ class _AddAddonScreenState extends State<AddAddonScreen> {
 
   Future<Map<String, dynamic>?> _saveToBackend() async {
     try {
-      final baseUrl = AppConfig.apiUrl;
       final isEditing =
           widget.addonToEdit != null && widget.addonToEdit!['_id'] != null;
-      final url = isEditing
-          ? '$baseUrl/addons/${widget.addonToEdit!['_id']}'
-          : '$baseUrl/addons';
-
-      var uri = Uri.parse(url);
-      var request = http.MultipartRequest(isEditing ? 'PUT' : 'POST', uri);
+      var request = http.MultipartRequest(
+        isEditing ? 'PUT' : 'POST',
+        AppConfig.apiUri(
+          isEditing ? 'addons/${widget.addonToEdit!['_id']}' : 'addons',
+        ),
+      );
 
       request.fields['name'] = _nameController.text;
       request.fields['description'] = _descriptionController.text;

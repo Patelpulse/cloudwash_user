@@ -18,7 +18,6 @@ class EditTestimonialsScreen extends ConsumerStatefulWidget {
 
 class _EditTestimonialsScreenState
     extends ConsumerState<EditTestimonialsScreen> {
-  final String _baseUrl = AppConfig.apiUrl;
   List<TestimonialModel> _testimonials = [];
   bool _isLoading = false;
 
@@ -31,7 +30,7 @@ class _EditTestimonialsScreenState
   Future<void> _fetchTestimonials() async {
     setState(() => _isLoading = true);
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/testimonials'));
+      final response = await http.get(AppConfig.apiUri('testimonials'));
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
         setState(() {
@@ -51,8 +50,7 @@ class _EditTestimonialsScreenState
     if (!await _showDeleteConfirmation()) return;
 
     try {
-      final response =
-          await http.delete(Uri.parse('$_baseUrl/testimonials/$id'));
+      final response = await http.delete(AppConfig.apiUri('testimonials/$id'));
       if (response.statusCode == 200) {
         _fetchTestimonials();
       }
@@ -87,7 +85,6 @@ class _EditTestimonialsScreenState
     showDialog(
       context: context,
       builder: (context) => _TestimonialDialog(
-        baseUrl: _baseUrl,
         existingTestimonial: testimonial,
         onSave: _fetchTestimonials,
       ),
@@ -150,12 +147,10 @@ class _EditTestimonialsScreenState
 }
 
 class _TestimonialDialog extends StatefulWidget {
-  final String baseUrl;
   final TestimonialModel? existingTestimonial;
   final VoidCallback onSave;
 
   const _TestimonialDialog({
-    required this.baseUrl,
     this.existingTestimonial,
     required this.onSave,
   });
@@ -209,9 +204,11 @@ class _TestimonialDialogState extends State<_TestimonialDialog> {
       final isEdit = widget.existingTestimonial != null;
       var request = http.MultipartRequest(
         isEdit ? 'PUT' : 'POST',
-        Uri.parse(isEdit
-            ? '${widget.baseUrl}/testimonials/${widget.existingTestimonial!.id}'
-            : '${widget.baseUrl}/testimonials'),
+        AppConfig.apiUri(
+          isEdit
+              ? 'testimonials/${widget.existingTestimonial!.id}'
+              : 'testimonials',
+        ),
       );
 
       request.fields['name'] = _nameController.text;

@@ -6,6 +6,7 @@ import 'package:cloud_user/core/models/service_model.dart';
 import 'package:cloud_user/features/home/data/about_us_model.dart';
 import 'package:cloud_user/features/home/data/footer_model.dart';
 import 'package:cloud_user/features/home/data/hero_section_model.dart';
+import 'package:cloud_user/features/home/data/static_page_model.dart';
 import 'package:cloud_user/features/home/data/stats_model.dart';
 import 'package:cloud_user/features/home/data/testimonial_model.dart';
 import 'package:cloud_user/features/home/data/why_choose_us_model.dart';
@@ -23,6 +24,56 @@ class FirebaseHomeRepository {
 
   FirebaseHomeRepository(this._firestore);
 
+  int _readInt(dynamic value, {int fallback = 0}) {
+    if (value == null) return fallback;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value.trim()) ?? fallback;
+    return fallback;
+  }
+
+  double _readDouble(dynamic value, {double fallback = 0}) {
+    if (value == null) return fallback;
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim()) ?? fallback;
+    return fallback;
+  }
+
+  bool _readBool(dynamic value, {bool fallback = true}) {
+    if (value == null) return fallback;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return fallback;
+  }
+
+  DateTime? _readDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is Timestamp) return value.toDate();
+    if (value is num) {
+      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+    }
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    if (value is Map && value['seconds'] != null) {
+      final seconds = value['seconds'];
+      final nanoseconds = value['nanoseconds'] ?? 0;
+      if (seconds is num && nanoseconds is num) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          (seconds.toInt() * 1000) + (nanoseconds.toInt() ~/ 1000000),
+        );
+      }
+    }
+    return null;
+  }
+
   Future<List<CategoryModel>> getCategories() async {
     try {
       final snapshot = await _firestore.collection('categories').get();
@@ -32,12 +83,10 @@ class FirebaseHomeRepository {
           id: doc.id,
           name: data['name'] ?? '',
           description: data['description'] ?? '',
-          price: (data['price'] ?? 0).toDouble(),
+          price: _readDouble(data['price']),
           imageUrl: data['imageUrl'] ?? '',
-          isActive: data['isActive'] ?? true,
-          displayOrder: (data['displayOrder'] ?? 100000) is int
-              ? data['displayOrder']
-              : int.tryParse('${data['displayOrder']}') ?? 100000,
+          isActive: _readBool(data['isActive'], fallback: true),
+          displayOrder: _readInt(data['displayOrder'], fallback: 100000),
           mongoId: data['mongoId'],
         );
       }).toList();
@@ -147,9 +196,9 @@ class FirebaseHomeRepository {
           title: data['title'] ?? '',
           description: data['description'] ?? '',
           position: data['position'] ?? 'home',
-          isActive: data['isActive'] ?? true,
+          isActive: _readBool(data['isActive'], fallback: true),
           imageUrl: data['imageUrl'] ?? '',
-          displayOrder: data['displayOrder'] ?? 0,
+          displayOrder: _readInt(data['displayOrder']),
         );
       }).toList();
     } catch (e) {
@@ -171,13 +220,11 @@ class FirebaseHomeRepository {
           id: doc.id,
           name: data['name'] ?? '',
           description: data['description'],
-          price: (data['price'] ?? 0).toDouble(),
+          price: _readDouble(data['price']),
           imageUrl: data['imageUrl'] ?? '',
-          isActive: data['isActive'] ?? true,
+          isActive: _readBool(data['isActive'], fallback: true),
           category: data['categoryId'],
-          displayOrder: (data['displayOrder'] ?? 100000) is int
-              ? data['displayOrder']
-              : int.tryParse('${data['displayOrder']}') ?? 100000,
+          displayOrder: _readInt(data['displayOrder'], fallback: 100000),
           mongoId: data['mongoId'],
         );
       }).toList();
@@ -227,6 +274,21 @@ class FirebaseHomeRepository {
     }
   }
 
+  Future<StaticPageModel?> getStaticPage(String slug) async {
+    try {
+      final snapshot = await _firestore
+          .collection('web_landing')
+          .doc('page_$slug')
+          .get();
+      if (!snapshot.exists) return null;
+      final data = snapshot.data();
+      if (data == null || data.isEmpty) return null;
+      return StaticPageModel.fromJson({'_id': snapshot.id, 'slug': slug, ...data});
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<StatsModel?> getStats() async {
     try {
       final snapshot = await _firestore
@@ -244,8 +306,10 @@ class FirebaseHomeRepository {
 
   Future<FooterModel?> getFooter() async {
     try {
-      final snapshot =
-          await _firestore.collection('web_landing').doc('footer').get();
+      final snapshot = await _firestore
+          .collection('web_landing')
+          .doc('footer')
+          .get();
       if (!snapshot.exists) return null;
       final data = snapshot.data();
       if (data == null) return null;
@@ -255,29 +319,90 @@ class FirebaseHomeRepository {
     }
   }
 
+  Stream<FooterModel?> watchFooter() {
+    return _firestore
+        .collection('web_landing')
+        .doc('footer')
+        .snapshots()
+        .map((snapshot) {
+      final data = snapshot.data();
+      if (data == null) return null;
+      return FooterModel.fromJson({'_id': snapshot.id, ...data});
+    });
+  }
+
   Future<List<TestimonialModel>> getTestimonials() async {
     try {
       final snapshot = await _firestore.collection('testimonials').get();
-      return snapshot.docs
-          .map(
-            (doc) => TestimonialModel.fromJson({'_id': doc.id, ...doc.data()}),
-          )
-          .toList();
+      return _mapTestimonials(snapshot.docs);
     } catch (e) {
       return [];
     }
   }
 
+  Stream<List<TestimonialModel>> watchTestimonials() {
+    return _firestore.collection('testimonials').snapshots().map(
+          (snapshot) => _mapTestimonials(snapshot.docs),
+        );
+  }
+
+  List<TestimonialModel> _mapTestimonials(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final items = docs
+        .map((doc) => {'_id': doc.id, ...doc.data()})
+        .where((item) => _readBool(item['isActive'], fallback: true))
+        .toList();
+
+    items.sort((a, b) {
+      final aTime =
+          _readDateTime(a['createdAt'])?.millisecondsSinceEpoch ?? 0;
+      final bTime =
+          _readDateTime(b['createdAt'])?.millisecondsSinceEpoch ?? 0;
+      if (aTime != bTime) return bTime.compareTo(aTime);
+      return (a['name'] ?? '')
+          .toString()
+          .compareTo((b['name'] ?? '').toString());
+    });
+
+    return items
+        .map((item) => TestimonialModel.fromJson(item))
+        .toList(growable: false);
+  }
+
   Future<List<WhyChooseUsModel>> getWhyChooseUs() async {
     try {
       final snapshot = await _firestore.collection('whyChooseUs').get();
-      return snapshot.docs
-          .map(
-            (doc) => WhyChooseUsModel.fromJson({'_id': doc.id, ...doc.data()}),
-          )
-          .toList();
+      return _mapWhyChooseUs(snapshot.docs);
     } catch (e) {
       return [];
     }
+  }
+
+  Stream<List<WhyChooseUsModel>> watchWhyChooseUs() {
+    return _firestore.collection('whyChooseUs').snapshots().map((snapshot) {
+      final items = _mapWhyChooseUs(snapshot.docs);
+      return items;
+    });
+  }
+
+  List<WhyChooseUsModel> _mapWhyChooseUs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final items = docs
+        .map((doc) => {'_id': doc.id, ...doc.data()})
+        .where((item) => _readBool(item['isActive'], fallback: true))
+        .toList();
+
+    items.sort((a, b) {
+      final aTime = _readDateTime(a['createdAt'])?.millisecondsSinceEpoch ?? 0;
+      final bTime = _readDateTime(b['createdAt'])?.millisecondsSinceEpoch ?? 0;
+      if (aTime != bTime) return aTime.compareTo(bTime);
+      return (a['title'] ?? '').toString().compareTo((b['title'] ?? '').toString());
+    });
+
+    return items
+        .map((item) => WhyChooseUsModel.fromJson(item))
+        .toList(growable: false);
   }
 }

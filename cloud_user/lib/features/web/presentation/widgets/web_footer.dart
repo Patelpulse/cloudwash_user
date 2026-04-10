@@ -3,69 +3,100 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cloud_user/features/home/data/home_providers.dart';
+import 'package:cloud_user/features/home/data/footer_model.dart';
 import 'package:cloud_user/features/home/data/web_content_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+List<Map<String, String>> _resolveLinks(
+  List<FooterLinkModel>? links,
+  List<Map<String, String>> fallback,
+) {
+  if (links == null || links.isEmpty) return fallback;
+
+  final mapped = links
+      .map(
+        (e) => {'label': e.label, 'route': e.route},
+      )
+      .where((link) => (link['label'] ?? '').trim().isNotEmpty)
+      .toList();
+
+  return mapped.isEmpty ? fallback : mapped;
+}
+
+String _resolveContactEmail(FooterModel? footer) {
+  final socialLinks = footer?.socialLinks ?? const <String, String>{};
+  final supportMail = (socialLinks['mail'] ?? '').trim();
+  if (supportMail.isNotEmpty) return supportMail;
+
+  final socialEmail = (socialLinks['email'] ?? '').trim();
+  if (socialEmail.isNotEmpty) return socialEmail;
+
+  final directEmail = (footer?.email ?? '').trim();
+  if (directEmail.isNotEmpty) return directEmail;
+
+  return 'hello@cloudwash.com';
+}
+
 class WebFooter extends ConsumerWidget {
-  const WebFooter({super.key});
+  final String? logoUrl;
+  final double logoHeight;
+
+  const WebFooter({
+    super.key,
+    required this.logoUrl,
+    required this.logoHeight,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
-    final heroAsync = ref.watch(heroSectionProvider);
-    final hero = heroAsync.valueOrNull;
-    final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
-    final double logoHeight = hero?.logoHeight ?? 140;
-    final footerAsync = ref.watch(footerProvider);
+    final footerAsync = ref.watch(liveFooterProvider);
     final footer = footerAsync.valueOrNull;
 
-    final exploreLinks = footer?.exploreLinks
-            .map((e) => {'label': e.label, 'route': e.route})
-            .toList() ??
-        [
-          {'label': 'Home', 'route': '/'},
-          {'label': 'About Us', 'route': '/about'},
-          {'label': 'Services', 'route': '/services'},
-          {'label': 'Membership', 'route': '/membership'},
-          {'label': 'Blog', 'route': '/blog'},
-        ];
-
-    final servicesLinks = footer?.serviceLinks
-            .map((e) => {'label': e.label, 'route': e.route})
-            .toList() ??
-        [
-          {'label': 'Dry Cleaning', 'route': '/services'},
-          {'label': 'Wash & Fold', 'route': '/services'},
-          {'label': 'Shoe Restoration', 'route': '/services'},
-          {'label': 'Leather Care', 'route': '/services'},
-          {'label': 'Steam Ironing', 'route': '/services'},
-        ];
+    final exploreLinks = _resolveLinks(
+      footer?.exploreLinks,
+      [
+        {'label': 'Home', 'route': '/'},
+        {'label': 'About Us', 'route': '/about'},
+        {'label': 'Services', 'route': '/services'},
+        {'label': 'Membership', 'route': '/membership'},
+        {'label': 'Blog', 'route': '/blog'},
+      ],
+    );
+    final servicesLinks = _resolveLinks(
+      footer?.serviceLinks,
+      [
+        {'label': 'Dry Cleaning', 'route': '/services'},
+        {'label': 'Wash & Fold', 'route': '/services'},
+        {'label': 'Shoe Restoration', 'route': '/services'},
+        {'label': 'Leather Care', 'route': '/services'},
+        {'label': 'Steam Ironing', 'route': '/services'},
+      ],
+    );
 
     final description = footer?.description ??
         'Redefining premium garment care with technology and craftsmanship. Your wardrobe deserves nothing but the best.';
     final phone = footer?.phone ?? '+91 98765 43210';
-    final email = footer?.email ?? 'hello@cloudwash.com';
+    final email = _resolveContactEmail(footer);
     final address =
         footer?.address ?? 'Suite 402, Laundry Lane,\nBangalore, KA 560001';
     final copyrightText = footer?.copyright ??
         '© ${DateTime.now().year} Cloud Wash. Crafted with precision.';
     final socialLinks =
         footer?.socialLinks ?? {'facebook': '', 'instagram': '', 'email': ''};
-    final policyLinks = footer?.policyLinks
-            .map((e) => {'label': e.label, 'route': e.route})
-            .toList() ??
-        [
-          {'label': 'Privacy Policy', 'route': '/privacy'},
-          {'label': 'Terms of Service', 'route': '/terms'},
-          {'label': 'Child Protection', 'route': '/child-protection'},
-          {'label': 'Sitemap', 'route': '/'},
-        ];
+    final policyLinks = _resolveLinks(
+      footer?.policyLinks,
+      [
+        {'label': 'Privacy Policy', 'route': '/privacy'},
+        {'label': 'Terms of Service', 'route': '/terms'},
+        {'label': 'Child Protection', 'route': '/child-protection'},
+        {'label': 'Sitemap', 'route': '/'},
+      ],
+    );
 
     return Container(
       color: const Color(0xFFF1F5F9), // Light Slate
@@ -180,7 +211,7 @@ class WebFooter extends ConsumerWidget {
     final hasNetworkLogo =
         trimmedLogoUrl.isNotEmpty && embeddedLogoBytes == null;
     final double targetHeight =
-        (isMobile ? logoHeight * 0.7 : logoHeight).clamp(60, 220);
+        (isMobile ? logoHeight * 0.7 : logoHeight).clamp(24, 220);
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -238,24 +269,24 @@ class WebFooter extends ConsumerWidget {
                 isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
               if ((socialLinks?['facebook'] ?? '').isNotEmpty) ...[
-                _SocialButton(
+                const _SocialButton(
                   icon: Icons.facebook_rounded,
-                  color: const Color(0xFF3B82F6),
+                  color: Color(0xFF3B82F6),
                 ),
                 const SizedBox(width: 12),
               ],
               if ((socialLinks?['instagram'] ?? '').isNotEmpty) ...[
-                _SocialButton(
+                const _SocialButton(
                   icon: Icons.camera_alt_rounded,
-                  color: const Color(0xFFEC4899),
+                  color: Color(0xFFEC4899),
                 ),
                 const SizedBox(width: 12),
               ],
               if ((socialLinks?['mail'] ?? '').isNotEmpty ||
                   (socialLinks?['email'] ?? '').isNotEmpty)
-                _SocialButton(
+                const _SocialButton(
                   icon: Icons.alternate_email_rounded,
-                  color: const Color(0xFF0EA5E9),
+                  color: Color(0xFF0EA5E9),
                 ),
             ],
           ),
@@ -320,8 +351,7 @@ class WebFooter extends ConsumerWidget {
                   route: link['route'] ?? '/',
                 ),
               ),
-            )
-            .toList(),
+            ),
       ],
     );
   }

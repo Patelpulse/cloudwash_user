@@ -54,6 +54,14 @@ class WebLandingScreen extends ConsumerWidget {
                     onTap: () => context.go('/web-landing/about'),
                   ),
                   _SectionCard(
+                    title: 'Static Pages',
+                    description:
+                        'Edit Terms, Privacy, Child Protection, Help & Refund pages',
+                    icon: Icons.policy_outlined,
+                    color: Colors.amber.shade100,
+                    onTap: () => context.go('/web-landing/static-pages'),
+                  ),
+                  _SectionCard(
                     title: 'Why Choose Us',
                     description: 'Manage features and benefits cards',
                     icon: Icons.check_circle_outline,
@@ -66,13 +74,6 @@ class WebLandingScreen extends ConsumerWidget {
                     icon: Icons.analytics_outlined,
                     color: Colors.purple.shade100,
                     onTap: () => context.go('/web-landing/stats'),
-                  ),
-                  _SectionCard(
-                    title: 'Testimonials',
-                    description: 'Manage customer reviews and ratings',
-                    icon: Icons.rate_review_outlined,
-                    color: Colors.pink.shade100,
-                    onTap: () => context.go('/web-landing/testimonials'),
                   ),
                   _SectionCard(
                     title: 'Footer',
