@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { getAboutUs, updateAboutUs, getStats, updateStats } = require('../controllers/webSectionsController');
+const {
+    getAboutUs,
+    updateAboutUs,
+    getStats,
+    updateStats,
+    getFooter,
+    updateFooter,
+    getStaticPage,
+    updateStaticPage,
+} = require('../controllers/webSectionsController');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -14,5 +23,13 @@ router.route('/stats')
     // Admin currently submits stats via multipart form-data.
     // `upload.none()` parses text fields without expecting files.
     .put(upload.none(), updateStats);
+
+router.route('/footer')
+    .get(getFooter)
+    .put(updateFooter);
+
+router.route('/pages/:slug')
+    .get(getStaticPage)
+    .put(upload.single('image'), updateStaticPage);
 
 module.exports = router;

@@ -67,6 +67,20 @@ const updateLogoForDevice = (heroSection, deviceType, logoValue) => {
     applyLogoByDevice(heroSection, nextLogoByDevice);
 };
 
+const normalizeTextInput = (value) => {
+    if (value === undefined || value === null) return null;
+    const text = `${value}`.trim();
+    return text.length > 0 ? text : null;
+};
+
+const normalizeNumberInput = (value) => {
+    if (value === undefined || value === null) return null;
+    const text = `${value}`.trim();
+    if (!text) return null;
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
 // Helper to upload to Cloudinary
 const uploadFromBuffer = (buffer) => {
     return new Promise((resolve, reject) => {
@@ -120,6 +134,14 @@ const uploadImageWithFallback = async (
     }
 };
 
+const findLatestHeroSection = () => {
+    return HeroSection.findOne({}).sort({
+        updatedAt: -1,
+        createdAt: -1,
+        _id: -1,
+    });
+};
+
 const syncHeroSectionToFirestore = async (heroSection) => {
     if (!admin.firestore) return;
 
@@ -135,6 +157,14 @@ const syncHeroSectionToFirestore = async (heroSection) => {
                     mainTitle: heroSection.mainTitle,
                     description: heroSection.description,
                     buttonText: heroSection.buttonText,
+                    titleFontFamily: heroSection.titleFontFamily || 'Playfair Display',
+                    bodyFontFamily: heroSection.bodyFontFamily || 'Inter',
+                    titleFontSize: heroSection.titleFontSize || 64,
+                    descriptionFontSize: heroSection.descriptionFontSize || 18,
+                    titleColor: heroSection.titleColor || '#1E293B',
+                    descriptionColor: heroSection.descriptionColor || '#64748B',
+                    accentColor: heroSection.accentColor || '#3B82F6',
+                    buttonTextColor: heroSection.buttonTextColor || '#FFFFFF',
                     imageUrl: heroSection.imageUrl,
                     logoUrl: logoByDevice.website || '',
                     logoByDevice,
@@ -154,7 +184,7 @@ const syncHeroSectionToFirestore = async (heroSection) => {
 // Get hero section (returns first/only document or creates one)
 const getHeroSection = async (req, res) => {
     try {
-        let heroSection = await HeroSection.findOne({});
+        let heroSection = await findLatestHeroSection();
 
         // If no hero section exists, create default one
         if (!heroSection) {
@@ -163,6 +193,14 @@ const getHeroSection = async (req, res) => {
                 mainTitle: 'Feel Your Way For\nFreshness',
                 description: 'Experience the epitome of cleanliness with Clino. We provide top-notch cleaning services tailored to your needs, ensuring your spaces shine with perfection.',
                 buttonText: 'Our Services',
+                titleFontFamily: 'Playfair Display',
+                bodyFontFamily: 'Inter',
+                titleFontSize: 64,
+                descriptionFontSize: 18,
+                titleColor: '#1E293B',
+                descriptionColor: '#64748B',
+                accentColor: '#3B82F6',
+                buttonTextColor: '#FFFFFF',
                 imageUrl: 'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png',
                 logoUrl: '',
                 logoByDevice: DEFAULT_LOGO_BY_DEVICE,
@@ -189,6 +227,14 @@ const updateHeroSection = async (req, res) => {
             mainTitle,
             description,
             buttonText,
+            titleFontFamily,
+            bodyFontFamily,
+            titleFontSize,
+            descriptionFontSize,
+            titleColor,
+            descriptionColor,
+            accentColor,
+            buttonTextColor,
             youtubeUrl,
             logoUrl,
             logoHeight,
@@ -196,10 +242,10 @@ const updateHeroSection = async (req, res) => {
             isActive,
         } = req.body;
 
-        let heroSection = await HeroSection.findOne({});
+        let heroSection = await findLatestHeroSection();
 
         if (!heroSection) {
-            return res.status(404).json({ message: 'Hero section not found' });
+            heroSection = await HeroSection.create({ logoByDevice: DEFAULT_LOGO_BY_DEVICE });
         }
 
         const normalizedLogoDeviceType = normalizeLogoDeviceType(logoDeviceType);
@@ -209,6 +255,40 @@ const updateHeroSection = async (req, res) => {
         heroSection.mainTitle = mainTitle || heroSection.mainTitle;
         heroSection.description = description || heroSection.description;
         heroSection.buttonText = buttonText || heroSection.buttonText;
+        const normalizedTitleFontFamily = normalizeTextInput(titleFontFamily);
+        if (normalizedTitleFontFamily) {
+            heroSection.titleFontFamily = normalizedTitleFontFamily;
+        }
+        const normalizedBodyFontFamily = normalizeTextInput(bodyFontFamily);
+        if (normalizedBodyFontFamily) {
+            heroSection.bodyFontFamily = normalizedBodyFontFamily;
+        }
+        const normalizedTitleFontSize = normalizeNumberInput(titleFontSize);
+        if (normalizedTitleFontSize !== null) {
+            heroSection.titleFontSize = normalizedTitleFontSize;
+        }
+        const normalizedDescriptionFontSize = normalizeNumberInput(
+            descriptionFontSize
+        );
+        if (normalizedDescriptionFontSize !== null) {
+            heroSection.descriptionFontSize = normalizedDescriptionFontSize;
+        }
+        const normalizedTitleColor = normalizeTextInput(titleColor);
+        if (normalizedTitleColor) {
+            heroSection.titleColor = normalizedTitleColor;
+        }
+        const normalizedDescriptionColor = normalizeTextInput(descriptionColor);
+        if (normalizedDescriptionColor) {
+            heroSection.descriptionColor = normalizedDescriptionColor;
+        }
+        const normalizedAccentColor = normalizeTextInput(accentColor);
+        if (normalizedAccentColor) {
+            heroSection.accentColor = normalizedAccentColor;
+        }
+        const normalizedButtonTextColor = normalizeTextInput(buttonTextColor);
+        if (normalizedButtonTextColor) {
+            heroSection.buttonTextColor = normalizedButtonTextColor;
+        }
         if (logoUrl !== undefined) {
             if (normalizedLogoDeviceType) {
                 updateLogoForDevice(heroSection, normalizedLogoDeviceType, logoUrl);

@@ -21,6 +21,46 @@ const heroSectionSchema = new mongoose.Schema({
         required: true,
         default: 'Our Services'
     },
+    titleFontFamily: {
+        type: String,
+        required: false,
+        default: 'Playfair Display'
+    },
+    bodyFontFamily: {
+        type: String,
+        required: false,
+        default: 'Inter'
+    },
+    titleFontSize: {
+        type: Number,
+        required: false,
+        default: 64
+    },
+    descriptionFontSize: {
+        type: Number,
+        required: false,
+        default: 18
+    },
+    titleColor: {
+        type: String,
+        required: false,
+        default: '#1E293B'
+    },
+    descriptionColor: {
+        type: String,
+        required: false,
+        default: '#64748B'
+    },
+    accentColor: {
+        type: String,
+        required: false,
+        default: '#3B82F6'
+    },
+    buttonTextColor: {
+        type: String,
+        required: false,
+        default: '#FFFFFF'
+    },
     imageUrl: {
         type: String,
         required: true,
