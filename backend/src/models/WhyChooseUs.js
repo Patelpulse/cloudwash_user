@@ -11,7 +11,8 @@ const whyChooseUsSchema = new mongoose.Schema({
     },
     iconUrl: {
         type: String,
-        required: true
+        required: false,
+        default: ''
     },
     isActive: {
         type: Boolean,
