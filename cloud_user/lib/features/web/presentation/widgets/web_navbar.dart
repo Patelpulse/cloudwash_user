@@ -1,7 +1,5 @@
 import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
-import 'package:cloud_user/core/utils/device_logo_utils.dart';
 import 'package:cloud_user/core/utils/logo_cache_utils.dart';
-import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -16,19 +14,23 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class WebNavBar extends ConsumerWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  const WebNavBar({super.key, required this.scaffoldKey});
+  final String? logoUrl;
+  final double logoHeight;
+
+  const WebNavBar({
+    super.key,
+    required this.scaffoldKey,
+    required this.logoUrl,
+    required this.logoHeight,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
-    final heroAsync = ref.watch(heroSectionProvider);
-    final hero = heroAsync.valueOrNull;
-    final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
-    final double baseLogoHeight = hero?.logoHeight ?? 140;
     final double navLogoHeight = isMobile
-        ? (baseLogoHeight * 0.6).clamp(36, 120)
-        : baseLogoHeight.clamp(60, 200);
+        ? (logoHeight * 0.6).clamp(24, 120)
+        : logoHeight.clamp(24, 200);
 
     // Watch Notifications
     final unreadCount = ref.watch(unreadNotificationsCountProvider);

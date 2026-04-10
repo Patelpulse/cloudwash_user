@@ -1,3 +1,4 @@
+import 'package:cloud_admin/core/auth/admin_auth_session.dart';
 import 'package:cloud_admin/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ class Sidebar extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+    adminAuthSession.value = false;
     if (context.mounted) {
       context.go('/login');
     }

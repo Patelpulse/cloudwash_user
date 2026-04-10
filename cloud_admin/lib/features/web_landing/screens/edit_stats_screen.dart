@@ -21,7 +21,6 @@ class _EditStatsScreenState extends ConsumerState<EditStatsScreen> {
 
   bool _isLoading = false;
   bool _isActive = true;
-  final String _baseUrl = AppConfig.apiUrl;
 
   @override
   void initState() {
@@ -45,7 +44,7 @@ class _EditStatsScreenState extends ConsumerState<EditStatsScreen> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/web-content/stats'));
+      final response = await http.get(AppConfig.apiUri('web-content/stats'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final stats = StatsModel.fromJson(data);
@@ -73,8 +72,8 @@ class _EditStatsScreenState extends ConsumerState<EditStatsScreen> {
 
     try {
       // Using MultipartRequest to be consistent with others, though basic PUT works too
-      var request = http.MultipartRequest(
-          'PUT', Uri.parse('$_baseUrl/web-content/stats'));
+      var request =
+          http.MultipartRequest('PUT', AppConfig.apiUri('web-content/stats'));
 
       request.fields['happyClients'] = _happyClientsController.text;
       request.fields['totalBranches'] = _branchesController.text;

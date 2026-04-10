@@ -96,12 +96,7 @@ class _AddNotificationScreenState extends State<AddNotificationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final baseUrl = AppConfig.apiUrl;
       final isEditing = widget.notificationToEdit != null;
-      final url = isEditing
-          ? '$baseUrl/notifications/${widget.notificationToEdit!['_id']}'
-          : '$baseUrl/notifications';
-
       final body = {
         'title': _titleController.text,
         'message': _messageController.text,
@@ -113,12 +108,14 @@ class _AddNotificationScreenState extends State<AddNotificationScreen> {
 
       final response = isEditing
           ? await http.put(
-              Uri.parse(url),
+              AppConfig.apiUri(
+                'notifications/${widget.notificationToEdit!['_id']}',
+              ),
               headers: {'Content-Type': 'application/json'},
               body: json.encode(body),
             )
           : await http.post(
-              Uri.parse(url),
+              AppConfig.apiUri('notifications'),
               headers: {'Content-Type': 'application/json'},
               body: json.encode(body),
             );

@@ -79,11 +79,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final baseUrl = AppConfig.apiUrl;
       final id = widget.adminData['_id'];
-      final url = '$baseUrl/admin/$id';
-
-      var request = http.MultipartRequest('PUT', Uri.parse(url));
+      var request = http.MultipartRequest(
+        'PUT',
+        AppConfig.apiUri('admin/$id'),
+      );
 
       request.fields['name'] = _nameController.text;
       request.fields['email'] = _emailController.text;

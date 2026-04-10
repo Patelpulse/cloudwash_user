@@ -32,8 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchProfile() async {
     setState(() => _isLoading = true);
     try {
-      final baseUrl = AppConfig.apiUrl;
-      final response = await http.get(Uri.parse('$baseUrl/admin'));
+      final response = await http.get(AppConfig.apiUri('admin'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -65,11 +64,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUpdatingPassword = true);
 
     try {
-      final baseUrl = AppConfig.apiUrl;
       final id = _adminData?['_id'];
 
       final response = await http.put(
-        Uri.parse('$baseUrl/admin/$id/password'),
+        AppConfig.apiUri('admin/$id/password'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'currentPassword': _currentPasswordController.text,

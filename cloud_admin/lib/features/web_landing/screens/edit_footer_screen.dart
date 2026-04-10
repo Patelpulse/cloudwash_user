@@ -1,14 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:cloud_admin/core/config/app_config.dart';
 
-class EditFooterScreen extends StatefulWidget {
+class EditFooterScreen extends ConsumerStatefulWidget {
   const EditFooterScreen({super.key});
 
   @override
-  State<EditFooterScreen> createState() => _EditFooterScreenState();
+  ConsumerState<EditFooterScreen> createState() => _EditFooterScreenState();
 }
 
-class _EditFooterScreenState extends State<EditFooterScreen> {
+class _EditFooterScreenState extends ConsumerState<EditFooterScreen> {
+  static const List<Map<String, String>> _defaultPolicyLinks = [
+    {'label': 'Privacy Policy', 'route': '/privacy'},
+    {'label': 'Terms of Service', 'route': '/terms'},
+    {'label': 'Child Protection', 'route': '/child-protection'},
+    {'label': 'Sitemap', 'route': '/'},
+  ];
+
   final _descriptionController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
@@ -23,6 +34,7 @@ class _EditFooterScreenState extends State<EditFooterScreen> {
   final List<Map<String, String>> _policyLinks = [];
   bool _isLoading = true;
   bool _isSaving = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,54 +42,233 @@ class _EditFooterScreenState extends State<EditFooterScreen> {
     _loadFooter();
   }
 
-  Future<void> _loadFooter() async {
-    setState(() => _isLoading = true);
+  Map<String, dynamic> _defaultFooterData() {
+    return {
+      'description':
+          'Redefining premium garment care with technology and craftsmanship. Your wardrobe deserves nothing but the best.',
+      'phone': '+91 98765 43210',
+      'email': 'hello@cloudwash.com',
+      'address': 'Suite 402, Laundry Lane, Bangalore, KA 560001',
+      'copyright': '© ${DateTime.now().year} Cloud Wash. Crafted with precision.',
+      'exploreLinks': <Map<String, String>>[],
+      'serviceLinks': <Map<String, String>>[],
+      'policyLinks': List<Map<String, String>>.from(_defaultPolicyLinks),
+      'socialLinks': {
+        'facebook': '',
+        'instagram': '',
+        'email': '',
+        'mail': '',
+      },
+    };
+  }
+
+  List<Map<String, String>> _parseLinks(
+    dynamic value, {
+    List<Map<String, String>> fallback = const [],
+  }) {
+    if (value is! List) return fallback;
+
+    return value
+        .map(
+          (item) {
+            final map = item is Map
+                ? Map<String, dynamic>.from(item)
+                : <String, dynamic>{};
+            return {
+              'label': map['label']?.toString() ?? '',
+              'route': map['route']?.toString() ?? '/',
+            };
+          },
+        )
+        .where((link) => link['label']!.trim().isNotEmpty)
+        .toList();
+  }
+
+  Map<String, String> _parseSocialLinks(dynamic value) {
+    if (value is! Map) {
+      return {'facebook': '', 'instagram': '', 'email': '', 'mail': ''};
+    }
+
+    final social = Map<String, dynamic>.from(value);
+    return {
+      'facebook': social['facebook']?.toString() ?? '',
+      'instagram': social['instagram']?.toString() ?? '',
+      'email': social['email']?.toString() ?? '',
+      'mail': social['mail']?.toString() ?? social['email']?.toString() ?? '',
+    };
+  }
+
+  String _resolveVisibleEmail(Map<String, String> social, String fallback) {
+    final mail = social['mail']?.trim() ?? '';
+    if (mail.isNotEmpty) return mail;
+
+    final socialEmail = social['email']?.trim() ?? '';
+    if (socialEmail.isNotEmpty) return socialEmail;
+
+    return fallback.trim();
+  }
+
+  void _applyFooterData(Map<String, dynamic> data) {
+    final social = _parseSocialLinks(data['socialLinks']);
+    final fallbackEmail = data['email']?.toString() ?? '';
+
+    _descriptionController.text = data['description']?.toString() ?? '';
+    _phoneController.text = data['phone']?.toString() ?? '';
+    _emailController.text = _resolveVisibleEmail(social, fallbackEmail);
+    _addressController.text = data['address']?.toString() ?? '';
+    _copyrightController.text = data['copyright']?.toString() ??
+        '© ${DateTime.now().year} Cloud Wash. Crafted with precision.';
+    _facebookController.text = social['facebook'] ?? '';
+    _instagramController.text = social['instagram'] ?? '';
+    _mailController.text = social['mail'] ?? '';
+
+    _exploreLinks
+      ..clear()
+      ..addAll(_parseLinks(data['exploreLinks']));
+    _serviceLinks
+      ..clear()
+      ..addAll(_parseLinks(data['serviceLinks']));
+    _policyLinks
+      ..clear()
+      ..addAll(
+        _parseLinks(
+          data['policyLinks'],
+          fallback: _defaultPolicyLinks,
+        ),
+      );
+
+    if (_policyLinks.isEmpty) {
+      _policyLinks.addAll(_defaultPolicyLinks);
+    }
+  }
+
+  Map<String, dynamic> _buildFooterPayload() {
+    final exploreLinks = _parseLinks(_exploreLinks);
+    final serviceLinks = _parseLinks(_serviceLinks);
+    final policyLinks = _parseLinks(
+      _policyLinks,
+      fallback: _defaultPolicyLinks,
+    );
+    final primaryEmail = _emailController.text.trim();
+    final supportEmail = _mailController.text.trim();
+    final resolvedEmail = primaryEmail.isNotEmpty ? primaryEmail : supportEmail;
+    final resolvedSupportEmail =
+        supportEmail.isNotEmpty ? supportEmail : resolvedEmail;
+
+    return {
+      'description': _descriptionController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'email': resolvedEmail,
+      'address': _addressController.text.trim(),
+      'copyright': _copyrightController.text.trim(),
+      'exploreLinks': exploreLinks,
+      'serviceLinks': serviceLinks,
+      'policyLinks': policyLinks.isEmpty ? _defaultPolicyLinks : policyLinks,
+      'socialLinks': {
+        'facebook': _facebookController.text.trim(),
+        'instagram': _instagramController.text.trim(),
+        'email': resolvedSupportEmail,
+        'mail': resolvedSupportEmail,
+      },
+    };
+  }
+
+  Future<Map<String, dynamic>?> _loadFooterFromFirestore() async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('web_landing')
           .doc('footer')
           .get();
-      final data = doc.data() ?? {};
+      final data = doc.data();
+      if (data == null || data.isEmpty) return null;
+      return Map<String, dynamic>.from(data);
+    } catch (_) {
+      return null;
+    }
+  }
 
-      _descriptionController.text = data['description'] ?? '';
-      _phoneController.text = data['phone'] ?? '';
-      _emailController.text = data['email'] ?? '';
-      _addressController.text = data['address'] ?? '';
-      _copyrightController.text = data['copyright'] ??
-          '© ${DateTime.now().year} Cloud Wash. Crafted with precision.';
-      final social = (data['socialLinks'] as Map<String, dynamic>?) ?? {};
-      _facebookController.text = social['facebook']?.toString() ?? '';
-      _instagramController.text = social['instagram']?.toString() ?? '';
-      _mailController.text =
-          social['email']?.toString() ?? social['mail']?.toString() ?? '';
+  Future<Map<String, dynamic>?> _loadFooterFromApi() async {
+    try {
+      final response = await http.get(
+        AppConfig.apiUri(
+          'web-content/footer',
+          queryParameters: {
+            'ts': DateTime.now().millisecondsSinceEpoch,
+          },
+        ),
+      );
 
-      final explore = (data['exploreLinks'] as List?) ?? [];
-      final services = (data['serviceLinks'] as List?) ?? [];
-      final policies = (data['policyLinks'] as List?) ??
-          [
-            {'label': 'Privacy Policy', 'route': '/privacy'},
-            {'label': 'Terms of Service', 'route': '/terms'},
-            {'label': 'Child Protection', 'route': '/child-protection'},
-            {'label': 'Sitemap', 'route': '/'},
-          ];
-      _exploreLinks
-        ..clear()
-        ..addAll(explore.map((e) => {
-              'label': e['label']?.toString() ?? '',
-              'route': e['route']?.toString() ?? '/',
-            }));
-      _serviceLinks
-        ..clear()
-        ..addAll(services.map((e) => {
-              'label': e['label']?.toString() ?? '',
-              'route': e['route']?.toString() ?? '/',
-            }));
-      _policyLinks
-        ..clear()
-        ..addAll(policies.map((e) => {
-              'label': e['label']?.toString() ?? '',
-              'route': e['route']?.toString() ?? '/',
-            }));
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return null;
+      return Map<String, dynamic>.from(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> _saveFooterToFirestore(Map<String, dynamic> payload) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('web_landing')
+          .doc('footer')
+          .set(
+        {
+          ...payload,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        },
+        SetOptions(merge: true),
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _saveFooterToApi(Map<String, dynamic> payload) async {
+    try {
+      final response = await http.put(
+        AppConfig.apiUri('web-content/footer'),
+        headers: const {'Content-Type': 'application/json; charset=utf-8'},
+        body: jsonEncode(payload),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _loadFooter() async {
+    setState(() => _isLoading = true);
+    try {
+      final firestoreFuture = _loadFooterFromFirestore();
+      final apiFuture = _loadFooterFromApi();
+
+      final firestoreData = await firestoreFuture;
+      final apiData = await apiFuture;
+
+      final mergedData = <String, dynamic>{
+        ...?firestoreData,
+        ...?apiData,
+      };
+
+      if (mergedData.isEmpty) {
+        _applyFooterData(_defaultFooterData());
+      } else {
+        _applyFooterData(mergedData);
+      }
+      _errorMessage = null;
+    } catch (e) {
+      _applyFooterData(_defaultFooterData());
+      _errorMessage = null;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Loaded default footer data: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -86,30 +277,25 @@ class _EditFooterScreenState extends State<EditFooterScreen> {
   Future<void> _save() async {
     setState(() => _isSaving = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('web_landing')
-          .doc('footer')
-          .set({
-        'description': _descriptionController.text,
-        'phone': _phoneController.text,
-        'email': _emailController.text,
-        'address': _addressController.text,
-        'copyright': _copyrightController.text,
-        'socialLinks': {
-          'facebook': _facebookController.text.trim(),
-          'instagram': _instagramController.text.trim(),
-          'email': _mailController.text.trim(),
-          'mail': _mailController.text.trim(),
-        },
-        'exploreLinks': _exploreLinks,
-        'serviceLinks': _serviceLinks,
-        'policyLinks': _policyLinks,
-        'updatedAt': DateTime.now().toIso8601String(),
-      }, SetOptions(merge: true));
+      final payload = Map<String, dynamic>.from(
+        jsonDecode(jsonEncode(_buildFooterPayload())) as Map,
+      );
+      final firestoreSaved = await _saveFooterToFirestore(payload);
+      final apiSaved = await _saveFooterToApi(payload);
+
+      if (!firestoreSaved && !apiSaved) {
+        throw Exception('Failed to save footer to Firestore and API');
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Footer saved')),
+        SnackBar(
+          content: Text(
+            apiSaved
+                ? 'Footer saved'
+                : 'Footer saved for website sync',
+          ),
+        ),
       );
       Navigator.pop(context);
     } catch (e) {
@@ -150,117 +336,164 @@ class _EditFooterScreenState extends State<EditFooterScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTextField(
-                    controller: _descriptionController,
-                    label: 'Brand blurb',
-                    hint:
-                        'Redefining premium garment care with technology and craftsmanship...',
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                          child: _buildTextField(
-                        controller: _phoneController,
-                        label: 'Phone',
-                        hint: '+91 98765 43210',
-                      )),
-                      const SizedBox(width: 16),
-                      Expanded(
-                          child: _buildTextField(
-                        controller: _emailController,
-                        label: 'Email',
-                        hint: 'hello@cloudwash.com',
-                      )),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _addressController,
-                    label: 'Address',
-                    hint: 'Suite 402, Laundry Lane, Bangalore, KA 560001',
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _copyrightController,
-                    label: 'Copyright line',
-                    hint: '© 2026 Cloud Wash. Crafted with precision.',
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Social Links',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _facebookController,
-                          label: 'Facebook URL',
-                          hint: 'https://facebook.com/cloudwash',
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red.shade300,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _instagramController,
-                          label: 'Instagram URL',
-                          hint: 'https://instagram.com/cloudwash',
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Failed to load footer',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _mailController,
-                    label: 'Support Email (for icon link)',
-                    hint: 'hello@cloudwash.com',
-                  ),
-                  const SizedBox(height: 24),
-                  _LinksEditor(
-                    title: 'Explore Links',
-                    items: _exploreLinks,
-                    onChanged: () => setState(() {}),
-                  ),
-                  const SizedBox(height: 24),
-                  _LinksEditor(
-                    title: 'Services Links',
-                    items: _serviceLinks,
-                    onChanged: () => setState(() {}),
-                  ),
-                  const SizedBox(height: 24),
-                  _LinksEditor(
-                    title: 'Bottom Policy Links',
-                    items: _policyLinks,
-                    onChanged: () => setState(() {}),
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSaving ? null : _save,
-                      icon: const Icon(Icons.save),
-                      label: _isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Save footer'),
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _loadFooter,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry'),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTextField(
+                        controller: _descriptionController,
+                        label: 'Brand blurb',
+                        hint:
+                            'Redefining premium garment care with technology and craftsmanship...',
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _phoneController,
+                              label: 'Phone',
+                              hint: '+91 98765 43210',
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _emailController,
+                              label: 'Email',
+                              hint: 'hello@cloudwash.com',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _addressController,
+                        label: 'Address',
+                        hint: 'Suite 402, Laundry Lane, Bangalore, KA 560001',
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _copyrightController,
+                        label: 'Copyright line',
+                        hint: '© 2026 Cloud Wash. Crafted with precision.',
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Social Links',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _facebookController,
+                              label: 'Facebook URL',
+                              hint: 'https://facebook.com/cloudwash',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _instagramController,
+                              label: 'Instagram URL',
+                              hint: 'https://instagram.com/cloudwash',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildTextField(
+                        controller: _mailController,
+                        label: 'Support Email (for icon link)',
+                        hint: 'hello@cloudwash.com',
+                      ),
+                      const SizedBox(height: 24),
+                      _LinksEditor(
+                        title: 'Explore Links',
+                        items: _exploreLinks,
+                        onChanged: () => setState(() {}),
+                      ),
+                      const SizedBox(height: 24),
+                      _LinksEditor(
+                        title: 'Services Links',
+                        items: _serviceLinks,
+                        onChanged: () => setState(() {}),
+                      ),
+                      const SizedBox(height: 24),
+                      _LinksEditor(
+                        title: 'Bottom Policy Links',
+                        items: _policyLinks,
+                        onChanged: () => setState(() {}),
+                      ),
+                      const SizedBox(height: 40),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _save,
+                          icon: const Icon(Icons.save),
+                          label: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Save footer'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 

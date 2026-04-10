@@ -1,11 +1,11 @@
 {
-    "name": "cloud_admin",
-    "short_name": "cloud_admin",
+    "name": "Admin Cloud wash",
+    "short_name": "Admin Cloud wash",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Admin Cloud wash - Manage your laundry business",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

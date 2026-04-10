@@ -27,7 +27,6 @@ class _EditAboutUsScreenState extends ConsumerState<EditAboutUsScreen> {
   bool _isActive = true;
   String? _imageUrl;
   Uint8List? _selectedImageBytes;
-  final String _baseUrl = AppConfig.apiUrl;
 
   @override
   void initState() {
@@ -53,7 +52,7 @@ class _EditAboutUsScreenState extends ConsumerState<EditAboutUsScreen> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/web-content/about'));
+      final response = await http.get(AppConfig.apiUri('web-content/about'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final about = AboutUsModel.fromJson(data);
@@ -93,8 +92,8 @@ class _EditAboutUsScreenState extends ConsumerState<EditAboutUsScreen> {
     setState(() => _isLoading = true);
 
     try {
-      var request = http.MultipartRequest(
-          'PUT', Uri.parse('$_baseUrl/web-content/about'));
+      var request =
+          http.MultipartRequest('PUT', AppConfig.apiUri('web-content/about'));
 
       request.fields['title'] = _titleController.text;
       request.fields['subtitle'] = _subtitleController.text;

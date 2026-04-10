@@ -181,16 +181,16 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
 
   Future<Map<String, dynamic>?> _saveToBackend() async {
     try {
-      final baseUrl = AppConfig.apiUrl;
       final isEditing = widget.subCategoryToEdit != null &&
           widget.subCategoryToEdit!['_id'] != null;
-
-      final url = isEditing
-          ? '$baseUrl/sub-categories/${widget.subCategoryToEdit!['_id']}'
-          : '$baseUrl/sub-categories';
-
-      var uri = Uri.parse(url);
-      var request = http.MultipartRequest(isEditing ? 'PUT' : 'POST', uri);
+      var request = http.MultipartRequest(
+        isEditing ? 'PUT' : 'POST',
+        AppConfig.apiUri(
+          isEditing
+              ? 'sub-categories/${widget.subCategoryToEdit!['_id']}'
+              : 'sub-categories',
+        ),
+      );
 
       request.fields['name'] = _nameController.text;
       request.fields['category'] = _selectedCategoryId!;

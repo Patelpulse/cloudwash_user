@@ -22,6 +22,8 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
   static const String _phoneKey = 'phone';
   static const String _tabletKey = 'tablet';
   static const String _websiteKey = 'website';
+  static const double _minLogoHeight = 20;
+  static const double _maxLogoHeight = 240;
   static const List<String> _deviceOrder = [
     _phoneKey,
     _tabletKey,
@@ -37,14 +39,20 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
   };
   String _selectedDeviceType = _websiteKey;
   double _logoHeight = 140;
+  final ScrollController _scrollController = ScrollController();
   Uint8List? _selectedLogoBytes;
   String? _selectedLogoMimeType;
-  final String _baseUrl = AppConfig.apiUrl;
 
   @override
   void initState() {
     super.initState();
     _fetchLogo();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchLogo() async {
@@ -78,7 +86,10 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
         final parsedHeight = rawHeight is num
             ? rawHeight.toDouble()
             : double.tryParse('${rawHeight ?? ''}');
-        _logoHeight = (parsedHeight ?? _logoHeight).clamp(60, 240);
+        _logoHeight = (parsedHeight ?? _logoHeight).clamp(
+          _minLogoHeight,
+          _maxLogoHeight,
+        );
       });
     } catch (e) {
       if (!mounted) return;
@@ -182,7 +193,7 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
   }
 
   Future<http.Response> _saveLogoAsFile() async {
-    final request = http.MultipartRequest('PUT', Uri.parse('$_baseUrl/hero'));
+    final request = http.MultipartRequest('PUT', AppConfig.apiUri('hero'));
     request.fields['logoDeviceType'] = _selectedDeviceType;
     final mimeParts = (_selectedLogoMimeType ?? 'image/png').split('/');
     final mediaType = mimeParts.length == 2
@@ -203,7 +214,7 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
   }
 
   Future<http.Response> _saveLogoAsDataUrl() async {
-    final request = http.MultipartRequest('PUT', Uri.parse('$_baseUrl/hero'));
+    final request = http.MultipartRequest('PUT', AppConfig.apiUri('hero'));
     request.fields['logoDeviceType'] = _selectedDeviceType;
     request.fields['logoUrl'] = _buildDataUrl(
       _selectedLogoBytes!,
@@ -216,7 +227,7 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
   }
 
   Future<http.Response> _saveHeightOnlyToApi(String logoUrl) async {
-    final request = http.MultipartRequest('PUT', Uri.parse('$_baseUrl/hero'));
+    final request = http.MultipartRequest('PUT', AppConfig.apiUri('hero'));
     request.fields['logoDeviceType'] = _selectedDeviceType;
     request.fields['logoUrl'] = logoUrl;
     request.fields['logoHeight'] = _logoHeight.toStringAsFixed(0);
@@ -230,7 +241,7 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
       var apiUpdated = false;
       try {
         final request =
-            http.MultipartRequest('PUT', Uri.parse('$_baseUrl/hero'));
+            http.MultipartRequest('PUT', AppConfig.apiUri('hero'));
         request.fields['logoDeviceType'] = _selectedDeviceType;
         request.fields['logoUrl'] = '';
         request.fields['logoHeight'] = _logoHeight.toStringAsFixed(0);
@@ -287,14 +298,24 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
       ),
       body: _isLoading && _logoUrl == null && _selectedLogoBytes == null
           ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                return Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(24),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 48,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 720),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                       const Text(
                         'Upload logo by device type',
                         style: TextStyle(
@@ -385,9 +406,9 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
                         ],
                       ),
                       Slider(
-                        min: 60,
-                        max: 240,
-                        divisions: 18,
+                        min: _minLogoHeight,
+                        max: _maxLogoHeight,
+                        divisions: 22,
                         value: _logoHeight,
                         label: '${_logoHeight.round()} px',
                         onChanged: _isLoading
@@ -423,10 +444,14 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
                           ),
                         ],
                       ),
-                    ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
     );
   }
@@ -444,7 +469,7 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
 
   Future<Map<String, dynamic>?> _fetchLogoFromApi() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/hero'));
+      final response = await http.get(AppConfig.apiUri('hero'));
       if (response.statusCode != 200) return null;
       final hero = HeroSectionModel.fromJson(jsonDecode(response.body));
       final logo = hero.logoUrl.trim();
@@ -580,7 +605,7 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
         final selectedLogo = (logos[_selectedDeviceType] ?? '').trim();
         final height = parsed['logoHeight'];
         if (height is num) {
-          _logoHeight = height.toDouble().clamp(60, 240);
+          _logoHeight = height.toDouble().clamp(_minLogoHeight, _maxLogoHeight);
         }
         if (selectedLogo.isNotEmpty) return selectedLogo;
 

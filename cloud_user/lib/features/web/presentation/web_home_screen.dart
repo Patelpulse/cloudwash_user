@@ -58,17 +58,51 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     }
   }
 
+  String _fontFamilyOrFallback(String? value, String fallback) {
+    final normalized = (value ?? '').trim();
+    return normalized.isNotEmpty ? normalized : fallback;
+  }
+
+  Color _colorFromHex(String? value, {required Color fallback}) {
+    final color = (value ?? '').trim();
+    if (color.isEmpty) return fallback;
+    final normalized = color.startsWith('#') ? color.substring(1) : color;
+    if (!RegExp(r'^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$').hasMatch(normalized)) {
+      return fallback;
+    }
+
+    final buffer = StringBuffer();
+    if (normalized.length == 6) {
+      buffer.write('ff');
+    }
+    buffer.write(normalized);
+    return Color(int.parse(buffer.toString(), radix: 16));
+  }
+
+  Color _adjustLightness(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    final nextLightness = (hsl.lightness + amount).clamp(0.0, 1.0).toDouble();
+    return hsl.withLightness(nextLightness).toColor();
+  }
+
+  double _heroTitleFontSize(HeroSectionModel? hero, bool isMobile) {
+    final baseSize = hero?.titleFontSize ?? (isMobile ? 42.0 : 64.0);
+    return baseSize.clamp(isMobile ? 18.0 : 20.0, isMobile ? 72.0 : 120.0).toDouble();
+  }
+
+  double _heroDescriptionFontSize(HeroSectionModel? hero, bool isMobile) {
+    final baseSize = hero?.descriptionFontSize ?? (isMobile ? 16.0 : 18.0);
+    return baseSize.clamp(isMobile ? 12.0 : 14.0, isMobile ? 24.0 : 28.0).toDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
-    final heroAsync = ref.watch(heroSectionProvider);
+    final heroAsync = ref.watch(liveHeroSectionProvider);
     final bannersAsync = ref.watch(homeBannersProvider);
     final spotlightAsync = ref.watch(spotlightServicesProvider);
     final topServicesAsync = ref.watch(topServicesProvider);
     final aboutUsAsync = ref.watch(aboutUsProvider);
-    final statsAsync = ref.watch(statsProvider);
-    final testimonialsAsync = ref.watch(testimonialsProvider);
-    final whyChooseUsAsync = ref.watch(whyChooseUsProvider);
 
     return Stack(
       children: [
@@ -81,9 +115,35 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
               _buildSpotlightSection(context, spotlightAsync),
               _buildMostBookedSection(context, topServicesAsync),
               _buildAboutUsSection(context, aboutUsAsync),
-              _buildWhyChooseUsSection(context, whyChooseUsAsync),
-              _buildTestimonialsSection(context, testimonialsAsync),
-              _buildStatsAndDownloadSection(context, statsAsync),
+              Consumer(
+                builder: (context, ref, _) {
+                  final whyChooseUsAsync =
+                      ref.watch(liveWhyChooseUsProvider);
+                  return _buildWhyChooseUsSection(
+                    context,
+                    whyChooseUsAsync,
+                  );
+                },
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final testimonialsAsync =
+                      ref.watch(liveTestimonialsProvider);
+                  return _buildTestimonialsSection(
+                    context,
+                    testimonialsAsync,
+                  );
+                },
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final statsAsync = ref.watch(liveStatsProvider);
+                  return _buildStatsAndDownloadSection(
+                    context,
+                    statsAsync,
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -251,6 +311,28 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     String btnText,
     HeroSectionModel? hero,
   ) {
+    final titleFontFamily =
+        _fontFamilyOrFallback(hero?.titleFontFamily, 'Playfair Display');
+    final bodyFontFamily =
+        _fontFamilyOrFallback(hero?.bodyFontFamily, 'Inter');
+    final titleColor = _colorFromHex(
+      hero?.titleColor,
+      fallback: const Color(0xFF1E293B),
+    );
+    final descriptionColor = _colorFromHex(
+      hero?.descriptionColor,
+      fallback: const Color(0xFF64748B),
+    );
+    final accentColor = _colorFromHex(
+      hero?.accentColor,
+      fallback: const Color(0xFF3B82F6),
+    );
+    final buttonTextColor = _colorFromHex(
+      hero?.buttonTextColor,
+      fallback: Colors.white,
+    );
+    final accentShade = _adjustLightness(accentColor, -0.08);
+
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -261,13 +343,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Color(0xFF3B82F6).withOpacity(0.1),
-                Color(0xFF0EA5E9).withOpacity(0.1),
+                accentColor.withValues(alpha: 0.12),
+                accentShade.withValues(alpha: 0.12),
               ],
             ),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: Color(0xFF3B82F6).withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),
@@ -278,36 +360,37 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Color(0xFF3B82F6),
+                  color: accentColor,
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 10),
               Text(
                 tagline,
-                style: GoogleFonts.inter(
-                  color: Color(0xFF3B82F6),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+                style: GoogleFonts.getFont(
+                  bodyFontFamily,
+                  textStyle: TextStyle(
+                    color: accentColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
           ),
         ),
         SizedBox(height: isMobile ? 24 : 32),
-        ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [Color(0xFF1E293B), Color(0xFF475569)],
-          ).createShader(bounds),
-          child: Text(
-            title.replaceAll('\\n', '\n'),
-            textAlign: isMobile ? TextAlign.center : TextAlign.start,
-            style: GoogleFonts.playfairDisplay(
-              fontSize: isMobile ? 42 : 64,
+        Text(
+          title.replaceAll('\\n', '\n'),
+          textAlign: isMobile ? TextAlign.center : TextAlign.start,
+          style: GoogleFonts.getFont(
+            titleFontFamily,
+            textStyle: TextStyle(
+              fontSize: _heroTitleFontSize(hero, isMobile),
               fontWeight: FontWeight.w900,
               height: 1.1,
-              color: Colors.white,
+              color: titleColor,
               letterSpacing: -1,
             ),
           ),
@@ -316,10 +399,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         Text(
           desc,
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
-          style: GoogleFonts.inter(
-            fontSize: isMobile ? 16 : 18,
-            color: Color(0xFF64748B),
-            height: 1.7,
+          style: GoogleFonts.getFont(
+            bodyFontFamily,
+            textStyle: TextStyle(
+              fontSize: _heroDescriptionFontSize(hero, isMobile),
+              color: descriptionColor,
+              height: 1.7,
+            ),
           ),
         ),
         SizedBox(height: isMobile ? 32 : 40),
@@ -330,12 +416,12 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+                  colors: [accentColor, accentShade],
                 ),
                 borderRadius: BorderRadius.circular(50),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF3B82F6).withOpacity(0.4),
+                    color: accentColor.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: Offset(0, 10),
                   ),
@@ -359,17 +445,20 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                   children: [
                     Text(
                       btnText,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: isMobile ? 15 : 16,
-                        color: Colors.white,
+                      style: GoogleFonts.getFont(
+                        bodyFontFamily,
+                        textStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: isMobile ? 15 : 16,
+                          color: buttonTextColor,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Icon(
                       Icons.arrow_forward_rounded,
                       size: 20,
-                      color: Colors.white,
+                      color: buttonTextColor,
                     ),
                   ],
                 ),
@@ -430,10 +519,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
               children: [
                 Text(
                   '50,000+ Happy Customers',
-                  style: GoogleFonts.inter(
-                    color: Color(0xFF1E293B),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                  style: GoogleFonts.getFont(
+                    bodyFontFamily,
+                    textStyle: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 Row(
@@ -449,10 +541,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     SizedBox(width: 6),
                     Text(
                       '4.9/5 Rating',
-                      style: GoogleFonts.inter(
-                        color: Color(0xFF64748B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                      style: GoogleFonts.getFont(
+                        bodyFontFamily,
+                        textStyle: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -969,47 +1064,56 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     final isMobile = screenWidth < 1000;
 
     return aboutUsAsync.when(
-      data: (aboutUs) => Container(
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 30 : 50,
-          horizontal: isMobile ? 24 : 60,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFFAFAFA), Colors.white],
+      data: (aboutUs) {
+        final resolvedAboutUs =
+            aboutUs != null && aboutUs.isActive ? aboutUs : null;
+
+        return Container(
+          padding: EdgeInsets.symmetric(
+            vertical: isMobile ? 30 : 50,
+            horizontal: isMobile ? 24 : 60,
           ),
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1400),
-            child: isMobile
-                ? Column(
-                    children: [
-                      _buildAboutUsContent(context, isMobile, aboutUs: aboutUs),
-                      const SizedBox(height: 60),
-                      _buildAboutUsImages(isMobile),
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(flex: 5, child: _buildAboutUsImages(isMobile)),
-                      const SizedBox(width: 100),
-                      Expanded(
-                        flex: 5,
-                        child: _buildAboutUsContent(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFFAFAFA), Colors.white],
+            ),
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: isMobile
+                  ? Column(
+                      children: [
+                        _buildAboutUsContent(
                           context,
                           isMobile,
-                          aboutUs: aboutUs,
+                          aboutUs: resolvedAboutUs,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(height: 60),
+                        _buildAboutUsImages(isMobile),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(flex: 5, child: _buildAboutUsImages(isMobile)),
+                        const SizedBox(width: 100),
+                        Expanded(
+                          flex: 5,
+                          child: _buildAboutUsContent(
+                            context,
+                            isMobile,
+                            aboutUs: resolvedAboutUs,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
       loading: () => const SizedBox.shrink(),
       error: (e, s) => const SizedBox.shrink(),
     );
@@ -1147,14 +1251,22 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     AsyncValue<List<WhyChooseUsModel>> whyChooseUsAsync,
   ) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 1000;
+    final isCompact = screenWidth < 1100;
 
     return whyChooseUsAsync.when(
       data: (items) {
+        final visibleItems = items
+            .where((item) => item.isActive)
+            .toList(growable: false);
+
+        if (visibleItems.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         return Container(
           padding: EdgeInsets.symmetric(
-            vertical: isMobile ? 30 : 50,
-            horizontal: isMobile ? 24 : 60,
+            vertical: isCompact ? 24 : 36,
+            horizontal: isCompact ? 20 : 60,
           ),
           color: Colors.white,
           child: Center(
@@ -1167,43 +1279,52 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     title: 'Why Choose Us',
                     description:
                         'We provide the highest standards of care for your beloved garments',
-                    isMobile: isMobile,
+                    isMobile: isCompact,
                   ),
-                  SizedBox(height: isMobile ? 40 : 60),
-                  if (isMobile)
-                    GridView.count(
+                  SizedBox(height: isCompact ? 20 : 28),
+                  if (isCompact)
+                    GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.85,
-                      children: items
-                          .map(
-                            (item) => _EnhancedWhyChooseCard(
-                              icon: _getIconData(item.iconUrl),
-                              title: item.title,
-                              subtitle: item.description,
-                              color: _getWhyChooseColor(item.title),
-                            ),
-                          )
-                          .toList(),
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: screenWidth < 700 ? 1 : 2,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: screenWidth < 700 ? 1.05 : 1.12,
+                      ),
+                      itemCount: visibleItems.length,
+                      itemBuilder: (context, index) {
+                        final item = visibleItems[index];
+                        return _SimpleWhyChooseCard(
+                          iconWidget: _buildWhyChooseIcon(
+                            item.iconUrl,
+                            _getWhyChooseColor(item.title),
+                          ),
+                          title: item.title,
+                          subtitle: item.description,
+                          color: _getWhyChooseColor(item.title),
+                        );
+                      },
                     )
                   else
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 24,
-                      mainAxisSpacing: 24,
-                      childAspectRatio: 0.9,
-                      children: items
+                    Wrap(
+                      spacing: 18,
+                      runSpacing: 18,
+                      alignment: WrapAlignment.center,
+                      children: visibleItems
                           .map(
-                            (item) => _EnhancedWhyChooseCard(
-                              icon: _getIconData(item.iconUrl),
-                              title: item.title,
-                              subtitle: item.description,
-                              color: _getWhyChooseColor(item.title),
+                            (item) => SizedBox(
+                              width: 210,
+                              child: _SimpleWhyChooseCard(
+                                iconWidget: _buildWhyChooseIcon(
+                                  item.iconUrl,
+                                  _getWhyChooseColor(item.title),
+                                ),
+                                title: item.title,
+                                subtitle: item.description,
+                                color: _getWhyChooseColor(item.title),
+                              ),
                             ),
                           )
                           .toList(),
@@ -1251,6 +1372,52 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     return Color(0xFF3B82F6);
   }
 
+  Widget _buildWhyChooseIcon(String iconSource, Color color) {
+    final source = iconSource.trim();
+    if (source.isEmpty || source.toLowerCase() == 'default') {
+      return Icon(Icons.star_rounded, size: 28, color: color);
+    }
+
+    final embeddedBytes = decodeDataImage(source);
+    if (embeddedBytes != null) {
+      return ClipOval(
+        child: Image.memory(
+          embeddedBytes,
+          width: 54,
+          height: 54,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    final uri = Uri.tryParse(source);
+    final looksLikeUrl = uri != null && uri.hasScheme && uri.host.isNotEmpty;
+    if (looksLikeUrl) {
+      return ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: source,
+          width: 54,
+          height: 54,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: color,
+              ),
+            ),
+          ),
+          errorWidget: (_, __, ___) =>
+              Icon(Icons.star_rounded, size: 28, color: color),
+        ),
+      );
+    }
+
+    return Icon(_getIconData(source), size: 28, color: color);
+  }
+
   Widget _buildTestimonialsSection(
     BuildContext context,
     AsyncValue<List<TestimonialModel>> testimonialsAsync,
@@ -1293,7 +1460,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                             .map(
                               (t) => _buildTestimonialCard(
                                 t.name,
-                                t.role,
+                                t.role.trim().isNotEmpty ? t.role : 'Customer',
                                 t.rating.toInt(),
                                 t.message,
                                 t.imageUrl,
@@ -1312,14 +1479,14 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                       childAspectRatio: 1.2,
                       children: items
                           .take(3)
-                          .map(
-                            (t) => _buildTestimonialCard(
-                              t.name,
-                              t.role,
-                              t.rating.toInt(),
-                              t.message,
-                              t.imageUrl,
-                            ),
+                            .map(
+                              (t) => _buildTestimonialCard(
+                                t.name,
+                                t.role.trim().isNotEmpty ? t.role : 'Customer',
+                                t.rating.toInt(),
+                                t.message,
+                                t.imageUrl,
+                              ),
                           )
                           .toList(),
                     ),
@@ -2283,14 +2450,14 @@ class _EnhancedServiceCardState extends State<_EnhancedServiceCard> {
   }
 }
 
-class _EnhancedWhyChooseCard extends StatelessWidget {
-  final IconData icon;
+class _SimpleWhyChooseCard extends StatelessWidget {
+  final Widget iconWidget;
   final String title;
   final String subtitle;
   final Color color;
 
-  const _EnhancedWhyChooseCard({
-    required this.icon,
+  const _SimpleWhyChooseCard({
+    required this.iconWidget,
     required this.title,
     required this.subtitle,
     required this.color,
@@ -2299,45 +2466,56 @@ class _EnhancedWhyChooseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.black.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(0.10),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 32, color: color),
+            child: Center(child: iconWidget),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Text(
             title,
-            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
               color: const Color(0xFF1E293B),
+              height: 1.2,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(
             subtitle,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF64748B), height: 1.5),
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              height: 1.4,
+              fontSize: 12.5,
+            ),
           ),
         ],
       ),
@@ -2383,7 +2561,22 @@ class _EnhancedTestimonialCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundImage: CachedNetworkImageProvider(avatarUrl),
+                backgroundColor: const Color(0xFFF1F5F9),
+                backgroundImage: avatarUrl.trim().isNotEmpty
+                    ? CachedNetworkImageProvider(avatarUrl)
+                    : null,
+                child: avatarUrl.trim().isEmpty
+                    ? Text(
+                        name.trim().isNotEmpty
+                            ? name.trim()[0].toUpperCase()
+                            : 'C',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: const Color(0xFF3B82F6),
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 16),
               Column(
@@ -2398,7 +2591,7 @@ class _EnhancedTestimonialCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    location,
+                    location.trim().isNotEmpty ? location : 'Customer',
                     style: const TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 13,

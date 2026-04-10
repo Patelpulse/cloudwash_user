@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_admin/core/auth/admin_auth_session.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('admin_data', json.encode(userData));
         await prefs.setBool('is_logged_in', true);
+        adminAuthSession.value = true;
 
         if (mounted) {
           context.go('/');
