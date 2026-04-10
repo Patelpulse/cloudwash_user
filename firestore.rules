@@ -126,7 +126,26 @@ service cloud.firestore {
       // TEMPORARY: Allow writes for development (TODO: Add proper admin authentication)
       allow write: if true;
     }
-    
+
+    // ========================
+    // WHY CHOOSE US COLLECTION
+    // ========================
+    match /whyChooseUs/{itemId} {
+      // Anyone can read Why Choose Us items (public)
+      allow read: if true;
+
+      // Writes are performed by the backend/admin SDK, so Firestore rules do
+      // not need to grant client-side write access here.
+    }
+
+    // ========================
+    // WEB LANDING DOCUMENTS
+    // ========================
+    match /web_landing/{docId} {
+      // Website and admin need shared read/write access for landing content.
+      allow read, write: if true;
+    }
+
     // ========================
     // ADDRESSES COLLECTION (Global)
     // ========================
