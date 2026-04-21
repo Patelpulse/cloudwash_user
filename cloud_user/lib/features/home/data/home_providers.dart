@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_user/core/models/banner_model.dart';
@@ -264,10 +265,15 @@ final liveHeroSectionProvider =
   String? lastSignature;
 
   while (true) {
-    final data = await _loadHeroSection(
-      apiRepository: apiRepository,
-      firebaseRepository: firebaseRepository,
-    );
+    HeroSectionModel? data;
+    try {
+      data = await _loadHeroSection(
+        apiRepository: apiRepository,
+        firebaseRepository: firebaseRepository,
+      ).timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      data = null;
+    }
     final signature = _stableJsonSignature(data?.toJson());
     if (signature != lastSignature) {
       lastSignature = signature;

@@ -22,7 +22,10 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final container = ProviderContainer();
-  await container.read(notificationServiceProvider).init();
+  // Local notifications are not supported on web; initializing here can block startup.
+  if (!kIsWeb) {
+    await container.read(notificationServiceProvider).init();
+  }
 
   runApp(
     UncontrolledProviderScope(

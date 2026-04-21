@@ -79,12 +79,6 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 
-  Color _adjustLightness(Color color, double amount) {
-    final hsl = HSLColor.fromColor(color);
-    final nextLightness = (hsl.lightness + amount).clamp(0.0, 1.0).toDouble();
-    return hsl.withLightness(nextLightness).toColor();
-  }
-
   double _heroTitleFontSize(HeroSectionModel? hero, bool isMobile) {
     final baseSize = hero?.titleFontSize ?? (isMobile ? 42.0 : 64.0);
     return baseSize.clamp(isMobile ? 18.0 : 20.0, isMobile ? 72.0 : 120.0).toDouble();
@@ -195,34 +189,25 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 1000;
 
+    // Never block the whole viewport on a spinner: show defaults while loading.
+    final hero = heroAsync.maybeWhen(
+      data: (h) => h,
+      orElse: () => null,
+    );
+
+    final tagline = hero?.tagline ?? '✨ We Are Clino';
+    final title = hero?.mainTitle ?? 'Feel Your Way For\nFreshness';
+    final desc = hero?.description ??
+        'Experience the epitome of cleanliness with Clino...';
+    final btnText = hero?.buttonText ?? 'Our Services';
+    final imageUrl = hero?.imageUrl ??
+        'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png';
+
     return Container(
       constraints: BoxConstraints(minHeight: isMobile ? 700 : 800),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF8FAFF), Colors.white, Color(0xFFF0F9FF)],
-        ),
-      ),
+      color: Colors.white,
       child: Stack(
         children: [
-          Positioned(
-            top: -100,
-            left: -100,
-            child: _AnimatedOrb(
-              size: isMobile ? 200 : 350,
-              colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            right: -50,
-            child: _AnimatedOrb(
-              size: isMobile ? 150 : 280,
-              colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
-              delay: 2,
-            ),
-          ),
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1400),
@@ -231,69 +216,48 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                   horizontal: isMobile ? 24 : 60,
                   vertical: isMobile ? 40 : 80,
                 ),
-                child: heroAsync.when(
-                  data: (hero) {
-                    final tagline = hero?.tagline ?? '✨ We Are Clino';
-                    final title =
-                        hero?.mainTitle ?? 'Feel Your Way For\nFreshness';
-                    final desc = hero?.description ??
-                        'Experience the epitome of cleanliness with Clino...';
-                    final btnText = hero?.buttonText ?? 'Our Services';
-                    final imageUrl = hero?.imageUrl ??
-                        'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png';
-
-                    return isMobile
-                        ? Column(
-                            children: [
-                              _buildHeroContent(
-                                context,
-                                isMobile,
-                                tagline,
-                                title,
-                                desc,
-                                btnText,
-                                hero,
-                              ),
-                              const SizedBox(height: 50),
-                              _buildHeroImage(context, isMobile, imageUrl),
-                            ],
-                          )
-                        : Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                flex: 5,
-                                child: _buildHeroContent(
-                                  context,
-                                  isMobile,
-                                  tagline,
-                                  title,
-                                  desc,
-                                  btnText,
-                                  hero,
-                                ),
-                              ),
-                              const SizedBox(width: 80),
-                              Expanded(
-                                flex: 4,
-                                child: _buildHeroImage(
-                                  context,
-                                  isMobile,
-                                  imageUrl,
-                                ),
-                              ),
-                            ],
-                          );
-                  },
-                  loading: () => const SizedBox(
-                    height: 600,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (_, __) => const SizedBox(
-                    height: 600,
-                    child: Center(child: Text('Failed to load hero section')),
-                  ),
-                ),
+                child: isMobile
+                    ? Column(
+                        children: [
+                          _buildHeroContent(
+                            context,
+                            isMobile,
+                            tagline,
+                            title,
+                            desc,
+                            btnText,
+                            hero,
+                          ),
+                          const SizedBox(height: 50),
+                          _buildHeroImage(context, isMobile, imageUrl),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: _buildHeroContent(
+                              context,
+                              isMobile,
+                              tagline,
+                              title,
+                              desc,
+                              btnText,
+                              hero,
+                            ),
+                          ),
+                          const SizedBox(width: 80),
+                          Expanded(
+                            flex: 4,
+                            child: _buildHeroImage(
+                              context,
+                              isMobile,
+                              imageUrl,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -323,15 +287,15 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
       hero?.descriptionColor,
       fallback: const Color(0xFF64748B),
     );
-    final accentColor = _colorFromHex(
-      hero?.accentColor,
-      fallback: const Color(0xFF3B82F6),
-    );
     final buttonTextColor = _colorFromHex(
       hero?.buttonTextColor,
       fallback: Colors.white,
     );
-    final accentShade = _adjustLightness(accentColor, -0.08);
+    const Color kHeroNeutralText = Color(0xFF334155);
+    const Color kHeroNeutralBorder = Color(0xFFE2E8F0);
+    const Color kHeroNeutralBg = Color(0xFFF8FAFC);
+    const Color kHeroCtaDark = Color(0xFF1E293B);
+    const Color kHeroCtaDarkEnd = Color(0xFF334155);
 
     return Column(
       crossAxisAlignment:
@@ -341,15 +305,10 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                accentColor.withValues(alpha: 0.12),
-                accentShade.withValues(alpha: 0.12),
-              ],
-            ),
+            color: kHeroNeutralBg,
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: accentColor.withValues(alpha: 0.3),
+              color: kHeroNeutralBorder,
               width: 1.5,
             ),
           ),
@@ -359,8 +318,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(
-                  color: accentColor,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF64748B),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -369,8 +328,8 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                 tagline,
                 style: GoogleFonts.getFont(
                   bodyFontFamily,
-                  textStyle: TextStyle(
-                    color: accentColor,
+                  textStyle: const TextStyle(
+                    color: kHeroNeutralText,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
@@ -415,15 +374,15 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [accentColor, accentShade],
+                gradient: const LinearGradient(
+                  colors: [kHeroCtaDark, kHeroCtaDarkEnd],
                 ),
                 borderRadius: BorderRadius.circular(50),
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withValues(alpha: 0.4),
+                    color: Colors.black.withValues(alpha: 0.12),
                     blurRadius: 20,
-                    offset: Offset(0, 10),
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
@@ -498,10 +457,10 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                       child: CircleAvatar(
                         radius: 22,
                         backgroundColor: [
-                          Color(0xFF3B82F6),
-                          Color(0xFF0EA5E9),
-                          Color(0xFF14B8A6),
-                          Color(0xFFF59E0B),
+                          Color(0xFF94A3B8),
+                          Color(0xFFCBD5E1),
+                          Color(0xFF64748B),
+                          Color(0xFF475569),
                         ][i],
                         child: Text(
                           ['👤', '👨', '👩', '🧑'][i],
@@ -561,65 +520,83 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
   }
 
   Widget _buildHeroImage(BuildContext context, bool isMobile, String imageUrl) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  Color(0xFF3B82F6).withOpacity(0.08),
-                  Colors.transparent,
-                ],
-              ),
+    final trimmed = imageUrl.trim();
+    final embedded = decodeDataImage(trimmed);
+    final double h = isMobile ? 400 : 550;
+    const radius = 32.0;
+
+    Widget buildFillImage() {
+      if (embedded != null) {
+        return Image.memory(
+          embedded,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.medium,
+        );
+      }
+      return CachedNetworkImage(
+        imageUrl: trimmed,
+        height: h,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        placeholder: (_, __) => const ColoredBox(
+          color: Colors.white,
+          child: Center(
+            child: CircularProgressIndicator(color: Color(0xFF94A3B8)),
+          ),
+        ),
+        errorWidget: (_, __, ___) => const ColoredBox(
+          color: Colors.white,
+          child: Center(
+            child: Icon(
+              Icons.cleaning_services,
+              size: 100,
+              color: Color(0xFF94A3B8),
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFF3B82F6).withOpacity(0.2),
-                blurRadius: 60,
-                offset: Offset(0, 30),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              height: isMobile ? 400 : 550,
-              fit: BoxFit.contain,
-              placeholder: (_, __) => Container(
-                height: isMobile ? 400 : 550,
+      );
+    }
+
+    // White frame + cover crop, plus a light radial wash at the edges so tinted
+    // feathered PNG fringes read as white (not blue) without heavy center dimming.
+    return Container(
+      width: double.infinity,
+      height: h,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const ColoredBox(color: Colors.white),
+          Positioned.fill(child: buildFillImage()),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
-                ),
-              ),
-              errorWidget: (_, __, ___) => Container(
-                height: isMobile ? 400 : 550,
-                decoration: BoxDecoration(
-                  color: Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.cleaning_services,
-                    size: 100,
-                    color: Color(0xFF3B82F6),
+                  borderRadius: BorderRadius.circular(radius),
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.05,
+                    colors: [
+                      Colors.white.withValues(alpha: 0),
+                      Colors.white.withValues(alpha: 0.25),
+                      Colors.white.withValues(alpha: 0.92),
+                    ],
+                    stops: const [0.58, 0.82, 1.0],
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -664,12 +641,12 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     );
 
                   final List<Color> gradients = [
-                    [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+                    [Color(0xFF64748B), Color(0xFF475569)],
                     [Color(0xFFF59E0B), Color(0xFFEF4444)],
-                    [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+                    [Color(0xFF14B8A6), Color(0xFF0D9488)],
                     [Color(0xFFEC4899), Color(0xFFF43F5E)],
-                    [Color(0xFF0EA5E9), Color(0xFFEC4899)],
-                    [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+                    [Color(0xFF78716C), Color(0xFF57534E)],
+                    [Color(0xFF0F766E), Color(0xFF115E59)],
                   ].expand((x) => x).toList();
 
                   if (isMobile) {
@@ -728,10 +705,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     );
                   }
                 },
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+                loading: () => const SizedBox.shrink(),
                 error: (error, stack) => Padding(
                   padding: const EdgeInsets.all(40.0),
                   child: Text('Error loading categories: $error'),
@@ -824,9 +798,9 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     );
 
                   final List<List<Color>> gradients = [
-                    [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+                    [Color(0xFF64748B), Color(0xFF334155)],
                     [Color(0xFFF59E0B), Color(0xFFEF4444)],
-                    [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+                    [Color(0xFF14B8A6), Color(0xFF0D9488)],
                     [Color(0xFFEC4899), Color(0xFFF43F5E)],
                   ];
 
@@ -883,7 +857,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                     );
                   }
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const SizedBox.shrink(),
                 error: (e, _) => Center(child: Text('Error: $e')),
               ),
             ],
@@ -1007,7 +981,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF3B82F6),
+            color: Color(0xFF64748B),
             letterSpacing: 2,
           ),
         ),
@@ -1028,13 +1002,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
   Widget _buildMostBookedViewAll(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E293B), Color(0xFF334155)],
         ),
         borderRadius: BorderRadius.circular(50),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF3B82F6).withOpacity(0.3),
+            color: Colors.black.withOpacity(0.12),
             blurRadius: 15,
             offset: Offset(0, 8),
           ),
@@ -1134,7 +1108,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    Color(0xFF3B82F6).withOpacity(0.08),
+                    Color(0xFF64748B).withOpacity(0.06),
                     Colors.transparent,
                   ],
                 ),
@@ -1365,11 +1339,11 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
 
   Color _getWhyChooseColor(String title) {
     final t = title.toLowerCase();
-    if (t.contains('quality')) return Color(0xFF3B82F6);
+    if (t.contains('quality')) return Color(0xFF475569);
     if (t.contains('time') || t.contains('delivery')) return Color(0xFFEC4899);
     if (t.contains('eco') || t.contains('friendly')) return Color(0xFF14B8A6);
     if (t.contains('price') || t.contains('fair')) return Color(0xFFF59E0B);
-    return Color(0xFF3B82F6);
+    return Color(0xFF475569);
   }
 
   Widget _buildWhyChooseIcon(String iconSource, Color color) {
@@ -1535,7 +1509,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             'value': statsData?.happyClients ?? '50K+',
             'label': 'Happy Customers',
             'icon': Icons.people_alt_rounded,
-            'color': Color(0xFF3B82F6),
+            'color': Color(0xFF475569),
           },
           {
             'value': statsData?.totalBranches ?? '1000+',
@@ -1676,13 +1650,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF0EA5E9)],
+            gradient: const LinearGradient(
+              colors: [Color(0xFF334155), Color(0xFF1E293B)],
             ),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Color(0xFF3B82F6).withOpacity(0.3),
+                color: Colors.black.withOpacity(0.12),
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),
@@ -1754,7 +1728,10 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [Color(0xFF3B82F6).withOpacity(0.1), Colors.transparent],
+              colors: [
+                Color(0xFF64748B).withOpacity(0.08),
+                Colors.transparent,
+              ],
             ),
           ),
         ),
@@ -1836,22 +1813,17 @@ class _SectionHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF3B82F6).withOpacity(0.1),
-                Color(0xFF0EA5E9).withOpacity(0.1),
-              ],
-            ),
+            color: const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: Color(0xFF3B82F6).withOpacity(0.3),
+              color: const Color(0xFFE2E8F0),
               width: 1.5,
             ),
           ),
           child: Text(
             subtitle,
             style: GoogleFonts.inter(
-              color: Color(0xFF3B82F6),
+              color: const Color(0xFF475569),
               fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: 2,
@@ -1884,35 +1856,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _AnimatedOrb extends StatelessWidget {
-  final double size;
-  final List<Color> colors;
-  final double delay;
-
-  const _AnimatedOrb({
-    required this.size,
-    required this.colors,
-    this.delay = 0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            ...colors.map((c) => c.withOpacity(0.18)),
-            Colors.transparent,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _PulseButton extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -1938,7 +1881,7 @@ class _PulseButton extends StatelessWidget {
         ),
         child: const Icon(
           Icons.play_arrow_rounded,
-          color: Color(0xFF3B82F6),
+          color: Color(0xFF334155),
           size: 32,
         ),
       ),
@@ -2418,14 +2361,14 @@ class _EnhancedServiceCardState extends State<_EnhancedServiceCard> {
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: const Color(0xFF3B82F6),
+                            color: const Color(0xFF334155),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isHovered
-                                ? const Color(0xFF3B82F6)
+                                ? const Color(0xFF334155)
                                 : const Color(0xFFF1F5F9),
                             shape: BoxShape.circle,
                           ),
@@ -2434,7 +2377,7 @@ class _EnhancedServiceCardState extends State<_EnhancedServiceCard> {
                             size: 16,
                             color: isHovered
                                 ? Colors.white
-                                : const Color(0xFF3B82F6),
+                                : const Color(0xFF334155),
                           ),
                         ),
                       ],
@@ -2573,7 +2516,7 @@ class _EnhancedTestimonialCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: const Color(0xFF3B82F6),
+                          color: const Color(0xFF475569),
                         ),
                       )
                     : null,
@@ -2905,7 +2848,7 @@ class _OffersCarouselState extends State<_OffersCarousel> {
               height: 8,
               decoration: BoxDecoration(
                 color: _currentPage == index
-                    ? const Color(0xFF3B82F6)
+                    ? const Color(0xFF334155)
                     : const Color(0xFFCBD5E1),
                 borderRadius: BorderRadius.circular(4),
               ),
