@@ -8,7 +8,8 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 10 * 1024 * 1024, // 10 MB
-        fieldSize: 2 * 1024 * 1024, // 2 MB
+        // Allow large base64 data URLs (e.g. logoUrl fallback payloads)
+        fieldSize: 50 * 1024 * 1024, // 50 MB
     },
 });
 

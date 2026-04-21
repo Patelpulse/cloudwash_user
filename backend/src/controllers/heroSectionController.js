@@ -311,6 +311,7 @@ const updateHeroSection = async (req, res) => {
         // Upload new hero image if provided
         if (heroImageFile) {
             const result = await uploadImageWithFallback(heroImageFile, {
+                allowDataUrlFallback: true,
                 fieldName: 'hero image',
             });
             heroSection.imageUrl = result.secure_url;
