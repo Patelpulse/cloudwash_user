@@ -182,7 +182,7 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
 
     return Scaffold(
       key: effectiveScaffoldKey,
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: Colors.white,
       drawer:
           isMobile ? _buildMobileDrawer(context, logoUrl, logoHeight) : null,
       endDrawer: widget.endDrawer,
@@ -248,7 +248,7 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.05),
+                color: Colors.grey.shade100,
               ),
               child: Center(
                 child: embeddedLogoBytes != null
