@@ -4,8 +4,8 @@ const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
 
-// Load env vars
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Load env vars and let the checked-in .env win over any stale process env.
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 // Connect to database
 connectDB();
