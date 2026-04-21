@@ -18,6 +18,9 @@ class EditHeroSectionScreen extends ConsumerStatefulWidget {
 }
 
 class _EditHeroSectionScreenState extends ConsumerState<EditHeroSectionScreen> {
+  /// Must match backend `multer` `fileSize` for `/api/hero` image field.
+  static const int _heroImageMaxBytes = 10 * 1024 * 1024;
+
   static const List<String> _fontFamilies = <String>[
     'Playfair Display',
     'Inter',
@@ -309,6 +312,18 @@ class _EditHeroSectionScreenState extends ConsumerState<EditHeroSectionScreen> {
 
     if (image != null) {
       final bytes = await image.readAsBytes();
+      if (bytes.length > _heroImageMaxBytes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Hero image must be ${(_heroImageMaxBytes ~/ (1024 * 1024))} MB or smaller '
+              '(selected: ${(bytes.length / (1024 * 1024)).toStringAsFixed(1)} MB).',
+            ),
+          ),
+        );
+        return;
+      }
       setState(() {
         _selectedImageBytes = bytes;
       });
@@ -777,6 +792,14 @@ class _EditHeroSectionScreenState extends ConsumerState<EditHeroSectionScreen> {
                           onPressed: _pickImage,
                           icon: const Icon(Icons.upload),
                           label: const Text('Change Hero Image'),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Max ${_heroImageMaxBytes ~/ (1024 * 1024)} MB per image',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ],
                     ),
