@@ -22,6 +22,30 @@
           }
         },
         {
+          "client_id": "864806051234-i37dv0qa4g0isd36kk2ogf30f04spjng.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cloudwash.app",
+            "certificate_hash": "d56af6c205085f8c00bacb68cc87939e05def4b0"
+          }
+        },
+        {
+          "client_id": "864806051234-m5lj0eg28ursichcr5b86d3osuuu5n9u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cloudwash.app",
+            "certificate_hash": "baeffd23c150a6dd689b8ba49f4a270fc8094074"
+          }
+        },
+        {
+          "client_id": "864806051234-q3idtv7a20725tdjo5jdr56nbo8gn81b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cloudwash.app",
+            "certificate_hash": "e8b5b918ad5ff62c030af54f15bf0dcdfa6e3205"
+          }
+        },
+        {
           "client_id": "864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -37,6 +61,57 @@
             {
               "client_id": "864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "864806051234-qsj7uels1o2ek134t5b8c7he6bo66mll.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.patelpulseventures.Cloudwash"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:864806051234:android:e5feca3894b96d0c8a26fb",
+        "android_client_info": {
+          "package_name": "com.cloudwashuser.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "864806051234-s64277c2d1953s0j9a5479vu438peuq2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cloudwashuser.app",
+            "certificate_hash": "e8b5b918ad5ff62c030af54f15bf0dcdfa6e3205"
+          }
+        },
+        {
+          "client_id": "864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRIGbcvURX41hw9lcvkGFtCrPn1wbwzek"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "864806051234-qsj7uels1o2ek134t5b8c7he6bo66mll.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.patelpulseventures.Cloudwash"
+              }
             }
           ]
         }

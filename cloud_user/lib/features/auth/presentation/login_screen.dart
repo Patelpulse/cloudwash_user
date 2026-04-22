@@ -338,11 +338,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: OutlinedButton.icon(
             onPressed: _isLoading ? null : _handleGoogleSignIn,
             icon: Image.network(
-              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+              'https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png',
               height: 24,
+              width: 24,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => 
+                  const Icon(Icons.g_mobiledata, size: 24),
             ),
             label: Text(
               'Sign in with Google',
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

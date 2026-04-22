@@ -21,8 +21,20 @@ class ProfileScreen extends ConsumerWidget {
     return userAsync.when(
       data: (user) {
         if (user == null) {
-          return const Scaffold(
-            body: Center(child: Text('Please login to view profile')),
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Please login to view profile'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.push('/login'),
+                    child: const Text('Login'),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 

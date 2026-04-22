@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sizer/sizer.dart';
 
 class MobileMainScreen extends ConsumerWidget {
   final Widget child;
@@ -62,57 +63,112 @@ class _MobileBottomBar extends StatelessWidget {
       if (location == '/profile') return 4;
       return -1;
     }
+    final padding = MediaQuery.of(context).padding;
 
-    return Container(
-      height: 85,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _BottomNavItem(
-              icon: Icons.home_rounded,
-              label: 'Home',
-              isActive: getCurrentIndex() == 0,
-              onTap: () => context.go('/'),
-            ),
-            _BottomNavItem(
-              icon: Icons.grid_view_rounded,
-              label: 'Services',
-              isActive: getCurrentIndex() == 1,
-              onTap: () => context.go('/services'),
-            ),
-            _BottomNavItem(
-              icon: Icons.shopping_basket_rounded,
-              label: 'Cart',
-              isActive: getCurrentIndex() == 2,
-              onTap: () => context.go('/cart'),
-            ),
-            _BottomNavItem(
-              icon: Icons.calendar_month_rounded,
-              label: 'Bookings',
-              isActive: getCurrentIndex() == 3,
-              onTap: () => context.go('/bookings'),
-            ),
-            _BottomNavItem(
-              icon: Icons.person_rounded,
-              label: 'Profile',
-              isActive: getCurrentIndex() == 4,
-              onTap: () => context.go('/profile'),
-            ),
-          ],
+
+return Padding(
+  padding: EdgeInsets.only(bottom: padding.bottom),
+  child: Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 20,
+          offset: const Offset(0, -5),
         ),
-      ),
-    );
+      ],
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _BottomNavItem(
+          icon: Icons.home_rounded,
+          label: 'Home',
+          isActive: getCurrentIndex() == 0,
+          onTap: () => context.go('/'),
+        ),
+        _BottomNavItem(
+          icon: Icons.grid_view_rounded,
+          label: 'Services',
+          isActive: getCurrentIndex() == 1,
+          onTap: () => context.go('/services'),
+        ),
+        _BottomNavItem(
+          icon: Icons.shopping_basket_rounded,
+          label: 'Cart',
+          isActive: getCurrentIndex() == 2,
+          onTap: () => context.go('/cart'),
+        ),
+        _BottomNavItem(
+          icon: Icons.calendar_month_rounded,
+          label: 'Bookings',
+          isActive: getCurrentIndex() == 3,
+          onTap: () => context.go('/bookings'),
+        ),
+        _BottomNavItem(
+          icon: Icons.person_rounded,
+          label: 'Profile',
+          isActive: getCurrentIndex() == 4,
+          onTap: () => context.go('/profile'),
+        ),
+      ],
+    ),
+  ),
+);
+    // return Padding(
+    //   padding:  EdgeInsets.only(bottom: padding.bottom),
+    //   child: Container(
+    //     height: 20.h,
+    //     decoration: BoxDecoration(
+    //       color: Colors.white,
+    //       boxShadow: [
+    //         BoxShadow(
+    //           color: Colors.black.withOpacity(0.1),
+    //           blurRadius: 20,
+    //           offset: const Offset(0, -5),
+    //         ),
+    //       ],
+    //     ),
+    //     child: Row(
+    //       mainAxisAlignment: MainAxisAlignment.spaceAround,
+    //       children: [
+    //         _BottomNavItem(
+    //           icon: Icons.home_rounded,
+    //           label: 'Home',
+    //           isActive: getCurrentIndex() == 0,
+    //           onTap: () => context.go('/'),
+    //         ),
+    //         _BottomNavItem(
+    //           icon: Icons.grid_view_rounded,
+    //           label: 'Services',
+    //           isActive: getCurrentIndex() == 1,
+    //           onTap: () => context.go('/services'),
+    //         ),
+    //         _BottomNavItem(
+    //           icon: Icons.shopping_basket_rounded,
+    //           label: 'Cart',
+    //           isActive: getCurrentIndex() == 2,
+    //           onTap: () => context.go('/cart'),
+    //         ),
+    //         _BottomNavItem(
+    //           icon: Icons.calendar_month_rounded,
+    //           label: 'Bookings',
+    //           isActive: getCurrentIndex() == 3,
+    //           onTap: () => context.go('/bookings'),
+    //         ),
+    //         _BottomNavItem(
+    //           icon: Icons.person_rounded,
+    //           label: 'Profile',
+    //           isActive: getCurrentIndex() == 4,
+    //           onTap: () => context.go('/profile'),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    // );
+  
+  
   }
 }
 
