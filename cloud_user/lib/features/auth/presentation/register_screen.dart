@@ -4,6 +4,8 @@ import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/auth/data/auth_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -90,6 +92,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(authRepositoryProvider).signInWithApple();
+
+      if (result != null && result.userCredential?.user != null) {
+        if (result.isAlreadyRegistered) {
+          // User already exists, redirect to Home
+          if (mounted) {
+            ref.invalidate(authStateProvider);
+            ref.invalidate(userProfileProvider);
+            context.go('/');
+          }
+        } else {
+          // New user, go to Step 2
+          setState(() {
+            _firebaseUser = result.userCredential!.user;
+            _nameController.text = _firebaseUser!.displayName ?? '';
+            _profileImageUrl = _firebaseUser!.photoURL;
+            _currentStep = 2;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Apple Sign-In failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -375,6 +411,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ),
+        if (!kIsWeb && Platform.isIOS) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: OutlinedButton.icon(
+              onPressed: _isLoading ? null : _handleAppleSignIn,
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.apple, size: 24, color: Colors.black),
+              label: Text(
+                'Sign up with Apple',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.grey.shade200),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                backgroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,

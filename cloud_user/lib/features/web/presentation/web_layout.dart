@@ -55,7 +55,8 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
     final screenWidth = MediaQuery.of(context).size.width;
     final heroAsync = ref.watch(liveHeroSectionProvider);
     final hero = heroAsync.valueOrNull;
-    final logoUrl = resolveHeroLogoForWidth(hero, screenWidth);
+    final logoUrl = "assets/images/logo.svg";
+    // resolveHeroLogoForWidth(hero, screenWidth);
     final double logoHeight = hero?.logoHeight ?? 140;
     final effectiveScaffoldKey = widget.scaffoldKey ?? _internalScaffoldKey;
 
@@ -183,8 +184,9 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
     return Scaffold(
       key: effectiveScaffoldKey,
       backgroundColor: Colors.white,
-      drawer:
-          isMobile ? _buildMobileDrawer(context, logoUrl, logoHeight) : null,
+      drawer: isMobile
+          ? _buildMobileDrawer(context, logoUrl, logoHeight)
+          : null,
       endDrawer: widget.endDrawer,
       body: Stack(
         children: [
@@ -209,10 +211,7 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
 
                       // Footer
                       if (!isMobile)
-                        WebFooter(
-                          logoUrl: logoUrl,
-                          logoHeight: logoHeight,
-                        ),
+                        WebFooter(logoUrl: logoUrl, logoHeight: logoHeight),
                     ],
                   ),
                 ),
@@ -247,9 +246,7 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
         child: Column(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-              ),
+              decoration: BoxDecoration(color: Colors.grey.shade100),
               child: Center(
                 child: embeddedLogoBytes != null
                     ? Image.memory(
@@ -258,28 +255,28 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
                         fit: BoxFit.contain,
                       )
                     : hasNetworkLogo
-                        ? Image.network(
-                            withLogoCacheBust(trimmedLogoUrl),
-                            height: drawerLogoHeight,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/images/logo.png',
-                              height: drawerLogoHeight,
-                              fit: BoxFit.contain,
-                            ),
-                          )
-                        : Image.asset(
-                            'assets/images/logo.png',
-                            height: drawerLogoHeight,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Text(
-                              'CLINOWASH',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 32,
-                              ),
-                            ),
+                    ? Image.network(
+                        withLogoCacheBust(trimmedLogoUrl),
+                        height: drawerLogoHeight,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/logo.png',
+                          height: drawerLogoHeight,
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/logo.png',
+                        height: drawerLogoHeight,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Text(
+                          'CLINOWASH',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
                           ),
+                        ),
+                      ),
               ),
             ),
             _drawerTile(context, 'Home', '/', Icons.home_outlined),
