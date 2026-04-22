@@ -42,7 +42,7 @@ class Sidebar extends StatelessWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              children: [
+              children: const [
                 _SidebarItem(
                   icon: Icons.dashboard_outlined,
                   title: 'Dashboard',
