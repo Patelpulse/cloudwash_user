@@ -5,7 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 part 'auth_repository.g.dart';
 
@@ -22,11 +24,15 @@ class AuthRepository {
   final TokenStorage _tokenStorage;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: kIsWeb
+        ? '864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com'
+        : null,
+  );
 
   AuthRepository(this._dio, this._tokenStorage);
 
-  Future<GoogleSignInResult?> signInWithGoogle() async {
+  Future<SocialSignInResult?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
@@ -66,7 +72,7 @@ class AuthRepository {
             print(
               '✅ Google Sign-In: Token and Profile synced for ${userCredential.user!.email}',
             );
-            return GoogleSignInResult(
+            return SocialSignInResult(
               userCredential: userCredential,
               isAlreadyRegistered: true,
             );
@@ -76,16 +82,82 @@ class AuthRepository {
             '⚠️ Google Sign-In: User not registered in backend. Please complete registration.',
           );
           // User exists in Firebase but not in MongoDB - they need to complete registration
-          return GoogleSignInResult(
+          return SocialSignInResult(
             userCredential: userCredential,
             isAlreadyRegistered: false,
           );
         }
       }
 
-      return GoogleSignInResult(userCredential: userCredential);
+      return SocialSignInResult(userCredential: userCredential);
     } catch (e) {
       print('❌ Google Sign-In Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<SocialSignInResult?> signInWithApple() async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final AuthCredential credential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: appleCredential.state, // Nonce is handled by the plugin if using state, but Firebase needs rawNonce if provided. Usually just identityToken is enough for modern Firebase.
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      // Get backend JWT token using Firebase UID
+      if (userCredential.user != null) {
+        try {
+          final response = await _dio.post(
+            'user/login',
+            data: {'firebaseUid': userCredential.user!.uid},
+          );
+
+          if (response.data['token'] != null) {
+            await _tokenStorage.saveToken(response.data['token']);
+
+            // Sync MongoDB ID to Firestore
+            await _firestore
+                .collection('users')
+                .doc(userCredential.user!.uid)
+                .set({
+                  '_id': response.data['_id'],
+                  'name': response.data['name'],
+                  'email': response.data['email'],
+                  'phone': response.data['phone'],
+                  'profileImage': response.data['profileImage'],
+                }, SetOptions(merge: true));
+
+            print(
+              '✅ Apple Sign-In: Token and Profile synced for ${userCredential.user!.email}',
+            );
+            return SocialSignInResult(
+              userCredential: userCredential,
+              isAlreadyRegistered: true,
+            );
+          }
+        } catch (e) {
+          print(
+            '⚠️ Apple Sign-In: User not registered in backend. Please complete registration.',
+          );
+          // User exists in Firebase but not in MongoDB - they need to complete registration
+          return SocialSignInResult(
+            userCredential: userCredential,
+            isAlreadyRegistered: false,
+          );
+        }
+      }
+
+      return SocialSignInResult(userCredential: userCredential);
+    } catch (e) {
+      print('❌ Apple Sign-In Error: $e');
       rethrow;
     }
   }
@@ -314,9 +386,9 @@ class AuthRepository {
   }
 }
 
-class GoogleSignInResult {
+class SocialSignInResult {
   final UserCredential? userCredential;
   final bool isAlreadyRegistered;
 
-  GoogleSignInResult({this.userCredential, this.isAlreadyRegistered = false});
+  SocialSignInResult({this.userCredential, this.isAlreadyRegistered = false});
 }

@@ -6,6 +6,7 @@ import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sizer/sizer.dart';
 
 class WebServicesPage extends ConsumerWidget {
   const WebServicesPage({super.key});
@@ -446,16 +447,21 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
               ),
               const SizedBox(height: 16),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'View Services',
-                    style: TextStyle(
-                      color: AppTheme.primary,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      'View Services',
+                      style: TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13.sp,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, size: 16, color: AppTheme.primary),
+                  Icon(Icons.arrow_forward, size: 12, color: AppTheme.primary),
                 ],
               ),
             ],

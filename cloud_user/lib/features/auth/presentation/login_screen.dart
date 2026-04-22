@@ -3,6 +3,8 @@ import 'package:cloud_user/features/profile/presentation/providers/user_provider
 import 'package:cloud_user/features/auth/data/auth_repository.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,6 +54,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(authRepositoryProvider).signInWithApple();
+
+      if (result != null && result.userCredential?.user != null) {
+        if (result.isAlreadyRegistered) {
+          if (mounted) {
+            ref.invalidate(authStateProvider);
+            ref.invalidate(userProfileProvider);
+            context.go('/');
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account not found. Please sign up first.'),
+              ),
+            );
+            context.go('/register');
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Apple Sign-In failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -362,6 +398,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+        if (!kIsWeb && Platform.isIOS) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: OutlinedButton.icon(
+              onPressed: _isLoading ? null : _handleAppleSignIn,
+              icon: const Icon(Icons.apple, size: 24, color: Colors.black),
+              label: Text(
+                'Sign in with Apple',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.grey.shade200),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

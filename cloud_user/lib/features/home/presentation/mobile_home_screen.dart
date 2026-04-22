@@ -95,12 +95,14 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
 
   double _heroTitleFontSize(HeroSectionModel? hero) {
     final base = hero?.titleFontSize ?? 28.0;
-    return base.clamp(18.0, 72.0).toDouble();
+    // Cap at 36 for mobile to ensure it fits well
+    return base.clamp(14.0, 20.0).toDouble();
   }
 
   double _heroDescriptionFontSize(HeroSectionModel? hero) {
     final base = hero?.descriptionFontSize ?? 13.0;
-    return base.clamp(12.0, 24.0).toDouble();
+    // Cap at 16 for mobile
+    return base.clamp(12.0, 14.0).toDouble();
   }
 
   String _heroTitleFontFamily(HeroSectionModel? hero) {
@@ -313,62 +315,12 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                 ),
                               ],
                             ),
-                            IgnorePointer(
-                              child: heroAsync.when(
-                                data: (hero) {
-                                  final logoUrl = resolveHeroLogoForWidth(
-                                    hero,
-                                    MediaQuery.of(context).size.width,
-                                  );
-                                  if (logoUrl.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  final embeddedLogoBytes =
-                                      _decodeDataImage(logoUrl);
-                                  return TweenAnimationBuilder<double>(
-                                    tween: Tween(begin: 0.92, end: 1.0),
-                                    duration: const Duration(milliseconds: 550),
-                                    curve: Curves.easeOutBack,
-                                    builder: (context, value, child) =>
-                                        Transform.scale(
-                                      scale: value,
-                                      child: child,
-                                    ),
-                                    child: Container(
-                                      width: 78,
-                                      height: 42,
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: embeddedLogoBytes != null
-                                          ? Image.memory(
-                                              embeddedLogoBytes,
-                                              fit: BoxFit.contain,
-                                            )
-                                          : Image.network(
-                                              withLogoCacheBust(logoUrl),
-                                              fit: BoxFit.contain,
-                                              errorBuilder: (_, __, ___) =>
-                                                  const SizedBox.shrink(),
-                                            ),
-                                    ),
-                                  );
-                                },
-                                loading: () => const SizedBox.shrink(),
-                                error: (_, __) => const SizedBox.shrink(),
-                              ),
-                            ),
+                            const SizedBox.shrink(),
                           ],
                         ),
                       ),
                     ),
                   ),
-
-                  // Content Overlay (Bottom)
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -387,7 +339,6 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                 color: Colors.black54,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
                               ),
                             ),
                             loading: () => const SizedBox.shrink(),
@@ -408,7 +359,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                               final heroTitleColor =
                                   _heroColor(hero?.titleColor, const Color(0xFF111827));
                               final heroDescColor =
-                                  _heroColor(hero?.descriptionColor, Colors.black54);
+                                  _heroColor(hero?.descriptionColor, Colors.black38);
                               final titleFontFamily =
                                   _heroTitleFontFamily(hero);
                               final bodyFontFamily =
