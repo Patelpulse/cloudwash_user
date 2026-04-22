@@ -1,6 +1,6 @@
 import 'package:cloud_user/core/config/app_config.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 final socketServiceProvider = Provider((ref) => SocketService());
 
@@ -18,14 +18,20 @@ class SocketService {
       url = url.substring(0, url.length - 4);
     }
 
-    print('🔌 Connecting to Socket: $url');
+    // Ensure we have a clean URL for the socket connection
+    final Uri uri = Uri.parse(url);
+    final String socketUrl = uri.scheme + '://' + uri.host + (uri.hasPort ? ':${uri.port}' : '');
 
-    _socket = IO.io(
-      url,
+    print('🔌 Connecting to Socket: $socketUrl');
+
+    _socket = IO.io(        
+      socketUrl,
       IO.OptionBuilder()
-          .setTransports(['websocket', 'polling']) // Support fallback
+          .setTransports(['websocket']) // Force websocket for better performance
           .enableAutoConnect()
-          .build(),
+          .setReconnectionAttempts(5)
+          .setReconnectionDelay(2000)
+            .build(),
     );
 
     _socket?.onConnect((_) {

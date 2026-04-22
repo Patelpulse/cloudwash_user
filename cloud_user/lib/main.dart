@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:sizer/sizer.dart';
 
 import 'package:cloud_user/core/services/notification_service.dart';
 import 'package:cloud_user/features/notifications/presentation/providers/notification_provider.dart';
@@ -90,11 +91,15 @@ class _CloudUserAppState extends ConsumerState<CloudUserApp> {
     // Keep notifications active
     ref.watch(notificationsProvider);
 
-    return MaterialApp.router(
-      title: 'Cloud Wash',
-      theme: AppTheme.lightTheme,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return Sizer(
+      builder: (context, orientation, deviceType) {
+        return MaterialApp.router(
+          title: 'Cloud Wash',
+          theme: AppTheme.lightTheme,
+          routerConfig: router,
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
