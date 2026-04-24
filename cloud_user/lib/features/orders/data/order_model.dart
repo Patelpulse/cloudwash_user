@@ -84,7 +84,15 @@ class OrderModel {
   static DateTime _parseDateTime(dynamic value) {
     if (value == null) return DateTime.now();
 
-    // If it's a Firestore Timestamp
+    // If it's a Firestore Timestamp (common in Flutter)
+    // We check the type name to avoid direct dependency on cloud_firestore in this model
+    if (value.runtimeType.toString() == 'Timestamp') {
+      try {
+        return (value as dynamic).toDate();
+      } catch (_) {}
+    }
+
+    // If it's a Map with _seconds (REST API / Node.js format)
     if (value is Map && value.containsKey('_seconds')) {
       final seconds = value['_seconds'] as int;
       final nanoseconds = value['_nanoseconds'] as int? ?? 0;
@@ -97,7 +105,13 @@ class OrderModel {
     if (value is DateTime) return value;
 
     // If it's a String (ISO format)
-    if (value is String) return DateTime.parse(value);
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
 
     // Fallback
     return DateTime.now();

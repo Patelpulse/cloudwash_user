@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:cloud_admin/core/config/app_config.dart';
 import 'package:cloud_admin/features/web_landing/models/hero_section_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -100,17 +102,38 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+Future<void> _pickLogo() async {
+  final result = await FilePicker.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['png', 'jpg', 'jpeg', 'svg'],
+    withData: true,
+  );
 
-  Future<void> _pickLogo() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile == null) return;
-    final bytes = await pickedFile.readAsBytes();
-    setState(() {
-      _selectedLogoBytes = bytes;
-      _selectedLogoMimeType = pickedFile.mimeType;
-    });
-  }
+  if (result == null) return;
+
+  final file = result.files.first;
+
+  setState(() {
+    _selectedLogoBytes = file.bytes;
+    _selectedLogoMimeType = file.extension == 'svg'
+        ? 'image/svg+xml'
+        : 'image/png';
+  });
+}
+
+
+  // Future<void> _pickLogo() async {
+  //   final picker = ImagePicker();
+  //   final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  //   if (pickedFile == null) return;
+  //   final bytes = await pickedFile.readAsBytes();
+  //   setState(() {
+  //     _selectedLogoBytes = bytes;
+  //     _selectedLogoMimeType = pickedFile.mimeType;
+  //   });
+  // }
+
+
 
   Future<void> _saveLogo() async {
     setState(() => _isLoading = true);
@@ -363,32 +386,79 @@ class _EditLogoSectionScreenState extends ConsumerState<EditLogoSectionScreen> {
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: Colors.grey.shade300),
                         ),
-                        child: _selectedLogoBytes != null
-                            ? Image.memory(_selectedLogoBytes!,
-                                fit: BoxFit.contain)
-                            : hasRemoteLogo
-                                ? (embeddedRemoteLogoBytes != null
-                                    ? Image.memory(
-                                        embeddedRemoteLogoBytes,
-                                        fit: BoxFit.contain,
-                                      )
-                                    : Image.network(_logoUrl!,
-                                        fit: BoxFit.contain))
-                                : const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.image_outlined,
-                                        size: 54,
-                                        color: Colors.grey,
-                                      ),
-                                      SizedBox(height: 12),
-                                      Text(
-                                        'No logo uploaded yet',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                    ],
-                                  ),
+child: _selectedLogoBytes != null
+    ? (_selectedLogoMimeType?.contains('svg') == true
+        ? SvgPicture.memory(
+            _selectedLogoBytes!,
+            fit: BoxFit.contain,
+          )
+        : Image.memory(
+            _selectedLogoBytes!,
+            fit: BoxFit.contain,
+          ))
+    : hasRemoteLogo
+        ? (embeddedRemoteLogoBytes != null
+            ? (_logoUrl!.contains('svg')
+                ? SvgPicture.memory(
+                    embeddedRemoteLogoBytes,
+                    fit: BoxFit.contain,
+                  )
+                : Image.memory(
+                    embeddedRemoteLogoBytes,
+                    fit: BoxFit.contain,
+                  ))
+            : (_logoUrl!.endsWith('.svg') ||
+                    _logoUrl!.contains('image/svg+xml')
+                ? SvgPicture.network(
+                    _logoUrl!,
+                    fit: BoxFit.contain,
+                  )
+                : Image.network(
+                    _logoUrl!,
+                    fit: BoxFit.contain,
+                  )))
+        : const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_outlined,
+                size: 54,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 12),
+              Text(
+                'No logo uploaded yet',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+
+                        // child: _selectedLogoBytes != null
+                        //     ? Image.memory(_selectedLogoBytes!,
+                        //         fit: BoxFit.contain)
+                        //     : hasRemoteLogo
+                        //         ? (embeddedRemoteLogoBytes != null
+                        //             ? Image.memory(
+                        //                 embeddedRemoteLogoBytes,
+                        //                 fit: BoxFit.contain,
+                        //               )
+                        //             : Image.network(_logoUrl!,
+                        //                 fit: BoxFit.contain))
+                        //         : const Column(
+                        //             mainAxisAlignment: MainAxisAlignment.center,
+                        //             children: [
+                        //               Icon(
+                        //                 Icons.image_outlined,
+                        //                 size: 54,
+                        //                 color: Colors.grey,
+                        //               ),
+                        //               SizedBox(height: 12),
+                        //               Text(
+                        //                 'No logo uploaded yet',
+                        //                 style: TextStyle(color: Colors.grey),
+                        //               ),
+                        //             ],
+                        //           ),
                       ),
                       const SizedBox(height: 16),
                       Row(

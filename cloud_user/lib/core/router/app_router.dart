@@ -41,7 +41,7 @@ GoRouter goRouter(GoRouterRef ref) {
 
   // Use Web Router for both Web and Mobile to ensure consistent responsive design
   return GoRouter(
-    initialLocation: kIsWeb ? '/' : '/onboarding',
+    initialLocation: '/',
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     redirect: (context, state) async {
@@ -53,8 +53,8 @@ GoRouter goRouter(GoRouterRef ref) {
       final isOnboarding = state.uri.path == '/onboarding';
 
       if (isAuthenticated) {
-        // If logged in and trying to access auth pages, go to home
-        if (isAuthRoute) {
+        // If logged in and trying to access auth pages or onboarding, go to home
+        if (isAuthRoute || isOnboarding) {
           return '/';
         }
       } else {
@@ -69,21 +69,23 @@ GoRouter goRouter(GoRouterRef ref) {
             // Force onboarding if not complete
             if (!isOnboarding) return '/onboarding';
           } else {
-            // Onboarding complete
+            // Onboarding complete but not authenticated
             // If not on auth/public route, go to register
             if (!isAuthRoute &&
                 state.uri.path != '/' &&
                 state.uri.path != '/services' &&
                 state.uri.path != '/about' &&
                 state.uri.path != '/contact' &&
+                state.uri.path != '/cart' &&
+                state.uri.path != '/bookings' &&
+                state.uri.path != '/profile' &&
                 !state.uri.path.startsWith('/category') &&
                 !state.uri.path.startsWith('/services-list')) {
-              return '/register';
+              return '/login';
             }
           }
         }
         // Web: Allow browsing without authentication
-        // No redirect needed - users can browse freely
       }
       return null;
     },

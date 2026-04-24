@@ -21,6 +21,8 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_user/core/widgets/home_shimmer_loading.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 class MobileHomeScreen extends ConsumerStatefulWidget {
   const MobileHomeScreen({super.key});
@@ -30,55 +32,86 @@ class MobileHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
-  late final WebViewController _videoController;
-  bool _isMuted = false;
+  late WebViewController _videoController;
+  late ScrollController _scrollController;
+  double _scrollOpacity = 0;
+  bool _isMuted = true;
 
   get import => null;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
     _initializeController();
   }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final newOpacity = (offset / 50).clamp(0.0, 1.0);
+    if (newOpacity != _scrollOpacity) {
+      setState(() {
+        _scrollOpacity = newOpacity;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  bool _isControllerInitialized = false;
 
   void _initializeController() async {
     final heroAsync = ref.read(heroSectionProvider);
     // Updated video URL with unmuted settings
     String videoUrl =
-        'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=0&show_logo=false&bigPlayButton=false';
+        'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=${_isMuted ? 1 : 0}&show_logo=false&bigPlayButton=false';
 
     heroAsync.whenData((data) {
       if (data != null && data.youtubeUrl != null) {
         String url = data.youtubeUrl!;
-
-        // Remove existing muted params to avoid conflicts
         url = url.replaceAll('&muted=1', '').replaceAll('?muted=1', '');
-
-        // Force unmuted and other settings
         if (!url.contains('?')) {
-          url += '?muted=0&autoplay=true&controls=false&loop=true';
+          url +=
+              '?muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
         } else {
-          url += '&muted=0&autoplay=true&controls=false&loop=true';
+          url +=
+              '&muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
         }
         videoUrl = url;
       }
     });
 
-    _videoController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onNavigationRequest: (request) => NavigationDecision.prevent,
-        ),
-      )
-      ..enableZoom(false);
+    if (!_isControllerInitialized) {
+      late final PlatformWebViewControllerCreationParams params;
+      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+        params = WebKitWebViewControllerCreationParams(
+          allowsInlineMediaPlayback: true,
+          mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+        );
+      } else {
+        params = const PlatformWebViewControllerCreationParams();
+      }
 
-    // Platform-specific configuration for auto-play (Android)
-    if (WebViewPlatform.instance != null) {
-      // Logic for Android specific media settings if accessible
-      // Note: Full autoplay with sound usually requires user interaction
-      // on mobile browsers, but we try via Javascript permissions.
+      _videoController = WebViewController.fromPlatformCreationParams(params)
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(const Color(0x00000000))
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onNavigationRequest: (request) => NavigationDecision.prevent,
+          ),
+        )
+        ..enableZoom(false);
+
+      if (_videoController.platform is AndroidWebViewController) {
+        (_videoController.platform as AndroidWebViewController)
+            .setMediaPlaybackRequiresUserGesture(false);
+      }
+
+      _isControllerInitialized = true;
     }
 
     _videoController.loadRequest(Uri.parse(videoUrl));
@@ -87,8 +120,6 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   void _toggleMute() {
     setState(() {
       _isMuted = !_isMuted;
-      // In a real app, we should use JS to toggle mute instead of re-initializing
-      // but for simplicity and reliability with this iframe based player:
       _initializeController();
     });
   }
@@ -158,84 +189,168 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
         body: HomeShimmerLoading(),
       );
     }
-
+final padding = MediaQuery.of(context).padding;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       extendBodyBehindAppBar: true,
       extendBody: true,
-      body: CustomScrollView(
-        slivers: [
-          // 1. VIDEO HEADER WITH OVERLAY CONTENT
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 300,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Video Background (Full Coverage)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.transparent,
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: 800,
-                          height: 300,
-                          child: WebViewWidget(controller: _videoController),
+      body: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // 1. VIDEO HEADER WITH OVERLAY CONTENT
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 300,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Video Background (Full Coverage)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.transparent,
+                        child: FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: 800,
+                            height: 300,
+                            child: WebViewWidget(controller: _videoController),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-
-                  // White Gradient Overlay (Bottom to Top)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.white,
-                            Colors.white.withValues(alpha: 0.7),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.3, 0.6],
+        
+                    // White Gradient Overlay (Bottom to Top)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.white,
+                              Colors.white.withValues(alpha: 0.7),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.3, 0.6],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-
-                  // Header Overlay (Profile + Notification)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Profile Section (Avatar + Name)
-                                userAsync.when(
-                                  data: (user) => GestureDetector(
-                                    onTap: () => context.push('/profile'),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 20,
-                                          backgroundImage: NetworkImage(
-                                            user?['profileImage'] ??
-                                                'https://i.pravatar.cc/150?u=user',
+        
+                    // Header Overlay (Profile + Notification)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Profile Section (Avatar + Name)
+                                  userAsync.when(
+                                    data: (user) {
+                                      if (user == null) {
+                                        // GUEST / LOGGED OUT UI
+                                        return GestureDetector(
+                                          onTap: () => context.push('/login'),
+                                          child: Row(
+                                            children: [
+                                              const CircleAvatar(
+                                                radius: 20,
+                                                backgroundColor: Colors.white,
+                                                child: Icon(
+                                                  Icons.person,
+                                                  color: AppTheme.primary,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      blurRadius: 4,
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Text(
+                                                  'LOGIN',
+                                                  style: GoogleFonts.inter(
+                                                    color: AppTheme.primary,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                        );
+                                      }
+        
+                                      // LOGGED IN UI
+                                      return GestureDetector(
+                                        onTap: () => context.push('/profile'),
+                                        child: Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 20,
+                                              backgroundImage: NetworkImage(
+                                                user['profileImage'] ??
+                                                    'https://i.pravatar.cc/150?u=user',
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.9,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                user['name'] ?? 'User',
+                                                style: GoogleFonts.inter(
+                                                  color: const Color(0xFF1A1A1A),
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                    loading: () => Row(
+                                      children: [
+                                        const CircleAvatar(
+                                          radius: 20,
+                                          backgroundColor: Colors.grey,
                                         ),
                                         const SizedBox(width: 10),
                                         Container(
@@ -247,11 +362,12 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                             color: Colors.white.withValues(
                                               alpha: 0.9,
                                             ),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                           ),
                                           child: Text(
-                                            user?['name'] ?? 'User',
+                                            'Loading...',
                                             style: GoogleFonts.inter(
                                               color: const Color(0xFF1A1A1A),
                                               fontSize: 14,
@@ -261,673 +377,649 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
                                         ),
                                       ],
                                     ),
+                                    error: (_, __) => const CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: Colors.grey,
+                                    ),
                                   ),
-                                  loading: () => Row(
-                                    children: [
-                                      const CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: Colors.grey,
+                                  // Notification Icon
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: InkWell(
+                                      onTap: () => context.push('/notifications'),
+                                      child: const Icon(
+                                        Icons.notifications_outlined,
+                                        color: Color(0xFF1A1A1A),
+                                        size: 20,
                                       ),
-                                      const SizedBox(width: 10),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.9,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox.shrink(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Greeting
+                            userAsync.when(
+                              data: (user) {
+                                final hour = DateTime.now().hour;
+                                final greeting = hour < 12
+                                    ? 'GOOD MORNING'
+                                    : hour < 17
+                                    ? 'GOOD AFTERNOON'
+                                    : 'GOOD EVENING';
+                                return Text(
+                                  '$greeting, ${user?['name']?.toString().toUpperCase() ?? 'USER'}',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.black54,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              },
+                              loading: () => const SizedBox.shrink(),
+                              error: (_, __) => const SizedBox.shrink(),
+                            ),
+                            const SizedBox(height: 8),
+        
+                            heroAsync.when(
+                              data: (hero) {
+                                final heroTitle =
+                                    (hero?.mainTitle.isNotEmpty ?? false)
+                                    ? hero!.mainTitle.replaceAll('\\n', '\n')
+                                    : 'Feel Fresh Every Day';
+                                final heroDesc =
+                                    (hero?.description.isNotEmpty ?? false)
+                                    ? hero!.description
+                                    : 'Book premium laundry pickup in seconds.';
+                                final heroTitleColor = _heroColor(
+                                  hero?.titleColor,
+                                  const Color(0xFF111827),
+                                );
+                                final heroDescColor = _heroColor(
+                                  hero?.descriptionColor,
+                                  Colors.black38,
+                                );
+                                final titleFontFamily = _heroTitleFontFamily(
+                                  hero,
+                                );
+                                final bodyFontFamily = _heroBodyFontFamily(hero);
+        
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 450),
+                                      child: Text(
+                                        heroTitle,
+                                        key: ValueKey(heroTitle),
+                                        style: GoogleFonts.getFont(
+                                          titleFontFamily,
+                                          textStyle: TextStyle(
+                                            color: heroTitleColor,
+                                            fontSize: _heroTitleFontSize(hero),
+                                            fontWeight: FontWeight.w800,
+                                            height: 1.1,
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
                                         ),
-                                        child: Text(
-                                          'Loading...',
-                                          style: GoogleFonts.inter(
-                                            color: const Color(0xFF1A1A1A),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 450),
+                                      child: Text(
+                                        heroDesc,
+                                        key: ValueKey(heroDesc),
+                                        style: GoogleFonts.getFont(
+                                          bodyFontFamily,
+                                          textStyle: TextStyle(
+                                            color: heroDescColor,
+                                            fontSize: _heroDescriptionFontSize(
+                                              hero,
+                                            ),
+                                            fontWeight: FontWeight.w500,
+                                            height: 1.4,
                                           ),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                              loading: () => const SizedBox.shrink(),
+                              error: (_, __) => const SizedBox.shrink(),
+                            ),
+        
+                            const SizedBox(height: 16),
+        
+                            // Badges
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.greenAccent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.flash_on,
+                                        color: Colors.black87,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'PREMIUM',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  error: (_, __) => const CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: Colors.grey,
-                                  ),
                                 ),
-                                // Notification Icon
+                                const SizedBox(width: 12),
                                 Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    shape: BoxShape.circle,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
                                   ),
-                                  child: InkWell(
-                                    onTap: () => context.push('/notifications'),
-                                    child: const Icon(
-                                      Icons.notifications_outlined,
-                                      color: Color(0xFF1A1A1A),
-                                      size: 20,
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.auto_awesome,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'EXPERT CARE',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox.shrink(),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Greeting
-                          userAsync.when(
-                            data: (user) => Text(
-                              'GOOD MORNING, ${user?['name']?.toString().toUpperCase() ?? 'USER'}',
-                              style: GoogleFonts.inter(
-                                color: Colors.black54,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            loading: () => const SizedBox.shrink(),
-                            error: (_, __) => const SizedBox.shrink(),
-                          ),
-                          const SizedBox(height: 8),
-
-                          heroAsync.when(
-                            data: (hero) {
-                              final heroTitle =
-                                  (hero?.mainTitle.isNotEmpty ?? false)
-                                      ? hero!.mainTitle.replaceAll('\\n', '\n')
-                                      : 'Feel Fresh Every Day';
-                              final heroDesc = (hero?.description.isNotEmpty ??
-                                      false)
-                                  ? hero!.description
-                                  : 'Book premium laundry pickup in seconds.';
-                              final heroTitleColor =
-                                  _heroColor(hero?.titleColor, const Color(0xFF111827));
-                              final heroDescColor =
-                                  _heroColor(hero?.descriptionColor, Colors.black38);
-                              final titleFontFamily =
-                                  _heroTitleFontFamily(hero);
-                              final bodyFontFamily =
-                                  _heroBodyFontFamily(hero);
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 450),
-                                    child: Text(
-                                      heroTitle,
-                                      key: ValueKey(heroTitle),
-                                      style: GoogleFonts.getFont(
-                                        titleFontFamily,
-                                        textStyle: TextStyle(
-                                          color: heroTitleColor,
-                                          fontSize: _heroTitleFontSize(hero),
-                                          fontWeight: FontWeight.w800,
-                                          height: 1.1,
-                                        ),
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 450),
-                                    child: Text(
-                                      heroDesc,
-                                      key: ValueKey(heroDesc),
-                                      style: GoogleFonts.getFont(
-                                        bodyFontFamily,
-                                        textStyle: TextStyle(
-                                          color: heroDescColor,
-                                          fontSize:
-                                              _heroDescriptionFontSize(hero),
-                                          fontWeight: FontWeight.w500,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                            loading: () => const SizedBox.shrink(),
-                            error: (_, __) => const SizedBox.shrink(),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Badges
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.greenAccent,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.flash_on,
-                                      color: Colors.black87,
-                                      size: 14,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'PREMIUM',
-                                      style: GoogleFonts.inter(
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.auto_awesome,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'EXPERT CARE',
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Mute Button
-                  Positioned(
-                    top: 100,
-                    right: 16,
-                    child: GestureDetector(
-                      onTap: _toggleMute,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isMuted ? Icons.volume_off : Icons.volume_up,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-
-          // 3. ACTIVE SERVICES CAROUSEL
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                categoriesAsync.when(
-                  data: (categories) {
-                    if (categories.isEmpty) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(2),
-                          child: Text(
-                            'No categories available',
-                            style: TextStyle(color: Colors.grey),
+        
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  categoriesAsync.when(
+                    data: (categories) {
+                      if (categories.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(2),
+                            child: Text(
+                              'No categories available',
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ),
-                        ),
-                      );
-                    }
-                    final firstRowItems = categories.take(4).toList();
-                    final secondRowItems = categories.length > 4
-                        ? categories.skip(4).take(4).toList()
-                        : <dynamic>[];
-
-                    Widget buildItem(CategoryModel cat) {
-                      String displayName = cat.name.toString().toUpperCase();
-                      final words = cat.name.toString().trim().split(' ');
-                      if (words.length > 1) {
-                        displayName =
-                            '${words[0]} ${words[1][0]}...'.toUpperCase();
+                        );
                       }
-                      final embeddedCategoryBytes = decodeDataImage(
-                        cat.imageUrl,
-                      );
-                      final hasEmbeddedImage = embeddedCategoryBytes != null;
-
-                      return GestureDetector(
-                        onTap: () => context.push(
-                          '/category/${cat.id}',
-                          extra: cat.name,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 65,
-                              height: 65,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: hasEmbeddedImage
-                                  ? Image.memory(
-                                      embeddedCategoryBytes!,
-                                      fit: BoxFit.contain,
-                                    )
-                                  : Image.network(
-                                      cat.imageUrl,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.category,
-                                        color: Colors.grey,
-                                      ),
+                      final firstRowItems = categories.take(4).toList();
+                      final secondRowItems = categories.length > 4
+                          ? categories.skip(4).take(4).toList()
+                          : <dynamic>[];
+        
+                      Widget buildItem(CategoryModel cat) {
+                        String displayName = cat.name.toString().toUpperCase();
+                        final words = cat.name.toString().trim().split(' ');
+                        if (words.length > 1) {
+                          displayName = '${words[0]} ${words[1][0]}...'
+                              .toUpperCase();
+                        }
+                        final embeddedCategoryBytes = decodeDataImage(
+                          cat.imageUrl,
+                        );
+                        final hasEmbeddedImage = embeddedCategoryBytes != null;
+        
+                        return GestureDetector(
+                          onTap: () => context.push(
+                            '/category/${cat.id}',
+                            extra: cat.name,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 65,
+                                height: 65,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
                                     ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              displayName,
-                              style: GoogleFonts.inter(
-                                color: const Color(0xFF1A1A1A),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 15,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // First Row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (var item in firstRowItems)
-                                Expanded(child: buildItem(item)),
-                              for (var i = 0; i < 4 - firstRowItems.length; i++)
-                                const Spacer(),
-                            ],
-                          ),
-
-                          const SizedBox(height: 5),
-
-                          // Second Row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (var item in secondRowItems)
-                                Expanded(child: buildItem(item)),
-                              for (var i = 0;
-                                  i < 4 - secondRowItems.length;
-                                  i++)
-                                const Spacer(),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox(
-                    height: 160, // Increased height
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (e, stack) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            const Icon(
-                              Icons.error,
-                              color: Colors.red,
-                              size: 40,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Error loading categories',
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              e.toString(),
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
-          // 4. BANNERS
-          SliverToBoxAdapter(
-            child: bannersAsync.when(
-              data: (banners) {
-                if (banners.isEmpty) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: CarouselSlider.builder(
-                    itemCount: banners.length,
-                    options: CarouselOptions(
-                      height: 180,
-                      autoPlay: true,
-                      viewportFraction: 0.9,
-                      enlargeCenterPage: true,
-                      autoPlayInterval: const Duration(seconds: 4),
-                      enableInfiniteScroll: true,
-                    ),
-                    itemBuilder: (context, index, realIndex) {
-                      final banner = banners[index];
-                      return Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 5),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          color: Colors.grey[200],
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: CachedNetworkImage(
-                                imageUrl: banner.imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    Shimmer.fromColors(
-                                  baseColor: Colors.grey[300]!,
-                                  highlightColor: Colors.grey[100]!,
-                                  child: Container(color: Colors.white),
-                                ),
-                                errorWidget: (_, __, ___) => const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Gradient Overlay
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withValues(alpha: 0.7),
                                   ],
-                                  stops: const [0.6, 1.0],
                                 ),
-                              ),
-                            ),
-                            // Text Overlay
-                            Positioned(
-                              bottom: 15,
-                              left: 15,
-                              right: 15,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (banner.title.isNotEmpty)
-                                    Text(
-                                      banner.title,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  if (banner.description.isNotEmpty)
-                                    Text(
-                                      banner.description,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
+                                child: hasEmbeddedImage
+                                    ? Image.memory(
+                                        embeddedCategoryBytes!,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : Image.network(
+                                        cat.imageUrl,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => const Icon(
+                                          Icons.category,
+                                          color: Colors.grey,
                                         ),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                ],
                               ),
+                              const SizedBox(height: 8),
+                              Text(
+                                displayName,
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFF1A1A1A),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+        
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 15,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // First Row
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (var item in firstRowItems)
+                                  Expanded(child: buildItem(item)),
+                                for (var i = 0; i < 4 - firstRowItems.length; i++)
+                                  const Spacer(),
+                              ],
+                            ),
+        
+                            const SizedBox(height: 5),
+        
+                            // Second Row
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (var item in secondRowItems)
+                                  Expanded(child: buildItem(item)),
+                                for (
+                                  var i = 0;
+                                  i < 4 - secondRowItems.length;
+                                  i++
+                                )
+                                  const Spacer(),
+                              ],
                             ),
                           ],
                         ),
                       );
                     },
+                    loading: () => const SizedBox(
+                      height: 160, // Increased height
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, stack) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 40,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Error loading categories',
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                e.toString(),
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-              loading: () => const SizedBox(height: 180),
-              error: (_, __) => const SizedBox.shrink(),
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
-          ),
-
-          // 5. SPOTLIGHT
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Spotlight'),
-                  const SizedBox(height: 15),
-                  spotlightAsync.when(
-                    data: (services) => CarouselSlider.builder(
-                      itemCount: services.length,
+            // 4. BANNERS
+            SliverToBoxAdapter(
+              child: bannersAsync.when(
+                data: (banners) {
+                  if (banners.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: CarouselSlider.builder(
+                      itemCount: banners.length,
                       options: CarouselOptions(
-                        height: 280,
-                        viewportFraction: 0.65,
-                        enlargeCenterPage: true,
-                        enableInfiniteScroll: true,
+                        height: 180,
                         autoPlay: true,
-                        autoPlayInterval: const Duration(seconds: 5),
-                        scrollPhysics: const BouncingScrollPhysics(),
+                        viewportFraction: 0.9,
+                        enlargeCenterPage: true,
+                        autoPlayInterval: const Duration(seconds: 4),
+                        enableInfiniteScroll: true,
                       ),
                       itemBuilder: (context, index, realIndex) {
-                        return _buildSpotlightCard(services[index]);
-                      },
-                    ),
-                    loading: () => const SizedBox(height: 200),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // 6. TOP SERVICES SECTION
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Top Services'),
-                  const SizedBox(height: 20),
-                  topServicesAsync.when(
-                    data: (services) => GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.85,
-                        mainAxisSpacing: 15,
-                        crossAxisSpacing: 15,
-                      ),
-                      itemCount: services.length,
-                      itemBuilder: (context, index) {
-                        return _buildServiceGridCard(services[index]);
-                      },
-                    ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // 7. EXTRA SECTIONS FROM DB
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  subCategoriesAsync.when(
-                    data: (subCats) {
-                      if (subCats.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('SUB CATEGORIES'),
-                          const SizedBox(height: 15),
-                          CarouselSlider.builder(
-                            itemCount: subCats.length,
-                            options: CarouselOptions(
-                              height: 160,
-                              viewportFraction: 0.4,
-                              enableInfiniteScroll: subCats.length > 2,
-                              enlargeCenterPage: false,
-                              padEnds: false,
-                              scrollPhysics: const BouncingScrollPhysics(),
-                            ),
-                            itemBuilder: (context, index, realIndex) {
-                              final cat = subCats[index];
-                              return _buildSubCategoryCard(cat);
-                            },
+                        final banner = banners[index];
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(horizontal: 5),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15),
+                            color: Colors.grey[200],
                           ),
-                        ],
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                  const SizedBox(height: 30),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final whyChooseUsAsync =
-                          ref.watch(liveWhyChooseUsProvider);
-                      return whyChooseUsAsync.when(
-                        data: (items) {
-                          if (items.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Stack(
+                            fit: StackFit.expand,
                             children: [
-                              _buildSectionTitle('Our Commitment'),
-                              const SizedBox(height: 15),
-                              ...items.take(3).map(
-                                    (item) => _buildWhyItem(
-                                      item.title,
-                                      item.description,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: CachedNetworkImage(
+                                  imageUrl: banner.imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      Shimmer.fromColors(
+                                        baseColor: Colors.grey[300]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: Container(color: Colors.white),
+                                      ),
+                                  errorWidget: (_, __, ___) => const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.grey,
                                     ),
                                   ),
+                                ),
+                              ),
+                              // Gradient Overlay
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(15),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.7),
+                                    ],
+                                    stops: const [0.6, 1.0],
+                                  ),
+                                ),
+                              ),
+                              // Text Overlay
+                              Positioned(
+                                bottom: 15,
+                                left: 15,
+                                right: 15,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (banner.title.isNotEmpty)
+                                      Text(
+                                        banner.title,
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    if (banner.description.isNotEmpty)
+                                      Text(
+                                        banner.description,
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ],
-                          );
-                        },
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      );
-                    },
-                  ),
-                ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => const SizedBox(height: 180),
+                error: (_, __) => const SizedBox.shrink(),
               ),
             ),
+        
+            // 5. SPOTLIGHT
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Spotlight'),
+                    const SizedBox(height: 15),
+                    spotlightAsync.when(
+                      data: (services) => CarouselSlider.builder(
+                        itemCount: services.length,
+                        options: CarouselOptions(
+                          height: 280,
+                          viewportFraction: 0.65,
+                          enlargeCenterPage: true,
+                          enableInfiniteScroll: true,
+                          autoPlay: true,
+                          autoPlayInterval: const Duration(seconds: 5),
+                          scrollPhysics: const BouncingScrollPhysics(),
+                        ),
+                        itemBuilder: (context, index, realIndex) {
+                          return _buildSpotlightCard(services[index]);
+                        },
+                      ),
+                      loading: () => const SizedBox(height: 200),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        
+            // 6. TOP SERVICES SECTION
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Top Services'),
+                    const SizedBox(height: 20),
+                    topServicesAsync.when(
+                      data: (services) => GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.85,
+                              mainAxisSpacing: 15,
+                              crossAxisSpacing: 15,
+                            ),
+                        itemCount: services.length,
+                        itemBuilder: (context, index) {
+                          return _buildServiceGridCard(services[index]);
+                        },
+                      ),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        
+            // 7. EXTRA SECTIONS FROM DB
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    subCategoriesAsync.when(
+                      data: (subCats) {
+                        if (subCats.isEmpty) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('SUB CATEGORIES'),
+                            const SizedBox(height: 15),
+                            CarouselSlider.builder(
+                              itemCount: subCats.length,
+                              options: CarouselOptions(
+                                height: 160,
+                                viewportFraction: 0.4,
+                                enableInfiniteScroll: subCats.length > 2,
+                                enlargeCenterPage: false,
+                                padEnds: false,
+                                scrollPhysics: const BouncingScrollPhysics(),
+                              ),
+                              itemBuilder: (context, index, realIndex) {
+                                final cat = subCats[index];
+                                return _buildSubCategoryCard(cat);
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 30),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final whyChooseUsAsync = ref.watch(
+                          liveWhyChooseUsProvider,
+                        );
+                        return whyChooseUsAsync.when(
+                          data: (items) {
+                            if (items.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionTitle('Our Commitment'),
+                                const SizedBox(height: 15),
+                                ...items
+                                    .take(3)
+                                    .map(
+                                      (item) => _buildWhyItem(
+                                        item.title,
+                                        item.description,
+                                      ),
+                                    ),
+                              ],
+                            );
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 50)),
+          ],
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: MediaQuery.of(context).padding.top,
+            color: const Color(0xFFF8F9FA).withOpacity(_scrollOpacity),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 50)),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildSectionTitle(String title) {
     return Padding(

@@ -23,10 +23,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
+
+  bool get _isAnyLoading => _isLoading || _isGoogleLoading || _isAppleLoading;
   bool _showPassword = false;
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
+    setState(() => _isGoogleLoading = true);
     try {
       final result = await ref.read(authRepositoryProvider).signInWithGoogle();
 
@@ -56,12 +60,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
   Future<void> _handleAppleSignIn() async {
-    setState(() => _isLoading = true);
+    setState(() => _isAppleLoading = true);
     try {
       final result = await ref.read(authRepositoryProvider).signInWithApple();
 
@@ -90,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ).showSnackBar(SnackBar(content: Text('Apple Sign-In failed: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isAppleLoading = false);
     }
   }
 
@@ -316,7 +320,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return SizedBox(
       height: 60,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleEmailLogin,
+        onPressed: _isAnyLoading ? null : _handleEmailLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
@@ -372,8 +376,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           width: double.infinity,
           height: 60,
           child: OutlinedButton.icon(
-            onPressed: _isLoading ? null : _handleGoogleSignIn,
-            icon: Image.network(
+            onPressed: _isAnyLoading ? null : _handleGoogleSignIn,
+            icon: _isGoogleLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Image.network(
               'https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png',
               height: 24,
               width: 24,
@@ -403,22 +413,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SizedBox(
             width: double.infinity,
             height: 60,
-            child: OutlinedButton.icon(
-              onPressed: _isLoading ? null : _handleAppleSignIn,
-              icon: const Icon(Icons.apple, size: 24, color: Colors.black),
+            child: ElevatedButton.icon(
+              onPressed: _isAnyLoading ? null : _handleAppleSignIn,
+              icon: _isAppleLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.apple, size: 24, color: Colors.white),
               label: Text(
                 'Sign in with Apple',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.grey.shade200),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 0,
               ),
             ),
           ),

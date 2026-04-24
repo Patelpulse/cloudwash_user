@@ -53,27 +53,13 @@ class UserOrders extends _$UserOrders {
     }
   }
 
-  // Cancel order (Firebase)
+  // Cancel order (MongoDB + Firebase Sync)
   Future<void> cancelOrder(String orderId, String reason) async {
     try {
-      // Retrieve the current user's ID from the profile provider
-      final userAsync = ref.read(userProfileProvider);
-
-      // We need to resolve the async value to get the data
-      // For a simple synchronous read if already loaded:
-      String? userId;
-      if (userAsync is AsyncData<Map<String, dynamic>?>) {
-        userId =
-            userAsync.value?['_id'] ?? FirebaseAuth.instance.currentUser?.uid;
-      } else {
-        // Fallback if not loaded in state (less likely in this flow)
-        userId = FirebaseAuth.instance.currentUser?.uid;
-      }
-
-      // Use Firebase-only cancellation with the specific User ID
-      await ref
-          .read(orderRepositoryProvider)
-          .cancelOrderFirebase(orderId, reason, userId: userId);
+      // Use the repository's cancelOrder which hits the backend API
+      // This ensures MongoDB is updated and the backend syncs to Firestore
+      await ref.read(orderRepositoryProvider).cancelOrder(orderId, reason);
+      
       // Refresh orders list
       ref.invalidateSelf();
     } catch (e) {
@@ -102,11 +88,16 @@ class UserOrdersRealtime extends _$UserOrdersRealtime {
     return userAsync.when(
       data: (user) {
         if (user == null) return Stream.value([]);
-        // Prefer the MongoDB ID '_id' as that is what we used as fallback in createOrder
-        // If not available, use the Firebase Auth UID if present
-        final userId = user['_id'] ?? FirebaseAuth.instance.currentUser?.uid;
+        // Priority 1: Firebase Auth UID (used for Firestore paths)
+        // Priority 2: MongoDB ID (as a fallback)
+        final userId = FirebaseAuth.instance.currentUser?.uid ?? user['_id'];
 
-        if (userId == null) return Stream.value([]);
+        if (userId == null) {
+          print('🔍 UserOrdersRealtime: No User ID found');
+          return Stream.value([]);
+        }
+
+        print('🔍 UserOrdersRealtime: Listening to orders for UID: $userId');
 
         return ref
             .watch(orderRepositoryProvider)

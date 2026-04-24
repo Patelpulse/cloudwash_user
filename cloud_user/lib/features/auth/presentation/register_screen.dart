@@ -25,6 +25,10 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   int _currentStep = 1;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
+
+  bool get _isAnyLoading => _isLoading || _isGoogleLoading || _isAppleLoading;
 
   // Step 2 Data
   User? _firebaseUser;
@@ -65,7 +69,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
+    setState(() => _isGoogleLoading = true);
     try {
       final result = await ref.read(authRepositoryProvider).signInWithGoogle();
 
@@ -94,12 +98,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
   Future<void> _handleAppleSignIn() async {
-    setState(() => _isLoading = true);
+    setState(() => _isAppleLoading = true);
     try {
       final result = await ref.read(authRepositoryProvider).signInWithApple();
 
@@ -128,7 +132,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ).showSnackBar(SnackBar(content: Text('Apple Sign-In failed: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isAppleLoading = false);
     }
   }
 
@@ -364,7 +368,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         const SizedBox(height: 32),
         Text(
-          'Join Cloud Wash',
+          'Join Cloud',
           style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
@@ -378,8 +382,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           width: double.infinity,
           height: 60,
           child: OutlinedButton.icon(
-            onPressed: _isLoading ? null : _handleGoogleSignIn,
-            icon: _isLoading
+            onPressed: _isAnyLoading ? null : _handleGoogleSignIn,
+            icon: _isGoogleLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -416,29 +420,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           SizedBox(
             width: double.infinity,
             height: 60,
-            child: OutlinedButton.icon(
-              onPressed: _isLoading ? null : _handleAppleSignIn,
-              icon: _isLoading
+            child: ElevatedButton.icon(
+              onPressed: _isAnyLoading ? null : _handleAppleSignIn,
+              icon: _isAppleLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Icon(Icons.apple, size: 24, color: Colors.black),
+                  : const Icon(Icons.apple, size: 24, color: Colors.white),
               label: Text(
                 'Sign up with Apple',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.grey.shade200),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                backgroundColor: Colors.white,
+                elevation: 0,
               ),
             ),
           ),
@@ -656,7 +664,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : onTap,
+        onPressed: _isAnyLoading ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,

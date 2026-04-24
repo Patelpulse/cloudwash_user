@@ -1,11 +1,168 @@
+// import 'package:cloud_user/core/theme/app_theme.dart';
+// import 'package:cloud_user/features/orders/data/order_model.dart';
+// import 'package:cloud_user/features/orders/data/order_provider.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
+// import 'package:flutter/material.dart';
+// import 'package:go_router/go_router.dart';
+// import 'package:google_fonts/google_fonts.dart';
+// import 'package:sizer/sizer.dart';
+
+// class MobileMainScreen extends ConsumerWidget {
+//   final Widget child;
+
+//   const MobileMainScreen({super.key, required this.child});
+
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     // Listen for real-time order status updates from Firebase
+//     ref.listen(userOrdersRealtimeProvider, (previous, next) {
+//       if (previous != null &&
+//           previous is AsyncData<List<OrderModel>> &&
+//           next is AsyncData<List<OrderModel>>) {
+//         final previousOrders = previous.value;
+//         final currentOrders = next.value;
+//         for (var order in currentOrders) {
+//           final oldOrder = previousOrders.firstWhere(
+//             (o) => o.id == order.id,
+//             orElse: () => order.copyWith(status: 'NEW'),
+//           );
+
+//           if (oldOrder.status != 'NEW' && oldOrder.status != order.status) {
+//             // Status updated! Show notification
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(
+//                 behavior: SnackBarBehavior.floating,
+//                 backgroundColor: AppTheme.primary,
+//                 content: Text(
+//                   'Booking #${order.orderNumber} status updated to ${order.status.toUpperCase()}',
+//                   style: const TextStyle(fontWeight: FontWeight.bold),
+//                 ),
+//                 duration: const Duration(seconds: 4),
+//               ),
+//             );
+//           }
+//         }
+//       }
+//     });
+
+//     final String location = GoRouterState.of(context).uri.path;
+
+//     int getCurrentIndex() {
+//       if (location == '/') return 0;
+//       if (location.startsWith('/services')) return 1;
+//       if (location.startsWith('/cart')) return 2;
+//       if (location.startsWith('/bookings')) return 3;
+//       if (location.startsWith('/profile')) return 4;
+//       return 0;
+//     }
+
+//     void onDestinationSelected(int index) {
+//       switch (index) {
+//         case 0:
+//           context.go('/');
+//           break;
+//         case 1:
+//           context.go('/services');
+//           break;
+//         case 2:
+//           context.go('/cart');
+//           break;
+//         case 3:
+//           context.go('/bookings');
+//           break;
+//         case 4:
+//           context.go('/profile');
+//           break;
+//       }
+//     }
+
+//     return Scaffold(
+//       body: child,
+//       bottomNavigationBar: Container(
+//         decoration: BoxDecoration(
+//           boxShadow: [
+//             BoxShadow(
+//               color: Colors.black.withOpacity(0.08),
+//               blurRadius: 20,
+//               offset: const Offset(0, -4),
+//             ),
+//           ],
+//         ),
+//         child: NavigationBarTheme(
+//           data: NavigationBarThemeData(
+//             height: 60,
+//             backgroundColor: Colors.white,
+//             indicatorColor: AppTheme.primary.withOpacity(0.08),
+//             indicatorShape: RoundedRectangleBorder(
+//               borderRadius: BorderRadius.circular(16),
+//             ),
+//             labelTextStyle: MaterialStateProperty.resolveWith((states) {
+//               final isSelected = states.contains(MaterialState.selected);
+//               return GoogleFonts.inter(
+//                 fontSize: 11,
+//                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+//                 color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+//               );
+//             }),
+//             iconTheme: MaterialStateProperty.resolveWith((states) {
+//               final isSelected = states.contains(MaterialState.selected);
+//               return IconThemeData(
+//                 size: 26,
+//                 color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+//               );
+//             }),
+//           ),
+//           child: NavigationBar(
+//             selectedIndex: getCurrentIndex(),
+//             onDestinationSelected: onDestinationSelected,
+//             elevation: 0,
+//             destinations: const [
+//               NavigationDestination(
+//                 icon: Icon(Icons.home_outlined),
+//                 selectedIcon: Icon(Icons.home_rounded),
+//                 label: 'Home',
+//               ),
+//               NavigationDestination(
+//                 icon: Icon(Icons.grid_view_outlined),
+//                 selectedIcon: Icon(Icons.grid_view_rounded),
+//                 label: 'Services',
+//               ),
+//               NavigationDestination(
+//                 icon: Icon(Icons.shopping_basket_outlined),
+//                 selectedIcon: Icon(Icons.shopping_basket_rounded),
+//                 label: 'Cart',
+//               ),
+//               NavigationDestination(
+//                 icon: Icon(Icons.calendar_month_outlined),
+//                 selectedIcon: Icon(Icons.calendar_month_rounded),
+//                 label: 'Bookings',
+//               ),
+//               NavigationDestination(
+//                 icon: Icon(Icons.person_outline),
+//                 selectedIcon: Icon(Icons.person_rounded),
+//                 label: 'Profile',
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
+
+
+import 'dart:io';
+
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/orders/data/order_model.dart';
 import 'package:cloud_user/features/orders/data/order_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sizer/sizer.dart';
 
 class MobileMainScreen extends ConsumerWidget {
   final Widget child;
@@ -14,7 +171,7 @@ class MobileMainScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Listen for real-time order status updates from Firebase
+    /// 🔔 Listen for realtime order updates
     ref.listen(userOrdersRealtimeProvider, (previous, next) {
       if (previous != null &&
           previous is AsyncData<List<OrderModel>> &&
@@ -29,7 +186,6 @@ class MobileMainScreen extends ConsumerWidget {
           );
 
           if (oldOrder.status != 'NEW' && oldOrder.status != order.status) {
-            // Status updated! Show notification
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 behavior: SnackBarBehavior.floating,
@@ -46,178 +202,174 @@ class MobileMainScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(body: child, bottomNavigationBar: _MobileBottomBar());
-  }
-}
-
-class _MobileBottomBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
     final String location = GoRouterState.of(context).uri.path;
 
     int getCurrentIndex() {
       if (location == '/') return 0;
-      if (location == '/services') return 1;
-      if (location == '/cart') return 2;
-      if (location == '/bookings') return 3;
-      if (location == '/profile') return 4;
-      return -1;
+      if (location.startsWith('/services')) return 1;
+      if (location.startsWith('/cart')) return 2;
+      if (location.startsWith('/bookings')) return 3;
+      if (location.startsWith('/profile')) return 4;
+      return 0;
     }
-    final padding = MediaQuery.of(context).padding;
 
+    void onDestinationSelected(int index) {
+      switch (index) {
+        case 0:
+          context.go('/');
+          break;
+        case 1:
+          context.go('/services');
+          break;
+        case 2:
+          context.go('/cart');
+          break;
+        case 3:
+          context.go('/bookings');
+          break;
+        case 4:
+          context.go('/profile');
+          break;
+      }
+    }
 
-return Padding(
-  padding: EdgeInsets.only(bottom: padding.bottom),
-  child: Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 20,
-          offset: const Offset(0, -5),
-        ),
-      ],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _BottomNavItem(
-          icon: Icons.home_rounded,
-          label: 'Home',
-          isActive: getCurrentIndex() == 0,
-          onTap: () => context.go('/'),
-        ),
-        _BottomNavItem(
-          icon: Icons.grid_view_rounded,
-          label: 'Services',
-          isActive: getCurrentIndex() == 1,
-          onTap: () => context.go('/services'),
-        ),
-        _BottomNavItem(
-          icon: Icons.shopping_basket_rounded,
-          label: 'Cart',
-          isActive: getCurrentIndex() == 2,
-          onTap: () => context.go('/cart'),
-        ),
-        _BottomNavItem(
-          icon: Icons.calendar_month_rounded,
-          label: 'Bookings',
-          isActive: getCurrentIndex() == 3,
-          onTap: () => context.go('/bookings'),
-        ),
-        _BottomNavItem(
-          icon: Icons.person_rounded,
-          label: 'Profile',
-          isActive: getCurrentIndex() == 4,
-          onTap: () => context.go('/profile'),
-        ),
-      ],
-    ),
-  ),
-);
-    // return Padding(
-    //   padding:  EdgeInsets.only(bottom: padding.bottom),
-    //   child: Container(
-    //     height: 20.h,
-    //     decoration: BoxDecoration(
-    //       color: Colors.white,
-    //       boxShadow: [
-    //         BoxShadow(
-    //           color: Colors.black.withOpacity(0.1),
-    //           blurRadius: 20,
-    //           offset: const Offset(0, -5),
-    //         ),
-    //       ],
-    //     ),
-    //     child: Row(
-    //       mainAxisAlignment: MainAxisAlignment.spaceAround,
-    //       children: [
-    //         _BottomNavItem(
-    //           icon: Icons.home_rounded,
-    //           label: 'Home',
-    //           isActive: getCurrentIndex() == 0,
-    //           onTap: () => context.go('/'),
-    //         ),
-    //         _BottomNavItem(
-    //           icon: Icons.grid_view_rounded,
-    //           label: 'Services',
-    //           isActive: getCurrentIndex() == 1,
-    //           onTap: () => context.go('/services'),
-    //         ),
-    //         _BottomNavItem(
-    //           icon: Icons.shopping_basket_rounded,
-    //           label: 'Cart',
-    //           isActive: getCurrentIndex() == 2,
-    //           onTap: () => context.go('/cart'),
-    //         ),
-    //         _BottomNavItem(
-    //           icon: Icons.calendar_month_rounded,
-    //           label: 'Bookings',
-    //           isActive: getCurrentIndex() == 3,
-    //           onTap: () => context.go('/bookings'),
-    //         ),
-    //         _BottomNavItem(
-    //           icon: Icons.person_rounded,
-    //           label: 'Profile',
-    //           isActive: getCurrentIndex() == 4,
-    //           onTap: () => context.go('/profile'),
-    //         ),
-    //       ],
-    //     ),
-    //   ),
-    // );
-  
-  
+    final currentIndex = getCurrentIndex();
+
+    return Scaffold(
+      body: child,
+
+      /// 🔥 Adaptive Bottom Navigation
+      bottomNavigationBar: SafeArea(
+        child: Platform.isIOS
+            ? _buildCupertinoTabBar(
+                context,
+                currentIndex,
+                onDestinationSelected,
+              )
+            : _buildMaterialNavBar(
+                context,
+                currentIndex,
+                onDestinationSelected,
+              ),
+      ),
+    );
   }
-}
 
-class _BottomNavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _BottomNavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
+  /// 🍏 iOS Style Bottom Nav
+  Widget _buildCupertinoTabBar(
+    BuildContext context,
+    int currentIndex,
+    Function(int) onTap,
+  ) {
+    return CupertinoTabBar(
+      currentIndex: currentIndex,
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppTheme.primary.withOpacity(0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? AppTheme.primary : const Color(0xFF9CA3AF),
-              size: 26,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              color: isActive ? AppTheme.primary : const Color(0xFF9CA3AF),
-            ),
+      activeColor: AppTheme.primary,
+      inactiveColor: Colors.grey,
+      backgroundColor: Colors.white,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(CupertinoIcons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(CupertinoIcons.square_grid_2x2),
+          label: 'Services',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(CupertinoIcons.cart),
+          label: 'Cart',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(CupertinoIcons.calendar),
+          label: 'Bookings',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(CupertinoIcons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
+  /// 🤖 Android Material 3 Nav
+  Widget _buildMaterialNavBar(
+    BuildContext context,
+    int currentIndex,
+    Function(int) onTap,
+  ) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
+      ),
+      child: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          height: 65,
+          backgroundColor: Colors.white,
+          indicatorColor: AppTheme.primary.withOpacity(0.1),
+          indicatorShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          labelTextStyle: MaterialStateProperty.resolveWith((states) {
+            final isSelected = states.contains(MaterialState.selected);
+            return GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight:
+                  isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected
+                  ? AppTheme.primary
+                  : AppTheme.textSecondary,
+            );
+          }),
+          iconTheme: MaterialStateProperty.resolveWith((states) {
+            final isSelected = states.contains(MaterialState.selected);
+            return IconThemeData(
+              size: 26,
+              color: isSelected
+                  ? AppTheme.primary
+                  : AppTheme.textSecondary,
+            );
+          }),
+        ),
+        child: NavigationBar(
+          selectedIndex: currentIndex,
+          onDestinationSelected: onTap,
+          elevation: 0,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.grid_view_outlined),
+              selectedIcon: Icon(Icons.grid_view_rounded),
+              label: 'Services',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.shopping_basket_outlined),
+              selectedIcon: Icon(Icons.shopping_basket_rounded),
+              label: 'Cart',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined),
+              selectedIcon: Icon(Icons.calendar_month_rounded),
+              label: 'Bookings',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }

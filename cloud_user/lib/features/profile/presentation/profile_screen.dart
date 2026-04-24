@@ -9,6 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_user/core/widgets/auth_required_placeholder.dart';
+
+import '../../cart/data/cart_provider.dart';
+import '../../location/data/address_provider.dart' show selectedAddressProvider, userAddressesProvider;
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -21,20 +25,10 @@ class ProfileScreen extends ConsumerWidget {
     return userAsync.when(
       data: (user) {
         if (user == null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Please login to view profile'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => context.push('/login'),
-                    child: const Text('Login'),
-                  ),
-                ],
-              ),
-            ),
+          return const AuthRequiredPlaceholder(
+            title: 'Your Profile',
+            message: 'Sign in to manage your addresses, view notifications, and update your personal information.',
+            icon: Icons.person_outline,
           );
         }
 
@@ -46,6 +40,7 @@ class ProfileScreen extends ConsumerWidget {
             vertical: isDesktop ? 60 : 20,
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildProfileHeader(context, user, isDesktop),
               const SizedBox(height: 32),
@@ -244,12 +239,7 @@ class ProfileScreen extends ConsumerWidget {
         title: 'Logout',
         subtitle: 'Sign out from account',
         color: Colors.red,
-        onTap: () async {
-          await ref.read(authRepositoryProvider).logout();
-          ref.invalidate(authStateProvider);
-          ref.invalidate(userProfileProvider);
-          if (context.mounted) context.go('/');
-        },
+        onTap: () => _showLogoutDialog(context, ref),
       ),
     ];
 
@@ -360,6 +350,40 @@ class ProfileScreen extends ConsumerWidget {
           style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 12),
         ),
       ],
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showAdaptiveDialog(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout from Cloud Wash?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); 
+              context.go('/'); // Navigate to home first to avoid rebuild flash
+              await ref.read(authRepositoryProvider).logout();
+              
+              // Comprehensive state reset
+              ref.invalidate(authStateProvider);
+              ref.invalidate(userProfileProvider);
+              ref.invalidate(userAddressesProvider);
+              ref.invalidate(selectedAddressProvider);
+              ref.read(cartProvider.notifier).clearCart();
+            },
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

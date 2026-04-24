@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 part 'auth_repository.g.dart';
 
@@ -27,7 +27,12 @@ class AuthRepository {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb
         ? '864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com'
-        : null,
+        : (defaultTargetPlatform == TargetPlatform.iOS
+            ? '864806051234-56q2qa18u2eg3gii8r9b3qi78bkhsr2r.apps.googleusercontent.com'
+            : null),
+    serverClientId: kIsWeb
+        ? null
+        : '864806051234-ioslqq625a88mpejsj1chsn0bm4cunrf.apps.googleusercontent.com',
   );
 
   AuthRepository(this._dio, this._tokenStorage);

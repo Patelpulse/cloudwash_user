@@ -2,6 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -30,10 +31,27 @@
 	<string>We use your location to provide continuous location-based features.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We use your location to enhance user experience and provide relevant services.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library so you can select profile pictures or upload relevant images.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera so you can capture profile pictures or relevant images directly.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone to capture videos with audio.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.864806051234-56q2qa18u2eg3gii8r9b3qi78bkhsr2r</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen.storyboard</string>
+<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UIStatusBarHidden</key>

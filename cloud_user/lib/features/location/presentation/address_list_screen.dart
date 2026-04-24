@@ -25,7 +25,7 @@ class AddressListScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.adaptive.arrow_back, color: Colors.black),
           onPressed: () => context.pop(),
         ),
       ),

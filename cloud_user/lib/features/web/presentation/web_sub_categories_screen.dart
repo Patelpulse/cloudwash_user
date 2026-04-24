@@ -31,6 +31,20 @@ class WebSubCategoriesScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (MediaQuery.of(context).size.width < 1000)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(
+                        Icons.adaptive.arrow_back,
+                        color: const Color(0xFF1E293B),
+                        size: 28,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
                 Text(
                   categoryName,
                   style: const TextStyle(

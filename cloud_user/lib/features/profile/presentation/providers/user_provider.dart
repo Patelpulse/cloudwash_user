@@ -100,7 +100,12 @@ class UserProfile extends _$UserProfile {
     }
 
     // Fallback to API if Firestore fails or is empty
-    return await ref.read(authRepositoryProvider).getProfile();
+    try {
+      return await ref.read(authRepositoryProvider).getProfile();
+    } catch (e) {
+      print('⚠️ Silent fallback: User profile fetch failed (likely not logged in): $e');
+      return null;
+    }
   }
 
   Future<void> updateProfile({

@@ -47,7 +47,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
 
     // Particle animation controller
     _particleController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2500),
       vsync: this,
     )..repeat();
 
@@ -81,14 +81,20 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
     // Start visual animation
     _logoController.forward();
 
-    // Minimum splash duration
-    final minDuration = Future.delayed(const Duration(milliseconds: 2500));
+    // Minimum splash duration (1.5s for snappier feel)
+    final minDuration = Future.delayed( Duration(seconds: 3));
 
-    // Data loading (if provided)
-    final dataLoading = widget.loadData?.call() ?? Future.value();
+    try {
+      // Data loading (if provided)
+      final dataLoading = widget.loadData?.call() ?? Future.value();
 
-    // Wait for BOTH to finish
-    await Future.wait([minDuration, dataLoading]);
+      // Wait for BOTH to finish
+      await Future.wait([minDuration, dataLoading]);
+    } catch (e) {
+      debugPrint('⚠️ Splash Screen Error: $e');
+      // Even if loading fails, wait for minimum duration to ensure smooth transition
+      await minDuration;
+    }
 
     if (mounted) {
       widget.onAnimationComplete();
@@ -108,7 +114,6 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Animated particles background
           AnimatedBuilder(
             animation: _particleController,
             builder: (context, child) {
@@ -181,7 +186,6 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
             ),
           ),
 
-          // Loading indicator at bottom
           Positioned(
             bottom: 60,
             left: 0,
@@ -235,21 +239,33 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
 
   Widget _buildSplashLogo() {
     final logoUrl = (widget.dynamicLogoUrl ?? '').trim();
-    if (logoUrl.isEmpty) {
-      return _buildDefaultLogo();
-    }
 
-    final bytes = _decodeDataImage(logoUrl);
-    if (bytes != null) {
-      return _buildLogoFrame(Image.memory(bytes, fit: BoxFit.contain));
-    }
-
-    return _buildLogoFrame(
-      Image.network(
-        withLogoCacheBust(logoUrl),
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => _buildDefaultLogo(),
-      ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      child: logoUrl.isEmpty
+          ? KeyedSubtree(
+              key: const ValueKey('default_logo'),
+              child: _buildDefaultLogo(),
+            )
+          : KeyedSubtree(
+              key: ValueKey(logoUrl),
+              child: _buildLogoFrame(
+                _decodeDataImage(logoUrl) != null
+                    ? Image.memory(
+                        _decodeDataImage(logoUrl)!,
+                        fit: BoxFit.contain,
+                      )
+                    : Image.network(
+                        withLogoCacheBust(logoUrl),
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return _buildDefaultLogo();
+                        },
+                        errorBuilder: (_, __, ___) => _buildDefaultLogo(),
+                      ),
+              ),
+            ),
     );
   }
 
@@ -259,7 +275,13 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen>
 
   Widget _buildDefaultLogo() {
     return _buildLogoFrame(
-      Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+      ),
     );
   }
 }

@@ -43,9 +43,9 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
               backgroundColor: Colors.white,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 18,
+                icon: Icon(
+                  Icons.adaptive.arrow_back,
+                  size: 20,
                   color: Colors.black,
                 ),
                 onPressed: () => context.pop(),
@@ -102,9 +102,9 @@ class _ServiceDetailsScreenState extends ConsumerState<ServiceDetailsScreen> {
                 child: CircleAvatar(
                   backgroundColor: Colors.white.withValues(alpha: 0.9),
                   child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 18,
+                    icon: Icon(
+                      Icons.adaptive.arrow_back,
+                      size: 20,
                       color: Colors.black,
                     ),
                     onPressed: () => context.pop(),

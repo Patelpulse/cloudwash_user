@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_user/features/orders/data/order_provider.dart';
@@ -6,6 +7,8 @@ import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_user/core/widgets/auth_required_placeholder.dart';
+import 'package:cloud_user/features/auth/presentation/providers/auth_state_provider.dart';
 
 class WebBookingsScreen extends ConsumerStatefulWidget {
   const WebBookingsScreen({super.key});
@@ -16,105 +19,156 @@ class WebBookingsScreen extends ConsumerStatefulWidget {
 
 class _WebBookingsScreenState extends ConsumerState<WebBookingsScreen> {
   String _selectedFilter = 'all';
+  double _scrollOpacity = 0;
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 1000;
     final ordersAsync = ref.watch(userOrdersRealtimeProvider);
+    final isAuthenticated = ref.watch(authStateProvider).value ?? false;
 
+    if (!isAuthenticated) {
+      return const AuthRequiredPlaceholder(
+        title: 'Your Bookings',
+        message: 'Sign in to track your current orders and view your complete service history.',
+        icon: Icons.calendar_month_rounded,
+      );
+    }
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 1000;
+    final padding = MediaQuery.of(context).padding;
     return WebLayout(
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 600),
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 20 : 40,
-          horizontal: isMobile ? 16 : 40,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      showNavBar: !isMobile,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification) {
+            final newOpacity = (notification.metrics.pixels / 50).clamp(
+              0.0,
+              1.0,
+            );
+            if (newOpacity != _scrollOpacity) {
+              setState(() {
+                _scrollOpacity = newOpacity;
+              });
+            }
+          }
+          return false;
+        },
+        child: Stack(
           children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A73E8).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
+            Container(
+              constraints: const BoxConstraints(minHeight: 600),
+              padding: EdgeInsets.only(
+                top: isMobile ? padding.top : 60,
+                bottom: isMobile ? 60 : 60,
+                left: isMobile ? 20 : 40,
+                right: isMobile ? 20 : 40,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A73E8).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_month_rounded,
+                          color: Color(0xFF1A73E8),
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'My Bookings',
+                              style: GoogleFonts.outfit(
+                                fontSize: isMobile ? 24 : 32,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1D1D1F),
+                              ),
+                            ),
+                            Text(
+                              'Manage and track all your service requests',
+                              style: GoogleFonts.inter(
+                                fontSize: isMobile ? 12 : 14,
+                                color: const Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.calendar_month_rounded,
-                    color: Color(0xFF1A73E8),
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'My Bookings',
-                      style: GoogleFonts.outfit(
-                        fontSize: isMobile ? 24 : 32,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1F2937),
+
+                  const SizedBox(height: 32),
+
+                  // Filters
+                  _buildFilterBar(),
+
+                  const SizedBox(height: 12),
+
+                  // Orders Grid
+                  ordersAsync.when(
+                    data: (orders) {
+                      // Filter orders
+                      final filteredOrders = _selectedFilter == 'all'
+                          ? orders
+                          : orders
+                                .where((o) => o.status == _selectedFilter)
+                                .toList();
+
+                      if (filteredOrders.isEmpty) {
+                        return _buildEmptyState(orders.isEmpty);
+                      }
+
+                      return GridView.builder(
+                        padding: EdgeInsets.zero, // 🔥 important
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: isMobile ? screenWidth : 500,
+
+                          childAspectRatio: isMobile ? 1.2 : 1.4,
+                          // mainAxisExtent: isMobile ? 260 : 360,
+                          crossAxisSpacing: isMobile ? 0 : 24,
+                          mainAxisSpacing: isMobile ? 16 : 24,
+                        ),
+                        itemCount: filteredOrders.length,
+                        itemBuilder: (context, index) => _BookingCard(
+                          order: filteredOrders[index],
+                          onTap: () =>
+                              _showOrderDetails(context, filteredOrders[index]),
+                        ),
+                      );
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(),
                       ),
                     ),
-                    Text(
-                      'Manage and track all your service requests',
-                      style: GoogleFonts.inter(
-                        fontSize: isMobile ? 12 : 14,
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    error: (error, stack) => _buildErrorState(error.toString()),
+                  ),
+                ],
+              ),
             ),
-
-            const SizedBox(height: 32),
-
-            // Filters
-            _buildFilterBar(),
-
-            const SizedBox(height: 32),
-
-            // Orders Grid
-            ordersAsync.when(
-              data: (orders) {
-                // Filter orders
-                final filteredOrders = _selectedFilter == 'all'
-                    ? orders
-                    : orders.where((o) => o.status == _selectedFilter).toList();
-
-                if (filteredOrders.isEmpty) {
-                  return _buildEmptyState(orders.isEmpty);
-                }
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 500,
-                    mainAxisExtent: isMobile ? 380 : 360,
-                    crossAxisSpacing: isMobile ? 12 : 24,
-                    mainAxisSpacing: isMobile ? 12 : 24,
-                  ),
-                  itemCount: filteredOrders.length,
-                  itemBuilder: (context, index) => _BookingCard(
-                    order: filteredOrders[index],
-                    onTap: () =>
-                        _showOrderDetails(context, filteredOrders[index]),
-                  ),
-                );
-              },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40),
-                  child: CircularProgressIndicator(),
+            if (!kIsWeb)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: MediaQuery.of(context).padding.top,
+                  color: const Color(0xFFF8F9FA).withOpacity(_scrollOpacity),
                 ),
               ),
-              error: (error, stack) => _buildErrorState(error.toString()),
-            ),
           ],
         ),
       ),
@@ -328,6 +382,7 @@ class _BookingCardState extends State<_BookingCard> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 1000;
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -360,25 +415,25 @@ class _BookingCardState extends State<_BookingCard> {
             children: [
               // Header
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(isMobile ? 16 : 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                        horizontal: 10,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '#${widget.order.orderNumber}',
-                        style: GoogleFonts.sourceCodePro(
-                          fontSize: 13,
+                        '#ORD${widget.order.orderNumber}',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: isMobile ? 10 : 11,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF374151),
+                          color: const Color(0xFF4B5563),
                         ),
                       ),
                     ),
@@ -390,7 +445,7 @@ class _BookingCardState extends State<_BookingCard> {
               // Body
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(isMobile ? 16 : 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -398,8 +453,8 @@ class _BookingCardState extends State<_BookingCard> {
                         children: [
                           Icon(
                             Icons.calendar_today_outlined,
-                            size: 16,
-                            color: Colors.grey[500],
+                            size: 14,
+                            color: Colors.grey.shade400,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -408,18 +463,19 @@ class _BookingCardState extends State<_BookingCard> {
                             ).format(widget.order.createdAt),
                             style: GoogleFonts.inter(
                               color: const Color(0xFF6B7280),
+                              fontSize: isMobile ? 12 : 13,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: isMobile ? 12 : 16),
                       Text(
                         '${widget.order.services.length} Service(s)',
                         style: GoogleFonts.outfit(
-                          fontSize: 18,
+                          fontSize: isMobile ? 16 : 18,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1F2937),
+                          color: const Color(0xFF1D1D1F),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -427,9 +483,9 @@ class _BookingCardState extends State<_BookingCard> {
                         widget.order.services.map((s) => s.name).join(', '),
                         style: GoogleFonts.inter(
                           color: const Color(0xFF6B7280),
-                          fontSize: 13,
+                          fontSize: isMobile ? 12 : 13,
                         ),
-                        maxLines: 2,
+                        maxLines: isMobile ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const Spacer(),
@@ -437,8 +493,8 @@ class _BookingCardState extends State<_BookingCard> {
                         children: [
                           Icon(
                             Icons.location_on_outlined,
-                            size: 16,
-                            color: Colors.grey[500],
+                            size: 14,
+                            color: Colors.grey.shade400,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -446,7 +502,7 @@ class _BookingCardState extends State<_BookingCard> {
                               widget.order.address.fullAddress ?? 'No address',
                               style: GoogleFonts.inter(
                                 color: const Color(0xFF6B7280),
-                                fontSize: 13,
+                                fontSize: isMobile ? 12 : 13,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -460,13 +516,11 @@ class _BookingCardState extends State<_BookingCard> {
               ),
               // Footer
               Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(22),
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
                 ),
+                decoration: const BoxDecoration(color: Color(0xFFF9FAFB)),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -475,6 +529,7 @@ class _BookingCardState extends State<_BookingCard> {
                       style: GoogleFonts.inter(
                         color: const Color(0xFF6B7280),
                         fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                     Text(
@@ -620,7 +675,7 @@ class _BookingDetailsModalState extends ConsumerState<_BookingDetailsModal> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back),
+                      icon: Icon(Icons.adaptive.arrow_back),
                       style: IconButton.styleFrom(
                         backgroundColor: const Color(0xFFF3F4F6),
                       ),

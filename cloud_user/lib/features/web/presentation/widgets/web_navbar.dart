@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:cloud_user/core/theme/app_theme.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +27,8 @@ class WebNavBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!kIsWeb) return const SizedBox.shrink();
+
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
     final double navLogoHeight = isMobile

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_user/features/orders/data/order_model.dart';
 import 'package:cloud_user/features/orders/data/order_provider.dart';
@@ -31,8 +32,8 @@ class BookingDetailsScreen extends ConsumerWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.blue),
+                    onPressed: () => context.pop(),
+                    icon: Icon(Icons.adaptive.arrow_back, color: Colors.blue),
                   ),
                   const SizedBox(width: 8),
                   Text(

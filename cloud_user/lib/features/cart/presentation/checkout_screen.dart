@@ -28,7 +28,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    // ... existing init code ...
+    // Initialize address selection with last order or default
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(selectedAddressProvider.notifier).initializeDefault();
+    });
   }
 
   // ... _placeOrder mod ...
@@ -211,7 +214,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.adaptive.arrow_back, color: Colors.black),
           onPressed: () => _currentStep == 0
               ? context.pop()
               : setState(() => _currentStep = 0),
@@ -535,12 +538,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ],
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => _showAddressSelection(context),
-                    child: const Text(
-                      'Change',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final addressListAsync = ref.watch(userAddressesProvider);
+                      final hasAddresses = addressListAsync.when(
+                        data: (list) => list.isNotEmpty,
+                        loading: () => false,
+                        error: (_, __) => false,
+                      );
+
+                      return TextButton(
+                        onPressed: hasAddresses
+                            ? () => _showAddressSelection(context)
+                            : () => context.push('/add-address'),
+                        child: Text(
+                          hasAddresses ? 'Change' : 'Add Address',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

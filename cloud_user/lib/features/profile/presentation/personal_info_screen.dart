@@ -21,135 +21,138 @@ class PersonalInfoScreen extends ConsumerWidget {
           return const Scaffold(body: Center(child: Text('Please login')));
         }
 
-        Widget content = Center(
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: isDesktop ? 700 : double.infinity,
-            ),
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!isDesktop)
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Personal Info',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 32),
-
-                // Profile Card
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.primary.withOpacity(0.1),
-                              width: 6,
-                            ),
-                            image: DecorationImage(
-                              image: NetworkImage(
-                                user['profileImage'] ??
-                                    'https://i.pravatar.cc/150?u=user_cloudwash',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        user['name'] ?? 'User',
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        user['createdAt'] != null
-                            ? 'Member since ${DateTime.parse(user['createdAt']).year}'
-                            : 'Member since 2024',
-                        style: GoogleFonts.inter(
-                          color: Colors.grey.shade500,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      const Divider(),
-                      const SizedBox(height: 32),
-
-                      _buildInfoRow(
-                        context,
-                        icon: Icons.email_outlined,
-                        label: 'Email Address',
-                        value: user['email'] ?? 'Not provided',
-                      ),
-                      const SizedBox(height: 24),
-                      _buildInfoRow(
-                        context,
-                        icon: Icons.phone_android_outlined,
-                        label: 'Phone Number',
-                        value: user['phone'] ?? 'Not provided',
-                      ),
-                      // Removed Verify Status row
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 48),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.push('/edit-profile'),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: Text(
-                      'Edit Details',
+        Widget content = Container(
+          alignment: Alignment.topCenter,
+          constraints: BoxConstraints(
+            maxWidth: isDesktop ? 700 : double.infinity,
+            minHeight: MediaQuery.of(context).size.height,
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 32 : 20,
+            vertical: isDesktop ? 32 : 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isDesktop)
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.adaptive.arrow_back),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Personal Info',
                       style: GoogleFonts.poppins(
-                        fontSize: 16,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  ],
+                ),
+              const SizedBox(height: 32),
+
+              // Profile Card
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppTheme.primary.withOpacity(0.1),
+                            width: 6,
+                          ),
+                          image: DecorationImage(
+                            image: NetworkImage(
+                              user['profileImage'] ??
+                                  'https://i.pravatar.cc/150?u=user_cloudwash',
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                      elevation: 0,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      user['name'] ?? 'User',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      user['createdAt'] != null
+                          ? 'Member since ${DateTime.parse(user['createdAt']).year}'
+                          : 'Member since 2024',
+                      style: GoogleFonts.inter(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 32),
+
+                    _buildInfoRow(
+                      context,
+                      icon: Icons.email_outlined,
+                      label: 'Email Address',
+                      value: user['email'] ?? 'Not provided',
+                    ),
+                    const SizedBox(height: 24),
+                    _buildInfoRow(
+                      context,
+                      icon: Icons.phone_android_outlined,
+                      label: 'Phone Number',
+                      value: user['phone'] ?? 'Not provided',
+                    ),
+                    // Removed Verify Status row
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 48),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/edit-profile'),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(
+                    'Edit Details',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
 
@@ -186,26 +189,30 @@ class PersonalInfoScreen extends ConsumerWidget {
           child: Icon(icon, color: AppTheme.primary, size: 20),
         ),
         const SizedBox(width: 20),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  // fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: valueColor ?? Colors.black87,
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: valueColor ?? Colors.black87,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

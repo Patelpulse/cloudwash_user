@@ -241,7 +241,7 @@ class OrderRepository {
   // Listen to user's orders real-time from Firebase
   Stream<List<OrderModel>> listenToUserOrders({String? userId}) {
     final uid = userId ?? _auth.currentUser?.uid;
-    if (uid == null) return Stream.value([]);
+    print('🔍 OrderRepository: Listening to Firestore path: users/$uid/orders');
 
     return _firestore
         .collection('users')
@@ -249,13 +249,19 @@ class OrderRepository {
         .collection('orders')
         .snapshots()
         .map((snapshot) {
+          print('🔍 OrderRepository: Found ${snapshot.docs.length} orders in Firestore');
           final orders = snapshot.docs.map((doc) {
             final data = doc.data();
             // Ensure ID is present for cancellation/updates
             if (!data.containsKey('_id')) {
               data['_id'] = doc.id;
             }
-            return OrderModel.fromJson(data);
+            try {
+              return OrderModel.fromJson(data);
+            } catch (e) {
+              print('🔥 OrderRepository: Error parsing order ${doc.id}: $e');
+              rethrow;
+            }
           }).toList();
 
           // Sort in memory instead of Firestore to avoid index requirement

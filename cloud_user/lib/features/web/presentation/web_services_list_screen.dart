@@ -352,9 +352,32 @@ class _WebServicesListScreenState extends ConsumerState<WebServicesListScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              widget.subCategoryName,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: Icon(
+                      Icons.adaptive.arrow_back,
+                      color: Colors.black,
+                      size: 24,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.subCategoryName,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
             Row(
               children: [

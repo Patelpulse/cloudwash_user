@@ -1,5 +1,6 @@
 import 'package:cloud_user/features/location/data/address_model.dart';
 import 'package:cloud_user/features/location/data/address_repository.dart';
+import 'package:cloud_user/features/orders/data/order_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'address_provider.g.dart';
@@ -66,7 +67,7 @@ class SelectedAddress extends _$SelectedAddress {
     state = null;
   }
 
-  // Initialize with default address if available
+  // Initialize with last order address or default address if available
   Future<void> initializeDefault() async {
     final addressesAsync = await ref.read(userAddressesProvider.future);
     if (addressesAsync.isEmpty) {
@@ -75,8 +76,29 @@ class SelectedAddress extends _$SelectedAddress {
     }
 
     try {
+      // 1. Try to find last used address from orders
+      final ordersAsync = await ref.read(userOrdersRealtimeProvider.future);
+      if (ordersAsync.isNotEmpty) {
+        final lastAddress = ordersAsync.first.address;
+        // Try to match by full address string
+        final matched = addressesAsync.firstWhere(
+          (a) =>
+              a.fullAddress.trim().toLowerCase() ==
+              lastAddress.fullAddress?.trim().toLowerCase(),
+        );
+        print('✅ Auto-selected last used address: ${matched.label}');
+        state = matched;
+        return;
+      }
+    } catch (e) {
+      print('⚠️ Failed to match last order address: $e');
+    }
+
+    // 2. Fallback to default address
+    try {
       state = addressesAsync.firstWhere((a) => a.isDefault);
     } catch (_) {
+      // 3. Last fallback: first address
       state = addressesAsync.first;
     }
   }

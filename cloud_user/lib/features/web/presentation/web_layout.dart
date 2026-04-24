@@ -11,6 +11,7 @@ import 'package:cloud_user/features/notifications/presentation/providers/notific
 import 'package:cloud_user/features/orders/data/order_provider.dart';
 import 'package:cloud_user/features/orders/data/order_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,6 +21,7 @@ class WebLayout extends ConsumerStatefulWidget {
   final Widget? endDrawer;
   final GlobalKey<ScaffoldState>? scaffoldKey;
   final Widget? floatingBottomBar;
+  final bool showNavBar;
 
   const WebLayout({
     super.key,
@@ -27,6 +29,7 @@ class WebLayout extends ConsumerStatefulWidget {
     this.endDrawer,
     this.scaffoldKey,
     this.floatingBottomBar,
+    this.showNavBar = true,
   });
 
   @override
@@ -192,11 +195,12 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
         children: [
           Column(
             children: [
-              WebNavBar(
-                scaffoldKey: effectiveScaffoldKey,
-                logoUrl: logoUrl,
-                logoHeight: logoHeight,
-              ),
+              if (widget.showNavBar && kIsWeb)
+                WebNavBar(
+                  scaffoldKey: effectiveScaffoldKey,
+                  logoUrl: logoUrl,
+                  logoHeight: logoHeight,
+                ),
 
               // Scrollable Content
               Expanded(

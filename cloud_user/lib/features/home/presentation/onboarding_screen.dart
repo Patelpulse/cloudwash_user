@@ -25,15 +25,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    _resetOnboardingForStability();
+    // _resetOnboardingForStability();
     _preloadHomeData();
   }
 
-  void _resetOnboardingForStability() async {
-    // For now, let's clear it so the user can definitely see it first
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('onboarding_complete');
-  }
+  // void _resetOnboardingForStability() async {
+  //   // For now, let's clear it so the user can definitely see it first
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.remove('onboarding_complete');
+  // }
 
   void _preloadHomeData() {
     // Silently pre-fetch all Home data while user is onboarding
@@ -54,7 +54,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);
     if (mounted) {
-      context.go('/register');
+      context.go('/login');
     }
   }
 
@@ -87,7 +87,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // If on web, skip onboarding as requested
     if (kIsWeb) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/register');
+        context.go('/login');
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }

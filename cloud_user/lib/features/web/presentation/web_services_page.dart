@@ -3,13 +3,22 @@ import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/core/utils/image_data_utils.dart';
 import 'package:cloud_user/features/home/data/home_providers.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sizer/sizer.dart';
 
-class WebServicesPage extends ConsumerWidget {
+class WebServicesPage extends ConsumerStatefulWidget {
   const WebServicesPage({super.key});
+
+  @override
+  ConsumerState<WebServicesPage> createState() => _WebServicesPageState();
+}
+
+class _WebServicesPageState extends ConsumerState<WebServicesPage> {
+  double _scrollOpacity = 0;
+
 
   // Category icon mapping
   IconData _getCategoryIcon(String name) {
@@ -58,16 +67,31 @@ class WebServicesPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 1000;
 
     return WebLayout(
-      child: Container(
+      showNavBar: !isMobile,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollUpdateNotification) {
+            final newOpacity = (notification.metrics.pixels / 50).clamp(0.0, 1.0);
+            if (newOpacity != _scrollOpacity) {
+              setState(() {
+                _scrollOpacity = newOpacity;
+              });
+            }
+          }
+          return false;
+        },
+        child: Stack(
+          children: [
+            Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 40 : 60,
+          vertical: isMobile ? 60 : 60,
           horizontal: isMobile ? 20 : 40,
         ),
         child: Center(
@@ -80,11 +104,11 @@ class WebServicesPage extends ConsumerWidget {
                 Text(
                   'Our Services',
                   style: TextStyle(
-                    fontSize: isMobile ? 32 : 36,
+                    fontSize: isMobile ? 18.sp : 36,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+              //  SizedBox(height: 1.h),
                 Text(
                   'Professional home services at your doorstep',
                   style: TextStyle(
@@ -92,9 +116,8 @@ class WebServicesPage extends ConsumerWidget {
                     color: Colors.grey.shade600,
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 10),
 
-                // Categories Grid
                 categoriesAsync.when(
                   data: (categories) => Wrap(
                     spacing: 24,
@@ -134,7 +157,7 @@ class WebServicesPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
                 isMobile
-                    ? Column(
+                    ? const Column(
                         children: [
                           _StepCard(
                             number: '1',
@@ -158,7 +181,7 @@ class WebServicesPage extends ConsumerWidget {
                           ),
                         ],
                       )
-                    : Row(
+                    : const Row(
                         children: [
                           Expanded(
                             child: _StepCard(
@@ -192,10 +215,10 @@ class WebServicesPage extends ConsumerWidget {
                 const SizedBox(height: 80),
 
                 // CTA Section
-                Container(
+                 Container(
                   padding: EdgeInsets.all(isMobile ? 24 : 40),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [AppTheme.primary, AppTheme.primaryDark],
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -287,9 +310,12 @@ class WebServicesPage extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
+        ),
         ),
       ),
+          ]
+        ),
+      )
     );
   }
 
@@ -392,37 +418,36 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
                                 fit: BoxFit.cover,
                               )
                             : hasNetworkImage
-                                ? CachedNetworkImage(
-                                    imageUrl: normalizedImageUrl,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Container(
-                                      color: widget.bgColor,
-                                      child: Icon(
-                                        widget.icon,
-                                        size: 32,
-                                        color:
-                                            HSLColor.fromColor(widget.bgColor)
-                                                .withLightness(0.5)
-                                                .toColor(),
-                                      ),
-                                    ),
-                                    errorWidget: (_, __, ___) => Icon(
-                                      widget.icon,
-                                      size: 32,
-                                      color: HSLColor.fromColor(
-                                        widget.bgColor,
-                                      ).withLightness(0.3).toColor(),
-                                    ),
-                                  )
-                                : Icon(
+                            ? CachedNetworkImage(
+                                imageUrl: normalizedImageUrl,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: widget.bgColor,
+                                  child: Icon(
                                     widget.icon,
                                     size: 32,
                                     color: HSLColor.fromColor(
                                       widget.bgColor,
-                                    ).withLightness(0.3).toColor(),
+                                    ).withLightness(0.5).toColor(),
                                   ),
+                                ),
+                                errorWidget: (_, __, ___) => Icon(
+                                  widget.icon,
+                                  size: 32,
+                                  color: HSLColor.fromColor(
+                                    widget.bgColor,
+                                  ).withLightness(0.3).toColor(),
+                                ),
+                              )
+                            : Icon(
+                                widget.icon,
+                                size: 32,
+                                color: HSLColor.fromColor(
+                                  widget.bgColor,
+                                ).withLightness(0.3).toColor(),
+                              ),
                       )
                     : Icon(
                         widget.icon,

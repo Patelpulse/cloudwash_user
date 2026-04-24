@@ -86,7 +86,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.adaptive.arrow_back, color: Colors.black),
                 onPressed: () => context.pop(),
               ),
             ),
