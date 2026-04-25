@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "864806051234-6ongf6m54osh5nu40kffujshrog1i80b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cloudwash.app",
+            "certificate_hash": "554a3c9f8efb8aa1baaad3a65c3c6e2c39f39244"
+          }
+        },
+        {
           "client_id": "864806051234-7a45j1bm87vrsj7m7hhcgi51acqpm7e2.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -63,10 +71,11 @@
               "client_type": 3
             },
             {
-              "client_id": "864806051234-qsj7uels1o2ek134t5b8c7he6bo66mll.apps.googleusercontent.com",
+              "client_id": "864806051234-56q2qa18u2eg3gii8r9b3qi78bkhsr2r.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.patelpulseventures.Cloudwash"
+                "bundle_id": "com.patelpulseventures.Cloudwash",
+                "app_store_id": "6758009485"
               }
             }
           ]
@@ -107,10 +116,11 @@
               "client_type": 3
             },
             {
-              "client_id": "864806051234-qsj7uels1o2ek134t5b8c7he6bo66mll.apps.googleusercontent.com",
+              "client_id": "864806051234-56q2qa18u2eg3gii8r9b3qi78bkhsr2r.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.patelpulseventures.Cloudwash"
+                "bundle_id": "com.patelpulseventures.Cloudwash",
+                "app_store_id": "6758009485"
               }
             }
           ]

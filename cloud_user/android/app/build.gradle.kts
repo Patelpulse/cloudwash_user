@@ -17,8 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.cloudwash.app"
-    compileSdk = 36
-    ndkVersion = "29.0.14206865"
+compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
@@ -32,14 +32,15 @@ android {
 
     defaultConfig {
         applicationId = "com.cloudwash.app"
-        minSdk = 33
-        targetSdk = 36
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
     }
-
-    signingConfigs {
+println("MIN SDK = ${flutter.minSdkVersion}")
+println("TARGET SDK = ${flutter.targetSdkVersion}")    signingConfigs {
+        
         create("release") {
             val keyAlias = keystoreProperties.getProperty("keyAlias")
             val keyPassword = keystoreProperties.getProperty("keyPassword")

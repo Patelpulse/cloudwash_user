@@ -63,6 +63,31 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   }
 
   bool _isControllerInitialized = false;
+  String? _lastLoadedUrl;
+
+  Future<void> _onRefresh() async {
+    // Invalidate all relevant providers to force a fresh fetch
+    ref.invalidate(userProfileProvider);
+    ref.invalidate(heroSectionProvider);
+    ref.invalidate(categoriesProvider);
+    ref.invalidate(homeBannersProvider);
+    ref.invalidate(spotlightServicesProvider);
+    ref.invalidate(topServicesProvider);
+    ref.invalidate(subCategoriesProvider);
+
+    // Re-initialize video if data changes
+    _initializeController();
+
+    // Wait for critical data to reload
+    try {
+      await Future.wait([
+        ref.read(heroSectionProvider.future),
+        ref.read(categoriesProvider.future),
+      ]);
+    } catch (e) {
+      debugPrint('Refresh error: $e');
+    }
+  }
 
   void _initializeController() async {
     final heroAsync = ref.read(heroSectionProvider);
@@ -73,16 +98,16 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     heroAsync.whenData((data) {
       if (data != null && data.youtubeUrl != null) {
         String url = data.youtubeUrl!;
-        url = url.replaceAll('&muted=1', '').replaceAll('?muted=1', '');
-        if (!url.contains('?')) {
-          url +=
+      url = url.replaceAll('&muted=1', '').replaceAll('?muted=1', '');
+      if (!url.contains('?')) {
+        url +=
               '?muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
-        } else {
-          url +=
+      } else {
+        url +=
               '&muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
-        }
-        videoUrl = url;
       }
+      videoUrl = url;
+    }
     });
 
     if (!_isControllerInitialized) {
@@ -182,6 +207,13 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     final topServicesAsync = ref.watch(topServicesProvider);
     final subCategoriesAsync = ref.watch(subCategoriesProvider);
 
+    // Listen for hero section updates to re-initialize video
+    ref.listen(heroSectionProvider, (previous, next) {
+      if (next.hasValue && next.value?.youtubeUrl != previous?.value?.youtubeUrl) {
+        _initializeController();
+      }
+    });
+
     // Show Skeleton Loader only on initial load (no data yet)
     if (categoriesAsync.isLoading && !categoriesAsync.hasValue) {
       return const Scaffold(
@@ -196,9 +228,15 @@ final padding = MediaQuery.of(context).padding;
       extendBody: true,
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
+          RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: AppTheme.primary,
+            backgroundColor: Colors.white,
+            edgeOffset: padding.top + 50,
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
               // 1. VIDEO HEADER WITH OVERLAY CONTENT
             SliverToBoxAdapter(
               child: SizedBox(
@@ -1007,6 +1045,7 @@ final padding = MediaQuery.of(context).padding;
             const SliverToBoxAdapter(child: SizedBox(height: 50)),
           ],
         ),
+      ),
         Positioned(
           top: 0,
           left: 0,
