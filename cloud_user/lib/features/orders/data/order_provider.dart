@@ -4,12 +4,8 @@ import 'package:cloud_user/features/orders/data/order_repository.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
 part 'order_provider.g.dart';
 
-// ... (keep existing classes)
-
-// Booked slots for date
 final bookedSlotsProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, DateTime>((ref, date) {
       return ref.watch(orderRepositoryProvider).getBookedSlots(date);
@@ -56,12 +52,20 @@ class UserOrders extends _$UserOrders {
   // Cancel order (MongoDB + Firebase Sync)
   Future<void> cancelOrder(String orderId, String reason) async {
     try {
-      // Use the repository's cancelOrder which hits the backend API
-      // This ensures MongoDB is updated and the backend syncs to Firestore
       await ref.read(orderRepositoryProvider).cancelOrder(orderId, reason);
-      
-      // Refresh orders list
       ref.invalidateSelf();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Cancel order (Firebase ONLY)
+  Future<void> cancelOrderFirebase(String orderId, String reason) async {
+    try {
+      await ref
+          .read(orderRepositoryProvider)
+          .cancelOrderFirebase(orderId, reason);
+      // No need to invalidate since it's a stream
     } catch (e) {
       rethrow;
     }
@@ -106,6 +110,17 @@ class UserOrdersRealtime extends _$UserOrdersRealtime {
       loading: () => Stream.value([]),
       error: (_, __) => Stream.value([]),
     );
+  }
+
+  // Cancel order (Firebase ONLY)
+  Future<void> cancelOrder(String orderId, String reason) async {
+    try {
+      await ref
+          .read(orderRepositoryProvider)
+          .cancelOrderFirebase(orderId, reason);
+    } catch (e) {
+      rethrow;
+    }
   }
 }
 

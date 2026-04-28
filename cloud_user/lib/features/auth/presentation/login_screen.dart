@@ -42,14 +42,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             context.go('/');
           }
         } else {
-          // New user from login screen, they need to register
+          // New user from login screen, redirect to registration with their details
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Account not found. Please sign up first.'),
-              ),
+            final user = result.userCredential!.user!;
+            final name = user.displayName ?? '';
+            final email = user.email ?? '';
+            final photoUrl = user.photoURL ?? '';
+            
+            context.go(
+              Uri(
+                path: '/register',
+                queryParameters: {
+                  'name': name,
+                  'email': email,
+                  'photoUrl': photoUrl,
+                },
+              ).toString(),
             );
-            context.go('/register');
           }
         }
       }
@@ -77,13 +86,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             context.go('/');
           }
         } else {
+          // New user from login screen, redirect to registration with their details
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Account not found. Please sign up first.'),
-              ),
+            final user = result.userCredential!.user!;
+            final name = user.displayName ?? '';
+            final email = user.email ?? '';
+            
+            context.go(
+              Uri(
+                path: '/register',
+                queryParameters: {
+                  'name': name,
+                  'email': email,
+                },
+              ).toString(),
             );
-            context.go('/register');
           }
         }
       }
@@ -148,11 +165,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 .animate()
                 .fadeIn(duration: 600.ms)
                 .slideY(begin: -0.2, end: 0),
-            const SizedBox(height: 40),
-            _buildLoginCard()
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 600.ms)
-                .scale(begin: const Offset(0.9, 0.9)),
+            // const SizedBox(height: 40),
+            // _buildLoginCard()
+            //     .animate()
+            //     .fadeIn(delay: 200.ms, duration: 600.ms)
+            //     .scale(begin: const Offset(0.9, 0.9)),
             const SizedBox(height: 32),
             _buildSocialLogin().animate().fadeIn(
               delay: 400.ms,
@@ -354,27 +371,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildSocialLogin() {
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.grey.shade200)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'OR CONTINUE WITH',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: Colors.grey.shade200)),
-          ],
-        ),
+        // Row(
+        //   children: [
+        //     Expanded(child: Divider(color: Colors.grey.shade200)),
+        //     Padding(
+        //       padding: const EdgeInsets.symmetric(horizontal: 16),
+        //       child: Text(
+        //         'OR CONTINUE WITH',
+        //         style: GoogleFonts.inter(
+        //           fontSize: 11,
+        //           color: Colors.grey,
+        //           fontWeight: FontWeight.w600,
+        //         ),
+        //       ),
+        //     ),
+        //     Expanded(child: Divider(color: Colors.grey.shade200)),
+        //   ],
+        // ),
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          height: 60,
+          height: 56,
           child: OutlinedButton.icon(
             onPressed: _isAnyLoading ? null : _handleGoogleSignIn,
             icon: _isGoogleLoading
@@ -388,12 +405,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               height: 24,
               width: 24,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => 
-                  const Icon(Icons.g_mobiledata, size: 24),
             ),
             label: Text(
               'Sign in with Google',
-              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -408,6 +422,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+        // const SizedBox(height: 16),
+        // SizedBox(
+        //   width: double.infinity,
+        //   height: 56,
+        //   child: OutlinedButton.icon(
+        //     onPressed: _isAnyLoading ? null : _handleGoogleSignIn,
+        //     icon: _isGoogleLoading
+        //         ? const SizedBox(
+        //             width: 20,
+        //             height: 20,
+        //             child: CircularProgressIndicator(strokeWidth: 2),
+        //           )
+        //         : Image.network(
+        //       'https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png',
+        //       height: 24,
+        //       width: 24,
+        //       fit: BoxFit.contain,
+        //     ),
+        //     label: Text(
+        //       'Sign up with Google',
+        //       style: GoogleFonts.inter(
+        //         fontSize: 15,
+        //         fontWeight: FontWeight.w600,
+        //         color: Colors.black87,
+        //       ),
+        //     ),
+        //     style: OutlinedButton.styleFrom(
+        //       side: BorderSide(color: Colors.grey.shade200),
+        //       shape: RoundedRectangleBorder(
+        //         borderRadius: BorderRadius.circular(16),
+        //       ),
+        //     ),
+        //   ),
+        // ),
+       
+       
         if (!kIsWeb && Platform.isIOS) ...[
           const SizedBox(height: 16),
           SizedBox(
@@ -447,6 +497,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ],
     );
   }
+
+
 
   Widget _buildFooter() {
     return Row(

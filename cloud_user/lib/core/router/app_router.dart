@@ -24,6 +24,7 @@ import 'package:cloud_user/features/web/presentation/web_services_list_screen.da
 import 'package:cloud_user/features/web/presentation/web_services_page.dart';
 import 'package:cloud_user/features/web/presentation/web_static_page.dart';
 import 'package:cloud_user/features/web/presentation/web_sub_categories_screen.dart';
+import 'package:cloud_user/core/router/route_observer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,7 @@ GoRouter goRouter(GoRouterRef ref) {
   return GoRouter(
     initialLocation: '/',
     navigatorKey: _rootNavigatorKey,
+    observers: [routeObserver],
     debugLogDiagnostics: true,
     redirect: (context, state) async {
       final isAuthenticated = await authRepo.isAuthenticated();
@@ -53,8 +55,9 @@ GoRouter goRouter(GoRouterRef ref) {
       final isOnboarding = state.uri.path == '/onboarding';
 
       if (isAuthenticated) {
-        // If logged in and trying to access auth pages or onboarding, go to home
-        if (isAuthRoute || isOnboarding) {
+        // If logged in and trying to access login/otp or onboarding, go to home
+        // But ALLOW /register so new social users can complete their profile
+        if (state.uri.path == '/login' || state.uri.path == '/otp' || isOnboarding) {
           return '/';
         }
       } else {
@@ -210,14 +213,14 @@ List<RouteBase> _buildWebRoutes() {
       name: 'register',
       builder: (context, state) => const RegisterScreen(),
     ),
-    GoRoute(
-      path: '/otp',
-      name: 'web-otp',
-      builder: (context, state) {
-        final extras = state.extra as Map<String, String>;
-        return OtpScreen(phone: extras['phone']!, generatedOtp: extras['otp']!);
-      },
-    ),
+    // GoRoute(
+    //   path: '/otp',
+    //   name: 'web-otp',
+    //   builder: (context, state) {
+    //     final extras = state.extra as Map<String, String>;
+    //     return OtpScreen(phone: extras['phone']!, generatedOtp: extras['otp']!);
+    //   },
+    // ),
     GoRoute(
       path: '/about',
       name: 'about',

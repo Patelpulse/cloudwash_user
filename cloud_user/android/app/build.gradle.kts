@@ -17,17 +17,17 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.cloudwash.app"
-compileSdk = flutter.compileSdkVersion
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -38,9 +38,8 @@ compileSdk = flutter.compileSdkVersion
         versionName = flutter.versionName
         multiDexEnabled = true
     }
-println("MIN SDK = ${flutter.minSdkVersion}")
-println("TARGET SDK = ${flutter.targetSdkVersion}")    signingConfigs {
-        
+
+    signingConfigs {
         create("release") {
             val keyAlias = keystoreProperties.getProperty("keyAlias")
             val keyPassword = keystoreProperties.getProperty("keyPassword")

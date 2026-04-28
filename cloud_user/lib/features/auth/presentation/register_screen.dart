@@ -44,6 +44,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _showPassword = false;
   bool _showConfirmPassword = false;
 
+  final _emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Use Future.microtask to handle query parameters after the first build or during initialization
+    Future.microtask(() {
+      if (!mounted) return;
+      
+      final uri = GoRouterState.of(context).uri;
+      final name = uri.queryParameters['name'];
+      final email = uri.queryParameters['email'];
+      final photoUrl = uri.queryParameters['photoUrl'];
+
+      if (name != null || email != null) {
+        setState(() {
+          if (name != null) _nameController.text = name;
+          if (email != null) _emailController.text = email;
+          if (photoUrl != null) _profileImageUrl = photoUrl;
+          
+          // If we have data, we might be coming from a social sign-in redirect
+          // We need a way to track the firebase UID if we're at Step 2
+          // For now, let's just ensure we are at step 2 if we have social data
+          _currentStep = 2;
+        });
+      }
+    });
+  }
+
   Future<void> _pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -86,6 +115,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           setState(() {
             _firebaseUser = result.userCredential!.user;
             _nameController.text = _firebaseUser!.displayName ?? '';
+            _emailController.text = _firebaseUser!.email ?? '';
             _profileImageUrl = _firebaseUser!.photoURL;
             _currentStep = 2;
           });
@@ -120,6 +150,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           setState(() {
             _firebaseUser = result.userCredential!.user;
             _nameController.text = _firebaseUser!.displayName ?? '';
+            _emailController.text = _firebaseUser!.email ?? '';
             _profileImageUrl = _firebaseUser!.photoURL;
             _currentStep = 2;
           });
@@ -164,9 +195,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref
           .read(authRepositoryProvider)
           .completeRegistration(
-            uid: _firebaseUser!.uid,
+            uid: _firebaseUser?.uid ?? FirebaseAuth.instance.currentUser?.uid ?? '',
             name: _nameController.text,
-            email: _firebaseUser!.email!,
+            email: _emailController.text,
             phone: cleanPhone,
             password: _passwordController.text,
             profileImage: _base64Image ?? _profileImageUrl,
@@ -180,7 +211,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } catch (e) {
       String errorMessage = 'Registration failed. Please try again.';
 
-      // Try to parse specific backend error message
       if (e.toString().contains('DioException')) {
         try {
           // Dynamic access to avoid strict type need without import
@@ -537,7 +567,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         const SizedBox(height: 20),
         _buildTextField(
           'Email Address',
-          TextEditingController(text: _firebaseUser?.email),
+          _emailController,
           Icons.email_outlined,
           enabled: false,
         ),

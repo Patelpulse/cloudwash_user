@@ -367,7 +367,8 @@ class ProfileScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context); 
-              context.go('/'); // Navigate to home first to avoid rebuild flash
+              
+              // Perform logout and state reset BEFORE navigating away
               await ref.read(authRepositoryProvider).logout();
               
               // Comprehensive state reset
@@ -376,6 +377,11 @@ class ProfileScreen extends ConsumerWidget {
               ref.invalidate(userAddressesProvider);
               ref.invalidate(selectedAddressProvider);
               ref.read(cartProvider.notifier).clearCart();
+              
+              // Navigate after cleanup
+              if (context.mounted) {
+                context.go('/');
+              }
             },
             child: const Text(
               'Logout',

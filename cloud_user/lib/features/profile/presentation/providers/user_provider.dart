@@ -4,6 +4,8 @@ import 'package:cloud_user/features/auth/data/auth_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'dart:async';
 
+import '../../../auth/presentation/providers/auth_state_provider.dart';
+
 part 'user_provider.g.dart';
 
 @riverpod
@@ -12,6 +14,9 @@ class UserProfile extends _$UserProfile {
 
   @override
   FutureOr<Map<String, dynamic>?> build() async {
+    // Watch auth state to automatically rebuild on login/logout
+    ref.watch(authStateProvider);
+    
     final auth = FirebaseAuth.instance;
     final user = auth.currentUser;
 

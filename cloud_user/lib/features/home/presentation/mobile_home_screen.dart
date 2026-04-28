@@ -15,6 +15,7 @@ import 'package:cloud_user/features/profile/presentation/providers/user_provider
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +24,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:cloud_user/core/router/route_observer.dart';
 
 class MobileHomeScreen extends ConsumerStatefulWidget {
   const MobileHomeScreen({super.key});
@@ -31,19 +33,16 @@ class MobileHomeScreen extends ConsumerStatefulWidget {
   ConsumerState<MobileHomeScreen> createState() => _MobileHomeScreenState();
 }
 
-class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
+class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> with RouteAware {
   late WebViewController _videoController;
-  late ScrollController _scrollController;
+  final ScrollController _scrollController = ScrollController();
   double _scrollOpacity = 0;
   bool _isMuted = true;
-
-  get import => null;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController()..addListener(_onScroll);
-    _initializeController();
+    _scrollController.addListener(_onScroll);
   }
 
   void _onScroll() {
@@ -57,13 +56,27 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    // Called when the top route has been popped off, and this route shows up.
+    _initializeController(force: true);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _scrollController.dispose();
     super.dispose();
   }
 
   bool _isControllerInitialized = false;
   String? _lastLoadedUrl;
+  bool _isVisible = false;
 
   Future<void> _onRefresh() async {
     // Invalidate all relevant providers to force a fresh fetch
@@ -75,8 +88,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     ref.invalidate(topServicesProvider);
     ref.invalidate(subCategoriesProvider);
 
-    // Re-initialize video if data changes
-    _initializeController();
+    // Re-initialize video on refresh
+    _initializeController(force: true);
 
     // Wait for critical data to reload
     try {
@@ -89,26 +102,26 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
     }
   }
 
-  void _initializeController() async {
+  void _initializeController({bool force = false}) async {
     final heroAsync = ref.read(heroSectionProvider);
-    // Updated video URL with unmuted settings
     String videoUrl =
         'https://player.cloudinary.com/embed/?cloud_name=dssmutzly&public_id=795v3npt7drmt0cvkhmsjtwxs4_result__zj0nsr&fluid=true&controls=false&autoplay=true&loop=true&muted=${_isMuted ? 1 : 0}&show_logo=false&bigPlayButton=false';
 
     heroAsync.whenData((data) {
-      if (data != null && data.youtubeUrl != null) {
+      if (data != null && data.youtubeUrl != null && data.youtubeUrl!.isNotEmpty) {
         String url = data.youtubeUrl!;
-      url = url.replaceAll('&muted=1', '').replaceAll('?muted=1', '');
-      if (!url.contains('?')) {
-        url +=
-              '?muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
-      } else {
-        url +=
-              '&muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
+        url = url.replaceAll('&muted=1', '').replaceAll('?muted=1', '');
+        if (!url.contains('?')) {
+          url += '?muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
+        } else {
+          url += '&muted=${_isMuted ? 1 : 0}&autoplay=true&controls=false&loop=true';
+        }
+        videoUrl = url;
       }
-      videoUrl = url;
-    }
     });
+
+    if (_lastLoadedUrl == videoUrl && !force) return;
+    _lastLoadedUrl = videoUrl;
 
     if (!_isControllerInitialized) {
       late final PlatformWebViewControllerCreationParams params;
@@ -136,7 +149,9 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
             .setMediaPlaybackRequiresUserGesture(false);
       }
 
-      _isControllerInitialized = true;
+      setState(() {
+        _isControllerInitialized = true;
+      });
     }
 
     _videoController.loadRequest(Uri.parse(videoUrl));
@@ -214,14 +229,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen> {
       }
     });
 
-    // Show Skeleton Loader only on initial load (no data yet)
-    if (categoriesAsync.isLoading && !categoriesAsync.hasValue) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF8F9FA),
-        body: HomeShimmerLoading(),
-      );
-    }
-final padding = MediaQuery.of(context).padding;
+    final padding = MediaQuery.of(context).padding;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       extendBodyBehindAppBar: true,
@@ -245,16 +253,44 @@ final padding = MediaQuery.of(context).padding;
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Video Background (Full Coverage)
+                    // 1. Fallback Image Background (Visible while video loads)
                     Positioned.fill(
-                      child: Container(
-                        color: Colors.transparent,
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: 800,
-                            height: 300,
-                            child: WebViewWidget(controller: _videoController),
+                      child: heroAsync.maybeWhen(
+                        data: (hero) => hero != null && hero.imageUrl.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: hero.imageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(color: Colors.grey[200]),
+                                errorWidget: (context, url, error) => Container(color: Colors.grey[200]),
+                              )
+                            : Container(color: Colors.grey[200]),
+                        orElse: () => Container(color: Colors.grey[200]),
+                      ),
+                    ),
+                    // 2. Video Background (Full Coverage)
+                    Positioned.fill(
+                      child: VisibilityDetector(
+                        key: const Key('home_video_visibility'),
+                        onVisibilityChanged: (visibilityInfo) {
+                          final isNowVisible = visibilityInfo.visibleFraction > 0.1;
+                          if (isNowVisible && !_isVisible) {
+                            _isVisible = true;
+                            _initializeController(force: true);
+                          } else if (!isNowVisible) {
+                            _isVisible = false;
+                          }
+                        },
+                        child: Container(
+                          color: Colors.transparent,
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: 800,
+                              height: 300,
+                              child: _isControllerInitialized
+                                  ? WebViewWidget(controller: _videoController)
+                                  : const SizedBox.shrink(),
+                            ),
                           ),
                         ),
                       ),

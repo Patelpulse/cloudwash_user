@@ -29,7 +29,8 @@ class _WebBookingsScreenState extends ConsumerState<WebBookingsScreen> {
     if (!isAuthenticated) {
       return const AuthRequiredPlaceholder(
         title: 'Your Bookings',
-        message: 'Sign in to track your current orders and view your complete service history.',
+        message:
+            'Sign in to track your current orders and view your complete service history.',
         icon: Icons.calendar_month_rounded,
       );
     }
@@ -1280,7 +1281,8 @@ class _BookingDetailsModalState extends ConsumerState<_BookingDetailsModal> {
 
                         try {
                           await ref
-                              .read(userOrdersProvider.notifier)
+                              // .read(userOrdersProvider.notifier)
+                              .read(userOrdersRealtimeProvider.notifier)
                               .cancelOrder(order.id, reason);
                           messenger.showSnackBar(
                             const SnackBar(
