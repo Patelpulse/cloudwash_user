@@ -12,6 +12,7 @@ import 'package:cloud_user/features/profile/presentation/providers/user_provider
 import 'package:cloud_user/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_user/core/widgets/profile_image.dart';
 
 class WebNavBar extends ConsumerWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
@@ -196,33 +197,20 @@ class WebNavBar extends ConsumerWidget {
                                                                   4.0,
                                                                 ),
                                                                 child:
-                                                                    CircleAvatar(
-                                                                  radius: 14,
-                                                                  backgroundColor:
-                                                                      AppTheme
-                                                                          .primary
-                                                                          .withOpacity(
-                                                                    0.1,
-                                                                  ),
-                                                                  backgroundImage:
-                                                                      user['profileImage'] !=
-                                                                              null
-                                                                          ? CachedNetworkImageProvider(
-                                                                              user['profileImage'],
-                                                                            )
-                                                                          : null,
-                                                                  child: user['profileImage'] ==
-                                                                          null
-                                                                      ? const Icon(
-                                                                          Icons
-                                                                              .person,
-                                                                          size:
-                                                                              16,
-                                                                          color:
-                                                                              AppTheme.primary,
-                                                                        )
-                                                                      : null,
-                                                                ),
+                                                                    ProfileImage(
+                                                                      imageSource:
+                                                                          user['profileImage'],
+                                                                      size: 28,
+                                                                      border:
+                                                                          Border.all(
+                                                                        color: AppTheme
+                                                                            .primary
+                                                                            .withOpacity(
+                                                                          0.1,
+                                                                        ),
+                                                                        width: 1,
+                                                                      ),
+                                                                    ),
                                                               ),
                                                             )
                                                           : IconButton(
@@ -306,28 +294,19 @@ class WebNavBar extends ConsumerWidget {
                                                                 ),
                                                                 child: Row(
                                                                   children: [
-                                                                    CircleAvatar(
-                                                                      radius:
-                                                                          16,
-                                                                      backgroundColor: AppTheme
-                                                                          .primary
-                                                                          .withOpacity(
-                                                                        0.1,
+                                                                    ProfileImage(
+                                                                      imageSource:
+                                                                          user['profileImage'],
+                                                                      size: 32,
+                                                                      border:
+                                                                          Border.all(
+                                                                        color: AppTheme
+                                                                            .primary
+                                                                            .withOpacity(
+                                                                          0.1,
+                                                                        ),
+                                                                        width: 1,
                                                                       ),
-                                                                      backgroundImage: user['profileImage'] !=
-                                                                              null
-                                                                          ? CachedNetworkImageProvider(
-                                                                              user['profileImage'],
-                                                                            )
-                                                                          : null,
-                                                                      child: user['profileImage'] ==
-                                                                              null
-                                                                          ? const Icon(
-                                                                              Icons.person,
-                                                                              size: 16,
-                                                                              color: AppTheme.primary,
-                                                                            )
-                                                                          : null,
                                                                     ),
                                                                     const SizedBox(
                                                                       width: 8,

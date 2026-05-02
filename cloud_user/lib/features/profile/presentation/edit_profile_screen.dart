@@ -1,3 +1,4 @@
+import 'package:cloud_user/core/widgets/profile_image.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:cloud_user/features/profile/presentation/providers/user_provider.dart';
@@ -133,29 +134,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     child: Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.primary.withOpacity(0.1),
-                              width: 6,
-                            ),
-                            image: DecorationImage(
-                              image: _base64Image != null
-                                  ? MemoryImage(
-                                          base64Decode(
-                                            _base64Image!.split(',').last,
-                                          ),
-                                        )
-                                        as ImageProvider
-                                  : NetworkImage(
-                                      user['profileImage'] ??
-                                          'https://i.pravatar.cc/150?u=user_cloudwash',
-                                    ),
-                              fit: BoxFit.cover,
-                            ),
+                        ProfileImage(
+                          imageSource: _base64Image ?? user['profileImage'],
+                          size: 120,
+                          border: Border.all(
+                            color: AppTheme.primary.withOpacity(0.1),
+                            width: 6,
                           ),
                         ),
                         InkWell(

@@ -7,19 +7,13 @@ import 'package:cloud_user/features/home/data/why_choose_us_model.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/network/api_client.dart';
+
 part 'home_repository.g.dart';
 
 @Riverpod(keepAlive: true)
 HomeRepository homeRepository(HomeRepositoryRef ref) {
-  return HomeRepository(
-    Dio(
-      BaseOptions(
-        baseUrl: AppConfig.baseUrl,
-        connectTimeout: const Duration(seconds: 120),
-        receiveTimeout: const Duration(seconds: 120),
-      ),
-    ),
-  );
+  return HomeRepository(ref.watch(apiClientProvider));
 }
 
 class HomeRepository {

@@ -165,11 +165,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 .animate()
                 .fadeIn(duration: 600.ms)
                 .slideY(begin: -0.2, end: 0),
-            // const SizedBox(height: 40),
-            // _buildLoginCard()
-            //     .animate()
-            //     .fadeIn(delay: 200.ms, duration: 600.ms)
-            //     .scale(begin: const Offset(0.9, 0.9)),
+            const SizedBox(height: 40),
+            _buildLoginCard()
+                .animate()
+                .fadeIn(delay: 200.ms, duration: 600.ms)
+                .scale(begin: const Offset(0.9, 0.9)),
             const SizedBox(height: 32),
             _buildSocialLogin().animate().fadeIn(
               delay: 400.ms,
@@ -371,23 +371,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildSocialLogin() {
     return Column(
       children: [
-        // Row(
-        //   children: [
-        //     Expanded(child: Divider(color: Colors.grey.shade200)),
-        //     Padding(
-        //       padding: const EdgeInsets.symmetric(horizontal: 16),
-        //       child: Text(
-        //         'OR CONTINUE WITH',
-        //         style: GoogleFonts.inter(
-        //           fontSize: 11,
-        //           color: Colors.grey,
-        //           fontWeight: FontWeight.w600,
-        //         ),
-        //       ),
-        //     ),
-        //     Expanded(child: Divider(color: Colors.grey.shade200)),
-        //   ],
-        // ),
+        Row(
+          children: [
+            Expanded(child: Divider(color: Colors.grey.shade200)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'OR CONTINUE WITH',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: Colors.grey.shade200)),
+          ],
+        ),
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,

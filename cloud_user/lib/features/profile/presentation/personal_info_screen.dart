@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_user/core/widgets/profile_image.dart';
 
 class PersonalInfoScreen extends ConsumerWidget {
   const PersonalInfoScreen({super.key});
@@ -52,7 +53,6 @@ class PersonalInfoScreen extends ConsumerWidget {
                   ],
                 ),
               const SizedBox(height: 32),
-
               // Profile Card
               Container(
                 padding: const EdgeInsets.all(32),
@@ -70,22 +70,12 @@ class PersonalInfoScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Center(
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppTheme.primary.withOpacity(0.1),
-                            width: 6,
-                          ),
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              user['profileImage'] ??
-                                  'https://i.pravatar.cc/150?u=user_cloudwash',
-                            ),
-                            fit: BoxFit.cover,
-                          ),
+                      child: ProfileImage(
+                        imageSource: user['profileImage'],
+                        size: 120,
+                        border: Border.all(
+                          color: AppTheme.primary.withOpacity(0.1),
+                          width: 6,
                         ),
                       ),
                     ),

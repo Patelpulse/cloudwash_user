@@ -58,7 +58,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '864806051234',
     projectId: 'cloudwash-6ceb6',
     storageBucket: 'cloudwash-6ceb6.firebasestorage.app',
-    iosBundleId: 'com.patelpulseventures.Cloudwash',
+    iosBundleId: 'com.patel.cloudwashusernewappId',
   );
 }
-

@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 
 import 'package:cloud_user/core/widgets/animated_background.dart';
+import 'package:cloud_user/core/widgets/profile_image.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -514,18 +515,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppTheme.primary, width: 2),
               ),
-              child: CircleAvatar(
-                radius: 54,
-                backgroundColor: Colors.grey.shade100,
-                backgroundImage: _base64Image != null
-                    ? MemoryImage(base64Decode(_base64Image!.split(',').last))
-                          as ImageProvider
-                    : (_profileImageUrl != null
-                          ? NetworkImage(_profileImageUrl!)
-                          : null),
-                child: (_base64Image == null && _profileImageUrl == null)
-                    ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                    : null,
+              child: ProfileImage(
+                imageSource: _base64Image ?? _profileImageUrl,
+                size: 108,
               ),
             ),
             InkWell(

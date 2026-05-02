@@ -28,33 +28,39 @@ Dio apiClient(ApiClientRef ref) {
         }
 
         if (kDebugMode) {
-          print('🌐 [${options.method}] ${options.uri}');
-          print(
-            '🔑 Token: ${token != null ? "Present (Starts with ${token.substring(0, 10)}...)" : "MISSING"}',
-          );
-          print('📂 Headers: ${options.headers}');
-          if (options.data != null) print('📦 Data: ${options.data}');
+          print('\n🚀 [API REQUEST] ${options.method} ${options.uri}');
+          if (options.headers.isNotEmpty) {
+            print('📁 Headers: ${options.headers}');
+          }
+          if (options.queryParameters.isNotEmpty) {
+            print('🔍 Query Params: ${options.queryParameters}');
+          }
+          if (options.data != null) {
+            print('📦 Body: ${options.data}');
+          }
+          print('--------------------------------------------------');
         }
 
         return handler.next(options);
       },
       onResponse: (response, handler) {
         if (kDebugMode) {
-          print('✅ [${response.statusCode}] ${response.requestOptions.uri}');
+          print('\n✅ [API RESPONSE] ${response.statusCode} ${response.requestOptions.uri}');
+          print('📄 Data: ${response.data}');
+          print('--------------------------------------------------');
         }
         return handler.next(response);
       },
       onError: (DioException error, handler) async {
         if (kDebugMode) {
-          print(
-            '❌ [${error.response?.statusCode}] ${error.requestOptions.uri}',
-          );
-          print('❌ Error Message: ${error.message}');
-          print('❌ Request Headers: ${error.requestOptions.headers}');
-          print('❌ Response Data: ${error.response?.data}');
+          print('\n❌ [API ERROR] ${error.response?.statusCode} ${error.requestOptions.uri}');
+          print('💬 Message: ${error.message}');
+          if (error.response?.data != null) {
+            print('📄 Error Data: ${error.response?.data}');
+          }
+          print('--------------------------------------------------');
         }
 
-        // Handle 401 Unauthorized (optional: trigger logout)
         if (error.response?.statusCode == 401) {
           print('🔒 UNAUTHORIZED: Token might be invalid or expired.');
         }

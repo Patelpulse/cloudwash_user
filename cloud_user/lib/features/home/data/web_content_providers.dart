@@ -349,8 +349,7 @@ final staticPageProvider = StreamProvider.autoDispose.family<StaticPageModel?, S
         isFirstEmission = false;
         yield resolvedData;
       }
-
-      await Future<void>.delayed(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(seconds: 60));
     }
   },
 );
@@ -452,7 +451,7 @@ final liveStatsProvider = StreamProvider.autoDispose<StatsModel?>((ref) async* {
       lastSignature = signature;
       yield data;
     }
-    await Future<void>.delayed(const Duration(seconds: 5));
+    await Future<void>.delayed(const Duration(seconds: 60));
   }
 });
 
@@ -473,7 +472,7 @@ final liveWhyChooseUsProvider =
         lastSignature = signature;
         yield data;
       }
-      await Future<void>.delayed(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(seconds: 60));
     }
   },
 );
@@ -500,7 +499,7 @@ final liveFooterProvider = StreamProvider.autoDispose<FooterModel>(
         lastSignature = signature;
         yield footer;
       }
-      await Future<void>.delayed(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(seconds: 60));
     }
   },
 );

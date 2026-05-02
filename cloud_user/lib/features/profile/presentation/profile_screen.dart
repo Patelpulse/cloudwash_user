@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_user/core/widgets/auth_required_placeholder.dart';
+import 'package:cloud_user/core/widgets/profile_image.dart';
 
 import '../../cart/data/cart_provider.dart';
 import '../../location/data/address_provider.dart' show selectedAddressProvider, userAddressesProvider;
@@ -89,22 +90,12 @@ class ProfileScreen extends ConsumerWidget {
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              Container(
-                width: isDesktop ? 100 : 80,
-                height: isDesktop ? 100 : 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.primary.withOpacity(0.2),
-                    width: 4,
-                  ),
-                  image: DecorationImage(
-                    image: NetworkImage(
-                      user['profileImage'] ??
-                          'https://i.pravatar.cc/150?u=user_cloudwash',
-                    ),
-                    fit: BoxFit.cover,
-                  ),
+              ProfileImage(
+                imageSource: user['profileImage'],
+                size: isDesktop ? 100 : 80,
+                border: Border.all(
+                  color: AppTheme.primary.withOpacity(0.2),
+                  width: 4,
                 ),
               ),
               InkWell(

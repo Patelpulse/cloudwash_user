@@ -478,6 +478,8 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
+import '../../../core/utils/apple_auth_helper.dart';
+
 part 'auth_repository.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -546,16 +548,42 @@ class AuthRepository {
         print('   - Email: ${user.email}');
         print('   - Display Name: ${user.displayName}');
         print('   - Photo URL: ${user.photoURL}');
-        print('   - Providers: ${user.providerData.map((e) => e.providerId).toList()}');
 
-        /// 🔥 CHECK FIRESTORE
-        final isAlreadyRegistered = await _checkUserExists(user.uid);
-        print('📝 Registration Status: ${isAlreadyRegistered ? "ALREADY REGISTERED" : "NEW USER"}');
+        // 1. Try to Login with Backend
+        try {
+          final response = await _dio.post(
+            'user/login',
+            data: {'firebaseUid': user.uid},
+          );
 
-        return SocialSignInResult(
-          userCredential: userCredential,
-          isAlreadyRegistered: isAlreadyRegistered,
-        );
+          if (response.data['token'] != null) {
+            await _tokenStorage.saveToken(response.data['token']);
+
+            // Sync MongoDB ID and info to Firestore
+            await _firestore.collection('users').doc(user.uid).set({
+              '_id': response.data['_id'],
+              'name': response.data['name'] ?? user.displayName ?? '',
+              'email': response.data['email'] ?? user.email ?? '',
+              'phone': response.data['phone'] ?? '',
+              'profileImage': response.data['profileImage'] ?? user.photoURL ?? '',
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
+            print('✅ Google Sign-In: Backend login successful and synced');
+            return SocialSignInResult(
+              userCredential: userCredential,
+              isAlreadyRegistered: true,
+            );
+          }
+        } catch (e) {
+          print('⚠️ Google Sign-In: User not found in backend or error: $e');
+          // If 404 or other error, assume not registered
+          final isAlreadyRegistered = await _checkUserExists(user.uid);
+          return SocialSignInResult(
+            userCredential: userCredential,
+            isAlreadyRegistered: isAlreadyRegistered,
+          );
+        }
       }
 
       return null;
@@ -565,34 +593,69 @@ class AuthRepository {
     }
   }
 
-  /// 🔥 APPLE SIGN-IN
+  /// 🔥 APPLE SIGN-IN (Secure Nonce Implementation)
   Future<SocialSignInResult?> signInWithApple() async {
     try {
+      // 🔐 Step 1: Generate Secure Nonce for Replay Attack Protection
+      final rawNonce = AppleAuthHelper.generateNonce();
+      final nonce = AppleAuthHelper.sha256ofString(rawNonce);
+
+      // 🍏 Step 2: Request Apple ID Credential
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        nonce: nonce,
       );
 
-      final credential = OAuthProvider('apple.com').credential(
+      // 🔥 Step 3: Create Firebase OAuth Credential
+      final oauthCredential = OAuthProvider("apple.com").credential(
         idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode, 
       );
 
-      final userCredential = await _auth.signInWithCredential(credential);
+      // 🔐 Step 4: Sign in to Firebase Auth
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final user = userCredential.user;
 
-      if (userCredential.user != null) {
-        final user = userCredential.user!;
+      if (user != null) {
+        // Step 5: Sync with Backend and Firestore
+        try {
+          final response = await _dio.post(
+            'user/login',
+            data: {'firebaseUid': user.uid},
+          );
 
-        /// 🔥 CHECK FIRESTORE
-        final isAlreadyRegistered = await _checkUserExists(user.uid);
+          if (response.data['token'] != null) {
+            await _tokenStorage.saveToken(response.data['token']);
 
-        return SocialSignInResult(
-          userCredential: userCredential,
-          isAlreadyRegistered: isAlreadyRegistered,
-        );
+            // Sync user data to Firestore
+            await _firestore.collection('users').doc(user.uid).set({
+              '_id': response.data['_id'],
+              'name': response.data['name'] ?? user.displayName ?? '',
+              'email': response.data['email'] ?? user.email ?? '',
+              'profileImage':
+                  response.data['profileImage'] ?? user.photoURL ?? '',
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
+            print('✅ Apple Sign-In: Backend login successful');
+            return SocialSignInResult(
+              userCredential: userCredential,
+              isAlreadyRegistered: true,
+            );
+          }
+        } catch (e) {
+          print('⚠️ Apple Sign-In: User not found in backend or error: $e');
+          final isAlreadyRegistered = await _checkUserExists(user.uid);
+          return SocialSignInResult(
+            userCredential: userCredential,
+            isAlreadyRegistered: isAlreadyRegistered,
+          );
+        }
       }
-
       return null;
     } catch (e) {
       print('❌ Apple Sign-In Error: $e');
@@ -600,7 +663,7 @@ class AuthRepository {
     }
   }
 
-  /// 🔥 COMPLETE REGISTRATION (NO API VERSION)
+  /// 🔥 COMPLETE REGISTRATION (WITH API VERSION)
   Future<void> completeRegistration({
     required String uid,
     required String name,
@@ -610,43 +673,133 @@ class AuthRepository {
     String? profileImage,
   }) async {
     try {
-      /// 🔥 SAVE USER IN FIRESTORE
+      // 1. Update Firebase Firestore (Real-time)
       await _firestore.collection('users').doc(uid).set({
         'name': name,
         'email': email,
         'phone': phone,
         'profileImage': profileImage,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
-      /// 🔥 SET PASSWORD IN FIREBASE AUTH
+      // 2. Update Firebase Auth Password
       final user = _auth.currentUser;
       if (user != null) {
         await user.updatePassword(password);
       }
 
-      print('✅ User Registered Successfully');
+      // 3. Update MongoDB (Backend)
+      final data = {
+        'firebaseUid': uid,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'role': 'user',
+        if (profileImage != null) 'profileImage': profileImage,
+      };
+
+      print('🚀 Registering with Backend: $data');
+      final response = await _dio.post('user/register', data: data);
+
+      if (response.data['token'] != null) {
+        await _tokenStorage.saveToken(response.data['token']);
+        
+        // Sync MongoDB ID back to Firestore
+        await _firestore.collection('users').doc(uid).set({
+          '_id': response.data['_id'],
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      print('✅ User Registered Successfully in both Firebase and Backend');
     } catch (e) {
       print('❌ Registration Error: $e');
       rethrow;
     }
   }
 
-  /// 🔥 EMAIL LOGIN
+  /// 🔥 EMAIL LOGIN WITH SELF-HEALING
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+      UserCredential? userCredential;
+      bool firebaseSignInFailed = false;
+
+      // 1. Try to sign in to Firebase Auth first
+      try {
+        userCredential = await _auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        print('✅ Firebase Auth sign-in successful');
+      } on FirebaseAuthException catch (e) {
+        print('⚠️ Firebase Auth sign-in failed: ${e.code}');
+        firebaseSignInFailed = true;
+        // We continue because we want to check if the user exists in MongoDB
+      } catch (e) {
+        print('⚠️ Unexpected Firebase error: $e');
+        firebaseSignInFailed = true;
+      }
+
+      // 2. Sign in to Backend (MongoDB)
+      // This verifies if the user exists and the password is correct in the main database
+      final response = await _dio.post(
+        'user/login',
+        data: {'email': email, 'password': password},
       );
 
-      return {
-        'success': true,
-        'uid': userCredential.user?.uid,
-      };
+      if (response.data['token'] != null) {
+        await _tokenStorage.saveToken(response.data['token']);
+
+        // 3. SELF-HEALING: If Firebase failed but Backend succeeded
+        if (firebaseSignInFailed || userCredential == null) {
+          print('🔄 Attempting self-healing: Creating missing Firebase user...');
+          try {
+            // Try to create the user in Firebase with the same credentials
+            userCredential = await _auth.createUserWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+            print('✅ Self-healing successful: Firebase user created');
+          } on FirebaseAuthException catch (e) {
+            if (e.code == 'email-already-in-use') {
+              // This means the user exists but the password might be different 
+              // or there's a sync issue. Try to sign in again just in case.
+              try {
+                userCredential = await _auth.signInWithEmailAndPassword(
+                  email: email,
+                  password: password,
+                );
+              } catch (retryError) {
+                print('❌ Self-healing failed: User exists in Firebase but password mismatch: $retryError');
+                throw Exception('Invalid Firebase credentials for existing user');
+              }
+            } else {
+              print('❌ Self-healing failed: ${e.message}');
+              // If we can't create the user, we still have the backend token, 
+              // but Firebase features (like Firestore) won't work perfectly.
+            }
+          }
+        }
+
+        // 4. Sync MongoDB data to Firestore
+        final firebaseUser = userCredential?.user;
+        if (firebaseUser != null) {
+          await _firestore.collection('users').doc(firebaseUser.uid).set({
+            '_id': response.data['_id'],
+            'name': response.data['name'],
+            'email': response.data['email'],
+            'phone': response.data['phone'],
+            'profileImage': response.data['profileImage'],
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      }
+
+      return response.data;
     } catch (e) {
       print('❌ Login Error: $e');
       rethrow;
@@ -661,11 +814,34 @@ class AuthRepository {
     try {
       final user = _auth.currentUser;
       if (user == null) return {};
+
+      // 1. Try Firestore first (Real-time source)
       final doc = await _firestore.collection('users').doc(user.uid).get();
-      return doc.data() ?? {};
+      if (doc.exists && doc.data()?['_id'] != null) {
+        return doc.data()!;
+      }
+
+      // 2. Fallback to Backend API if Firestore is empty or missing MongoDB ID
+      print('🔄 Firestore profile missing, fetching from backend...');
+      final response = await _dio.get('user/profile');
+      final profileData = Map<String, dynamic>.from(response.data);
+
+      // 3. Sync to Firestore for next time
+      await _firestore.collection('users').doc(user.uid).set({
+        ...profileData,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return profileData;
     } catch (e) {
       print('❌ Get Profile Error: $e');
-      rethrow;
+      // If API fails, return whatever we have in Firestore or empty
+      final user = _auth.currentUser;
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        return doc.data() ?? {};
+      }
+      return {};
     }
   }
 
@@ -675,6 +851,17 @@ class AuthRepository {
     String? profileImage,
   }) async {
     try {
+      // 1. Update Backend
+      final response = await _dio.put(
+        'user/profile',
+        data: {
+          'name': name,
+          'phone': phone,
+          if (profileImage != null) 'profileImage': profileImage,
+        },
+      );
+
+      // 2. Sync to Firestore
       final firebaseUser = _auth.currentUser;
       if (firebaseUser != null) {
         final updates = {
@@ -682,6 +869,7 @@ class AuthRepository {
           'phone': phone,
           if (profileImage != null) 'profileImage': profileImage,
           'updatedAt': FieldValue.serverTimestamp(),
+          if (response.data['_id'] != null) '_id': response.data['_id'],
         };
         await _firestore
             .collection('users')
@@ -689,7 +877,7 @@ class AuthRepository {
             .set(updates, SetOptions(merge: true));
         return updates;
       }
-      return {};
+      return response.data;
     } catch (e) {
       print('❌ Update Profile Error: $e');
       rethrow;

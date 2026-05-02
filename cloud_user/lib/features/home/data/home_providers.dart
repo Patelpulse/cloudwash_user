@@ -279,7 +279,7 @@ final liveHeroSectionProvider =
       lastSignature = signature;
       yield data;
     }
-    await Future<void>.delayed(const Duration(seconds: 5));
+    await Future<void>.delayed(const Duration(seconds: 60));
   }
 });
 
