@@ -73,6 +73,8 @@ GoRouter goRouter(GoRouterRef ref) {
             if (!isOnboarding) return '/onboarding';
           } else {
             // Onboarding complete but not authenticated
+            if (isOnboarding) return '/';
+
             // If not on auth/public route, go to register
             if (!isAuthRoute &&
                 state.uri.path != '/' &&

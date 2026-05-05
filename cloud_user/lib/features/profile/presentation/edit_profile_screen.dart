@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -177,6 +178,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _phoneController,
                     Icons.phone_android_outlined,
                     keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Phone number is required';
+                      }
+                      if (value.length != 10) {
+                        return 'Phone number must be exactly 10 digits';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 48),
                   SizedBox(
@@ -247,6 +261,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     IconData icon, {
     bool enabled = true,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -270,7 +286,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           borderSide: BorderSide(color: AppTheme.primary, width: 2),
         ),
       ),
-      validator: (value) => value!.isEmpty ? 'This field is required' : null,
+      inputFormatters: inputFormatters,
+      validator: validator ?? (value) => value!.isEmpty ? 'This field is required' : null,
     );
   }
 }

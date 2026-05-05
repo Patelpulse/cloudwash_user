@@ -27,8 +27,9 @@ Dio apiClient(ApiClientRef ref) {
           options.headers['Authorization'] = 'Bearer $token';
         }
 
-        if (kDebugMode) {
-          print('\n🚀 [API REQUEST] ${options.method} ${options.uri}');
+        final isRegistration = options.path.contains('register');
+        if (kDebugMode || isRegistration) {
+          print('\n🚀 [${isRegistration ? 'REGISTRATION' : 'API'} REQUEST] ${options.method} ${options.uri}');
           if (options.headers.isNotEmpty) {
             print('📁 Headers: ${options.headers}');
           }
@@ -44,16 +45,18 @@ Dio apiClient(ApiClientRef ref) {
         return handler.next(options);
       },
       onResponse: (response, handler) {
-        if (kDebugMode) {
-          print('\n✅ [API RESPONSE] ${response.statusCode} ${response.requestOptions.uri}');
+        final isRegistration = response.requestOptions.path.contains('register');
+        if (kDebugMode || isRegistration) {
+          print('\n✅ [${isRegistration ? 'REGISTRATION' : 'API'} RESPONSE] ${response.statusCode} ${response.requestOptions.uri}');
           print('📄 Data: ${response.data}');
           print('--------------------------------------------------');
         }
         return handler.next(response);
       },
       onError: (DioException error, handler) async {
-        if (kDebugMode) {
-          print('\n❌ [API ERROR] ${error.response?.statusCode} ${error.requestOptions.uri}');
+        final isRegistration = error.requestOptions.path.contains('register');
+        if (kDebugMode || isRegistration) {
+          print('\n❌ [${isRegistration ? 'REGISTRATION' : 'API'} ERROR] ${error.response?.statusCode} ${error.requestOptions.uri}');
           print('💬 Message: ${error.message}');
           if (error.response?.data != null) {
             print('📄 Error Data: ${error.response?.data}');

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 
 class AddAddressScreen extends ConsumerStatefulWidget {
   const AddAddressScreen({super.key});
@@ -112,6 +113,15 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 Icons.phone_android_outlined,
                 _phoneController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Required';
+                  if (value.length != 10) return 'Must be 10 digits';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -230,6 +240,8 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     TextEditingController controller, {
     TextInputType? keyboardType,
     bool required = true,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -252,9 +264,10 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         filled: true,
         fillColor: Colors.grey.shade50,
       ),
-      validator: required
+      inputFormatters: inputFormatters,
+      validator: validator ?? (required
           ? (value) => value!.isEmpty ? 'Required' : null
-          : null,
+          : null),
     );
   }
 

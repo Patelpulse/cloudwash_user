@@ -29,22 +29,24 @@ const uploadFromBuffer = (buffer) => {
 
 const createService = async (req, res) => {
     try {
-        const { name, category, subCategory, price, duration, description, isActive, displayOrder } = req.body;
+        const { name, category, subCategory: subCategoryId, price, duration, description, isActive, displayOrder } = req.body;
+        
+        let imageUrl = '';
 
-        if (!req.file) {
-            return res.status(400).json({ message: 'Please upload an image' });
+        if (req.file) {
+            // Upload image to Cloudinary if provided
+            const result = await uploadFromBuffer(req.file.buffer);
+            imageUrl = result.secure_url;
         }
-
-        const result = await uploadFromBuffer(req.file.buffer);
 
         const service = await Service.create({
             name,
             category,
-            subCategory, // Add this
+            subCategory: subCategoryId || null,
             price,
             duration,
             description,
-            imageUrl: result.secure_url,
+            imageUrl,
             isActive: isActive === 'true',
             displayOrder: Number.isFinite(Number(displayOrder))
                 ? Number(displayOrder)
@@ -132,8 +134,13 @@ const updateService = async (req, res) => {
         }
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            service.imageUrl = result.secure_url;
+            try {
+                const result = await uploadFromBuffer(req.file.buffer);
+                service.imageUrl = result.secure_url;
+            } catch (cldError) {
+                console.error('Cloudinary upload failed during update:', cldError);
+                // Continue without updating imageUrl
+            }
         }
 
         const updatedService = await service.save();

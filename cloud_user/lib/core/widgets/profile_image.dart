@@ -12,26 +12,37 @@ class ProfileImage extends StatelessWidget {
     required this.imageSource,
     this.size = 80,
     this.border,
-    this.fallbackUrl = 'https://i.pravatar.cc/150?u=user_cloudwash',
+    this.fallbackUrl = 'https://i0.wp.com/e-quester.com/wp-content/uploads/2021/11/placeholder-image-person-jpg.jpg?fit=820%2C678&ssl=1',
   });
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider provider;
-    
     if (imageSource == null || imageSource!.isEmpty) {
-      provider = NetworkImage(fallbackUrl);
-    } else if (imageSource!.startsWith('data:image')) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: border,
+          color: Colors.grey[100],
+        ),
+        child: Icon(
+          Icons.person,
+          size: size * 0.6,
+          color: Colors.grey[400],
+        ),
+      );
+    }
+
+    ImageProvider provider;
+    if (imageSource!.startsWith('data:image')) {
       try {
         final base64String = imageSource!.split(',').last;
         provider = MemoryImage(base64Decode(base64String));
       } catch (e) {
-        provider = NetworkImage(fallbackUrl);
+        return _buildFallback();
       }
-    } else if (imageSource!.startsWith('http')) {
-      provider = NetworkImage(imageSource!);
     } else {
-      // Handle other potential formats or assume it's a URL
       provider = NetworkImage(imageSource!);
     }
 
@@ -45,9 +56,26 @@ class ProfileImage extends StatelessWidget {
           image: provider,
           fit: BoxFit.cover,
           onError: (exception, stackTrace) {
-            // Silently fail and fallback to placeholder if needed
+            // Error handling handled by the widget structure
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: border,
+        color: Colors.grey[100],
+      ),
+      child: Icon(
+        Icons.person,
+        size: size * 0.6,
+        color: Colors.grey[400],
       ),
     );
   }

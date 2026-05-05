@@ -25,7 +25,8 @@ const subCategorySchema = new mongoose.Schema({
     },
     imageUrl: {
         type: String,
-        required: true,
+        required: false,
+        default: ''
     },
     displayOrder: {
         type: Number,

@@ -8,23 +8,32 @@ class FirebaseSubCategoryService {
     required String name,
     required String categoryId,
     required String description,
+    required double price,
     required String imageUrl,
     required bool isActive,
+    String? mongoId,
     int? displayOrder,
   }) async {
     try {
       final nextOrder =
           displayOrder ?? await _getNextDisplayOrder(defaultValue: 100000);
-      final docRef = await _firestore.collection('subCategories').add({
+      final data = <String, dynamic>{
         'name': name,
         'categoryId': categoryId,
         'description': description,
+        'price': price,
         'imageUrl': imageUrl,
         'isActive': isActive,
         'displayOrder': nextOrder,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (mongoId != null && mongoId.trim().isNotEmpty) {
+        data['mongoId'] = mongoId.trim();
+      }
+
+      final docRef = await _firestore.collection('subCategories').add(data);
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to create sub-category: $e');
@@ -37,8 +46,10 @@ class FirebaseSubCategoryService {
     required String name,
     required String categoryId,
     required String description,
+    required double price,
     String? imageUrl,
     required bool isActive,
+    String? mongoId,
     int? displayOrder,
   }) async {
     try {
@@ -46,6 +57,7 @@ class FirebaseSubCategoryService {
         'name': name,
         'categoryId': categoryId,
         'description': description,
+        'price': price,
         'isActive': isActive,
         'updatedAt': FieldValue.serverTimestamp(),
       };
@@ -56,6 +68,10 @@ class FirebaseSubCategoryService {
 
       if (imageUrl != null) {
         updateData['imageUrl'] = imageUrl;
+      }
+
+      if (mongoId != null && mongoId.trim().isNotEmpty) {
+        updateData['mongoId'] = mongoId.trim();
       }
 
       await _firestore

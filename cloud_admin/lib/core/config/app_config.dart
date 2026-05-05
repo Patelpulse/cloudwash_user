@@ -1,9 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
-  static const String _defaultProdApiUrl =
-      'https://cloudwash.in/api/';
-
+  static const String _defaultProdApiUrl = 'https://cloudwash.in/api/';
   static bool _isLocalHost() {
     final host = Uri.base.host.toLowerCase();
     return host == 'localhost' || host == '127.0.0.1' || host == '0.0.0.0';
@@ -67,13 +65,6 @@ class AppConfig {
   }
 
   static String get apiUrl {
-    // Local browser builds should default to production so editors work even
-    // when no localhost backend is running. A dart-define can still override
-    // this explicitly only on non-local hosts.
-    if (_isLocalHost()) {
-      return _defaultProdApiUrl;
-    }
-
     // 1. Try dart-define (ideal for Vercel/CI)
     const defineUrl = String.fromEnvironment('API_URL');
     final normalizedDefineUrl = _normalizeApiUrl(defineUrl);
@@ -86,6 +77,11 @@ class AppConfig {
     final normalizedEnvUrl = _normalizeApiUrl(envUrl);
     if (normalizedEnvUrl != null) {
       return normalizedEnvUrl;
+    }
+
+    // Local browser builds should default to production ONLY if no env var is set.
+    if (_isLocalHost()) {
+      return _defaultProdApiUrl;
     }
 
     if (_isProductionHost()) {

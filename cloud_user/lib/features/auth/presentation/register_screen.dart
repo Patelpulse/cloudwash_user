@@ -4,6 +4,7 @@ import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/auth/data/auth_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import 'package:flutter_animate/flutter_animate.dart';
@@ -28,6 +29,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isLoading = false;
   bool _isGoogleLoading = false;
   bool _isAppleLoading = false;
+  bool _isAppleRegistration = false;
 
   bool get _isAnyLoading => _isLoading || _isGoogleLoading || _isAppleLoading;
 
@@ -65,6 +67,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           if (email != null) _emailController.text = email;
           if (photoUrl != null) _profileImageUrl = photoUrl;
           
+          if (uri.queryParameters['isApple'] == 'true') {
+            _isAppleRegistration = true;
+          }
+          
           // If we have data, we might be coming from a social sign-in redirect
           // We need a way to track the firebase UID if we're at Step 2
           // For now, let's just ensure we are at step 2 if we have social data
@@ -99,7 +105,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() => _isGoogleLoading = true);
+    setState(() {
+      _isGoogleLoading = true;
+      _isAppleRegistration = false;
+    });
     try {
       final result = await ref.read(authRepositoryProvider).signInWithGoogle();
 
@@ -134,7 +143,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleAppleSignIn() async {
-    setState(() => _isAppleLoading = true);
+    setState(() {
+      _isAppleLoading = true;
+      _isAppleRegistration = false;
+    });
     try {
       final result = await ref.read(authRepositoryProvider).signInWithApple();
 
@@ -150,6 +162,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           // New user, go to Step 2
           setState(() {
             _firebaseUser = result.userCredential!.user;
+            _isAppleRegistration = true;
             _nameController.text = _firebaseUser!.displayName ?? '';
             _emailController.text = _firebaseUser!.email ?? '';
             _profileImageUrl = _firebaseUser!.photoURL;
@@ -169,16 +182,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleCompleteRegistration() async {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
-      return;
+    if (!_isAppleRegistration) {
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+        return;
+      }
+      
+      if (_passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Password is required')));
+        return;
+      }
     }
 
-    if (_phoneController.text.length < 10) {
+    if (_phoneController.text.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid mobile number')),
+        const SnackBar(content: Text('Mobile number must be exactly 10 digits')),
       );
       return;
     }
@@ -200,7 +222,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             name: _nameController.text,
             email: _emailController.text,
             phone: cleanPhone,
-            password: _passwordController.text,
+            password: _isAppleRegistration 
+                ? (_firebaseUser?.uid ?? FirebaseAuth.instance.currentUser?.uid ?? 'AppleAuthUser')
+                : _passwordController.text,
             profileImage: _base64Image ?? _profileImageUrl,
           );
 
@@ -212,7 +236,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } catch (e) {
       String errorMessage = 'Registration failed. Please try again.';
 
-      if (e.toString().contains('DioException')) {
+      if (e is FirebaseAuthException) {
+        errorMessage = e.message ?? errorMessage;
+      } else if (e.toString().contains('DioException')) {
         try {
           // Dynamic access to avoid strict type need without import
           final dynamic exception = e;
@@ -223,8 +249,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             } else if (data is String) {
               errorMessage = data;
             }
+          } else if (exception.type.toString().contains('connectionTimeout')) {
+            errorMessage = 'Connection timed out. Please check your internet.';
+          } else if (exception.message != null) {
+            errorMessage = exception.message;
           }
         } catch (_) {}
+      } else {
+        // If it's a regular Exception or Error, use its string representation
+        final errStr = e.toString();
+        if (errStr.isNotEmpty && !errStr.contains('Instance of')) {
+          errorMessage = errStr.replaceAll('Exception:', '').trim();
+        }
       }
 
       if (mounted) {
@@ -561,7 +597,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           'Email Address',
           _emailController,
           Icons.email_outlined,
-          enabled: false,
+          enabled: true,
         ),
         const SizedBox(height: 48),
         _primaryButton('Continue', () => setState(() => _currentStep = 3)),
@@ -582,26 +618,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _phoneController,
           Icons.phone_android_outlined,
           keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
         ),
-        const SizedBox(height: 20),
-        _buildTextField(
-          'Create Password',
-          _passwordController,
-          Icons.lock_outline,
-          isPassword: true,
-          obscureText: !_showPassword,
-          onSuffixIconTap: () => setState(() => _showPassword = !_showPassword),
-        ),
-        const SizedBox(height: 20),
-        _buildTextField(
-          'Confirm Password',
-          _confirmPasswordController,
-          Icons.lock_outline,
-          isPassword: true,
-          obscureText: !_showConfirmPassword,
-          onSuffixIconTap: () =>
-              setState(() => _showConfirmPassword = !_showConfirmPassword),
-        ),
+        if (!_isAppleRegistration) ...[
+          const SizedBox(height: 20),
+          _buildTextField(
+            'Create Password',
+            _passwordController,
+            Icons.lock_outline,
+            isPassword: true,
+            obscureText: !_showPassword,
+            onSuffixIconTap: () => setState(() => _showPassword = !_showPassword),
+          ),
+          const SizedBox(height: 20),
+          _buildTextField(
+            'Confirm Password',
+            _confirmPasswordController,
+            Icons.lock_outline,
+            isPassword: true,
+            obscureText: !_showConfirmPassword,
+            onSuffixIconTap: () =>
+                setState(() => _showConfirmPassword = !_showConfirmPassword),
+          ),
+        ],
         const SizedBox(height: 48),
         _primaryButton('Register Now', _handleCompleteRegistration),
       ],
@@ -617,6 +659,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     bool isPassword = false,
     VoidCallback? onSuffixIconTap,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,6 +679,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           enabled: enabled,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             fontSize: 15,

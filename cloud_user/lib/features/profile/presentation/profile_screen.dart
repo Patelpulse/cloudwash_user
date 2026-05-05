@@ -4,6 +4,7 @@ import 'package:cloud_user/core/storage/token_storage.dart';
 import 'package:cloud_user/core/theme/app_theme.dart';
 import 'package:cloud_user/features/web/presentation/web_layout.dart';
 import 'package:cloud_user/features/auth/data/auth_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,11 +16,18 @@ import 'package:cloud_user/core/widgets/profile_image.dart';
 import '../../cart/data/cart_provider.dart';
 import '../../location/data/address_provider.dart' show selectedAddressProvider, userAddressesProvider;
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _isDeleting = false;
+
+  @override
+  Widget build(BuildContext context) {
     final userAsync = ref.watch(userProfileProvider);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
@@ -33,23 +41,42 @@ class ProfileScreen extends ConsumerWidget {
           );
         }
 
-        Widget content = SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: isDesktop
-                ? MediaQuery.of(context).size.width * 0.1
-                : 20,
-            vertical: isDesktop ? 60 : 20,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProfileHeader(context, user, isDesktop),
-              const SizedBox(height: 32),
-              _buildProfileMenu(context, ref, isDesktop),
-              const SizedBox(height: 32),
-              _buildVersionInfo(),
-            ],
-          ),
+        Widget content = Stack(
+          children: [
+            SingleChildScrollView(
+              physics: kIsWeb ? const NeverScrollableScrollPhysics() : null,
+              padding: EdgeInsets.only(
+                left: isDesktop ? 32 : 20,
+                right: isDesktop ? 32 : 20,
+                top: isDesktop ? 32 : 16,
+                bottom: isDesktop ? 100 : 120, // Extra bottom padding for bottom bar
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProfileHeader(context, user, isDesktop),
+                  const SizedBox(height: 32),
+                  _buildProfileMenu(context, ref, isDesktop),
+                  const SizedBox(height: 32),
+                  _buildVersionInfo(),
+                ],
+              ),
+            ),
+            if (_isDeleting)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
 
         if (kIsWeb) {
@@ -224,6 +251,18 @@ class ProfileScreen extends ConsumerWidget {
         subtitle: 'Rules of the platform',
         onTap: () => context.push('/terms'),
       ),
+      const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Divider(color: Colors.redAccent, thickness: 0.5),
+      ),
+      _buildMenuItem(
+        context,
+        icon: Icons.delete_forever_outlined,
+        title: 'Delete Account',
+        subtitle: 'Permanently remove your data',
+        color: Colors.red.shade700,
+        onTap: () => _showDeleteAccountDialog(context, ref),
+      ),
       _buildMenuItem(
         context,
         icon: Icons.logout,
@@ -376,6 +415,80 @@ class ProfileScreen extends ConsumerWidget {
             },
             child: const Text(
               'Logout',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
+    showAdaptiveDialog(
+      context: context,
+      builder: (context) => AlertDialog.adaptive(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'This action is permanent and cannot be undone. All your data, including order history and addresses, will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Pop confirmation dialog
+              
+              setState(() => _isDeleting = true);
+
+              try {
+                await ref.read(authRepositoryProvider).deleteAccount();
+                
+                // State changes in AuthRepository will cause this widget to rebuild
+                // as AuthRequiredPlaceholder, effectively removing the _isDeleting overlay.
+
+                // Comprehensive state reset
+                ref.invalidate(authStateProvider);
+                ref.invalidate(userProfileProvider);
+                ref.invalidate(userAddressesProvider);
+                ref.invalidate(selectedAddressProvider);
+                ref.read(cartProvider.notifier).clearCart();
+                
+                if (mounted) {
+                  context.go('/');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Account deleted successfully'),
+                      backgroundColor: Colors.black87,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() => _isDeleting = false);
+                  
+                  final messenger = ScaffoldMessenger.of(context);
+                  String message = e.toString();
+                  
+                  if (message.contains('requires-recent-login')) {
+                    message = 'For security, please logout and login again before deleting your account.';
+                  } else if (e is FirebaseAuthException) {
+                    message = e.message ?? 'An error occurred during account deletion.';
+                  }
+
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(message),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Delete',
               style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),

@@ -98,6 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 queryParameters: {
                   'name': name,
                   'email': email,
+                  'isApple': 'true',
                 },
               ).toString(),
             );

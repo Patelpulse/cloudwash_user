@@ -143,34 +143,42 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+        const SnackBar(content: Text('Please select a parent category')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
+    final isEditing = widget.serviceToEdit != null;
 
     try {
       String? imageUrl = _existingImageUrl;
+      String? mongoId = widget.serviceToEdit?['mongoId'];
       final parsedDisplayOrder =
           int.tryParse(_displayOrderController.text.trim());
 
-      // Try to upload image to backend/Cloudinary if selected
-      if (_selectedImage != null) {
-        try {
-          final backendResult = await _saveToBackend();
-          if (backendResult != null && backendResult['imageUrl'] != null) {
-            imageUrl = backendResult['imageUrl'];
-          }
-        } catch (e) {
-          debugPrint('Backend upload failed: $e');
-          // Continue without image - save to Firebase anyway
+      // Try to save to backend (MongoDB) always
+      try {
+        final backendResult = await _saveToBackend();
+        if (backendResult != null) {
+          imageUrl = backendResult['imageUrl'] ?? imageUrl;
+          mongoId = backendResult['_id'] ?? mongoId;
+        }
+      } catch (e) {
+        debugPrint('Backend save failed: $e');
+        // If it fails, we still continue to Firebase but warn the user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Warning: Failed to save to MongoDB: $e'),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       }
 
       // Save to Firebase Firestore
-      if (widget.serviceToEdit != null &&
-          widget.serviceToEdit!['firebaseId'] != null) {
+      if (isEditing && widget.serviceToEdit!['firebaseId'] != null) {
         // Update existing in Firebase
         await _firebaseServiceService.updateService(
           serviceId: widget.serviceToEdit!['firebaseId'],
@@ -183,6 +191,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           isActive: _isActive,
           unit: 'piece',
           displayOrder: parsedDisplayOrder,
+          mongoId: mongoId,
         );
       } else {
         // Create new in Firebase
@@ -196,13 +205,14 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           isActive: _isActive,
           unit: 'piece',
           displayOrder: parsedDisplayOrder,
+          mongoId: mongoId,
         );
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.serviceToEdit != null
+            content: Text(isEditing
                 ? 'Service updated successfully!'
                 : 'Service created successfully!'),
             backgroundColor: Colors.green,
@@ -238,17 +248,30 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       );
 
       request.fields['name'] = _nameController.text;
-      request.fields['category'] = _selectedCategoryId!;
+
+      // Use mongoId for backend if available, fallback to id
+      final selectedCategory = _categories.firstWhere(
+        (c) => c['id'] == _selectedCategoryId,
+        orElse: () => {},
+      );
+      request.fields['category'] =
+          selectedCategory['mongoId'] ?? _selectedCategoryId!;
+
       if (_selectedSubCategoryId != null) {
-        request.fields['subCategory'] = _selectedSubCategoryId!;
+        final selectedSub = _subCategories.firstWhere(
+          (s) => s['id'] == _selectedSubCategoryId,
+          orElse: () => {},
+        );
+        request.fields['subCategory'] =
+            selectedSub['mongoId'] ?? _selectedSubCategoryId!;
       }
+
       request.fields['price'] = _priceController.text;
       request.fields['duration'] = _durationController.text;
       request.fields['description'] = _descriptionController.text;
       request.fields['isActive'] = _isActive.toString();
       if (_displayOrderController.text.trim().isNotEmpty) {
-        request.fields['displayOrder'] =
-            _displayOrderController.text.trim();
+        request.fields['displayOrder'] = _displayOrderController.text.trim();
       }
 
       if (_selectedImage != null) {
@@ -272,9 +295,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
       }
 
       var response = await request.send();
+      final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseBody = await response.stream.bytesToString();
+        // Try to parse response for image URL
         try {
           final jsonResponse = json.decode(responseBody);
           return {
@@ -287,8 +311,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
             '_id': widget.serviceToEdit?['_id'],
           };
         }
+      } else {
+        throw Exception(
+            'Backend error (${response.statusCode}): $responseBody');
       }
-      return null;
     } catch (e) {
       debugPrint('Backend save error: $e');
       rethrow;

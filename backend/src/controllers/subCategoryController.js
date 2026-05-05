@@ -31,20 +31,21 @@ const uploadFromBuffer = (buffer) => {
 const createSubCategory = async (req, res) => {
     try {
         const { name, category, description, price, isActive, displayOrder } = req.body;
+        
+        let imageUrl = '';
 
-        if (!req.file) {
-            return res.status(400).json({ message: 'Please upload an image' });
+        if (req.file) {
+            // Upload image to Cloudinary if provided
+            const result = await uploadFromBuffer(req.file.buffer);
+            imageUrl = result.secure_url;
         }
-
-        // Upload image to Cloudinary
-        const result = await uploadFromBuffer(req.file.buffer);
 
         const subCategory = await SubCategory.create({
             name,
             category,
             description,
             price,
-            imageUrl: result.secure_url,
+            imageUrl,
             isActive: isActive === 'true',
             displayOrder: Number.isFinite(Number(displayOrder))
                 ? Number(displayOrder)
@@ -117,8 +118,13 @@ const updateSubCategory = async (req, res) => {
         }
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            subCategory.imageUrl = result.secure_url;
+            try {
+                const result = await uploadFromBuffer(req.file.buffer);
+                subCategory.imageUrl = result.secure_url;
+            } catch (cldError) {
+                console.error('Cloudinary upload failed during update:', cldError);
+                // Continue without updating imageUrl
+            }
         }
 
         const updatedSubCategory = await subCategory.save();

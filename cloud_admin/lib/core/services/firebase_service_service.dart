@@ -14,12 +14,13 @@ class FirebaseServiceService {
     required bool isActive,
     String? unit,
     int? displayOrder,
+    String? mongoId,
   }) async {
     try {
       final nextOrder =
           displayOrder ?? await _getNextDisplayOrder(defaultValue: 1000);
 
-      final docRef = await _firestore.collection('services').add({
+      final data = <String, dynamic>{
         'name': name,
         'subCategoryId': subCategoryId,
         'categoryId': categoryId,
@@ -31,7 +32,13 @@ class FirebaseServiceService {
         'displayOrder': nextOrder,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (mongoId != null && mongoId.trim().isNotEmpty) {
+        data['mongoId'] = mongoId.trim();
+      }
+
+      final docRef = await _firestore.collection('services').add(data);
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to create service: $e');
@@ -50,6 +57,7 @@ class FirebaseServiceService {
     required bool isActive,
     String? unit,
     int? displayOrder,
+    String? mongoId,
   }) async {
     try {
       final Map<String, dynamic> updateData = {
@@ -69,6 +77,10 @@ class FirebaseServiceService {
 
       if (imageUrl != null) {
         updateData['imageUrl'] = imageUrl;
+      }
+
+      if (mongoId != null && mongoId.trim().isNotEmpty) {
+        updateData['mongoId'] = mongoId.trim();
       }
 
       await _firestore.collection('services').doc(serviceId).update(updateData);

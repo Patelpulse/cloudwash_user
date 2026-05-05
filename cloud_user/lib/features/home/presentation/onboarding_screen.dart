@@ -54,7 +54,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_complete', true);
     if (mounted) {
-      context.go('/login');
+      context.go('/');
     }
   }
 
@@ -87,7 +87,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // If on web, skip onboarding as requested
     if (kIsWeb) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/login');
+        context.go('/');
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }

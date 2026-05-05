@@ -27,6 +27,7 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
   // Controllers
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
   final _displayOrderController = TextEditingController();
 
   // State variables
@@ -70,6 +71,7 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
     final sub = widget.subCategoryToEdit!;
     _nameController.text = sub['name'] ?? '';
     _descriptionController.text = sub['description'] ?? '';
+    _priceController.text = sub['price']?.toString() ?? '';
     _isActive = sub['isActive'] == true;
     _existingImageUrl = sub['imageUrl'];
     if (sub['displayOrder'] != null) {
@@ -113,19 +115,26 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
 
     try {
       String? imageUrl = _existingImageUrl;
+      String? mongoId = widget.subCategoryToEdit?['mongoId'];
       final parsedDisplayOrder =
           int.tryParse(_displayOrderController.text.trim());
 
-      // Try to upload image to backend/Cloudinary if selected
-      if (_selectedImage != null) {
-        try {
-          final backendResult = await _saveToBackend();
-          if (backendResult != null && backendResult['imageUrl'] != null) {
-            imageUrl = backendResult['imageUrl'];
-          }
-        } catch (e) {
-          debugPrint('Backend upload failed: $e');
-          // Continue without image - save to Firebase anyway
+      // Always try to sync with backend (MongoDB)
+      try {
+        final backendResult = await _saveToBackend();
+        if (backendResult != null) {
+          imageUrl = backendResult['imageUrl'] ?? imageUrl;
+          mongoId = backendResult['_id'] ?? mongoId;
+        }
+      } catch (e) {
+        debugPrint('Backend sync failed: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Warning: MongoDB sync failed: $e'),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       }
 
@@ -138,8 +147,10 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
           name: _nameController.text,
           categoryId: _selectedCategoryId!,
           description: _descriptionController.text,
+          price: double.tryParse(_priceController.text) ?? 0,
           imageUrl: imageUrl,
           isActive: _isActive,
+          mongoId: mongoId,
           displayOrder: parsedDisplayOrder,
         );
       } else {
@@ -148,8 +159,10 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
           name: _nameController.text,
           categoryId: _selectedCategoryId!,
           description: _descriptionController.text,
+          price: double.tryParse(_priceController.text) ?? 0,
           imageUrl: imageUrl ?? '',
           isActive: _isActive,
+          mongoId: mongoId,
           displayOrder: parsedDisplayOrder,
         );
       }
@@ -193,12 +206,19 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
       );
 
       request.fields['name'] = _nameController.text;
-      request.fields['category'] = _selectedCategoryId!;
+      request.fields['price'] = _priceController.text;
+      
+      // Use mongoId for category if available
+      final selectedCategory = _categories.firstWhere(
+        (c) => c['id'] == _selectedCategoryId,
+        orElse: () => {},
+      );
+      request.fields['category'] = selectedCategory['mongoId'] ?? _selectedCategoryId!;
+
       request.fields['description'] = _descriptionController.text;
       request.fields['isActive'] = _isActive.toString();
       if (_displayOrderController.text.trim().isNotEmpty) {
-        request.fields['displayOrder'] =
-            _displayOrderController.text.trim();
+        request.fields['displayOrder'] = _displayOrderController.text.trim();
       }
 
       if (_selectedImage != null) {
@@ -222,9 +242,9 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
       }
 
       var response = await request.send();
+      final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseBody = await response.stream.bytesToString();
         // Try to parse response for image URL
         try {
           final jsonResponse = json.decode(responseBody);
@@ -238,8 +258,10 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
             '_id': widget.subCategoryToEdit?['_id'],
           };
         }
+      } else {
+        throw Exception(
+            'Backend error (${response.statusCode}): $responseBody');
       }
-      return null;
     } catch (e) {
       debugPrint('Backend save error: $e');
       rethrow;
@@ -250,6 +272,7 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _priceController.dispose();
     _displayOrderController.dispose();
     super.dispose();
   }
@@ -343,6 +366,14 @@ class _AddSubCategoryScreenState extends State<AddSubCategoryScreen> {
                     controller: _nameController,
                     label: 'Sub-Category Name',
                     hint: 'e.g. Sofa Cleaning',
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildTextField(
+                    controller: _priceController,
+                    label: 'Price (₹)',
+                    hint: 'e.g. 499',
+                    isNumeric: true,
                   ),
                   const SizedBox(height: 24),
 

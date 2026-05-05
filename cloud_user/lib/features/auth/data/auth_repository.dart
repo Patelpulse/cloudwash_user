@@ -490,6 +490,7 @@ AuthRepository authRepository(AuthRepositoryRef ref) {
   );
 }
 
+/// Repository responsible for authentication and user account management.
 class AuthRepository {
   final Dio _dio;
   final TokenStorage _tokenStorage;
@@ -888,6 +889,39 @@ class AuthRepository {
     await _tokenStorage.clearToken();
     await _auth.signOut();
     await _googleSignIn.signOut();
+  }
+
+  /// 🔥 DELETE ACCOUNT
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final uid = user.uid;
+
+      // 1. Delete from Backend (MongoDB)
+      try {
+        await _dio.delete('user/profile');
+      } catch (e) {
+        print('⚠️ Backend account deletion failed: $e');
+        // We continue to ensure Firebase data is also cleaned up
+      }
+
+      // 2. Delete from Firestore
+      await _firestore.collection('users').doc(uid).delete();
+
+      // 3. Delete from Firebase Auth
+      // Note: This may fail if the user hasn't logged in recently (requires-recent-login)
+      await user.delete();
+
+      // 4. Final Cleanup & Logout
+      await logout();
+      
+      print('✅ Account deleted successfully from all platforms');
+    } catch (e) {
+      print('❌ Delete Account Error: $e');
+      rethrow;
+    }
   }
 }
 
