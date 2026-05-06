@@ -37,12 +37,12 @@ const notificationSchema = new mongoose.Schema({
         default: null,
     },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         default: null,
     },
     orderId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Order',
         default: null,
     },

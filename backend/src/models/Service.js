@@ -7,12 +7,12 @@ const serviceSchema = new mongoose.Schema({
         trim: true,
     },
     category: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Category',
         required: true,
     },
     subCategory: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'SubCategory',
         required: false, // Optional for now to support backward compatibility
     },

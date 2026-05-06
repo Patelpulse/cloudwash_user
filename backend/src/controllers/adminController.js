@@ -1,32 +1,10 @@
+const { uploadToImageKit } = require('../utils/imagekit');
 const Admin = require('../models/Admin');
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
 const firebaseAdmin = require('../config/firebase');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-// Helper to upload to Cloudinary
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        const cld_upload_stream = cloudinary.uploader.upload_stream(
-            {
-                folder: "cloud_wash_admins"
-            },
-            (error, result) => {
-                if (result) {
-                    resolve(result);
-                } else {
-                    reject(error);
-                }
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/admins");
+    return result;
 };
 
 const getProfile = async (req, res) => {
@@ -78,8 +56,8 @@ const updateProfile = async (req, res) => {
         admin.location = location || admin.location;
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            admin.profileImage = result.secure_url;
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            admin.profileImage = result.url;
         }
 
         const updatedAdmin = await admin.save();

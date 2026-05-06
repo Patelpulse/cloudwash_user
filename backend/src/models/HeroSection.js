@@ -64,7 +64,7 @@ const heroSectionSchema = new mongoose.Schema({
     imageUrl: {
         type: String,
         required: true,
-        default: 'https://res.cloudinary.com/dssmutzly/image/upload/v1766830730/4d01db37af62132b8e554cfabce7767a_z7ioie.png'
+        default: ''
     },
     logoUrl: {
         type: String,

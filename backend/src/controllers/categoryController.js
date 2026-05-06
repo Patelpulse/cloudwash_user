@@ -1,13 +1,5 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const Category = require('../models/Category');
-
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
 
 const getErrorMessage = (error) => {
     if (!error) return 'Unknown upload error';
@@ -37,34 +29,13 @@ const parseDisplayOrder = (value, fallback = 100000) => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-// Helper to upload to Cloudinary using stream
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        if (!buffer) {
-            reject(new Error('Missing file buffer'));
-            return;
-        }
-
-        const cld_upload_stream = cloudinary.uploader.upload_stream(
-            {
-                folder: "cloud_wash_categories"
-            },
-            (error, result) => {
-                if (result?.secure_url) {
-                    resolve(result);
-                } else {
-                    reject(
-                        error || new Error('Cloudinary upload failed without result')
-                    );
-                }
-            }
-        );
-
-        const readStream = streamifier.createReadStream(buffer);
-        readStream.on('error', reject);
-        cld_upload_stream.on('error', reject);
-        readStream.pipe(cld_upload_stream);
-    });
+// Helper to upload to ImageKit using buffer
+const uploadFromBuffer = async (buffer, fileName) => {
+    if (!buffer) {
+        throw new Error('Missing file buffer');
+    }
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/categories");
+    return result;
 };
 
 const toDataUrlFromFile = (file) => {
@@ -78,7 +49,7 @@ const uploadImageWithFallback = async (
     { allowDataUrlFallback = false, fieldName = 'image' } = {}
 ) => {
     try {
-        return await uploadFromBuffer(file.buffer);
+        return await uploadFromBuffer(file.buffer, file.originalname);
     } catch (error) {
         if (!allowDataUrlFallback) {
             throw error;
@@ -86,9 +57,9 @@ const uploadImageWithFallback = async (
 
         const errorMessage = getErrorMessage(error);
         console.warn(
-            `⚠️ Cloudinary upload failed for ${fieldName}. Using data URL fallback: ${errorMessage}`
+            `⚠️ ImageKit upload failed for ${fieldName}. Using data URL fallback: ${errorMessage}`
         );
-        return { secure_url: toDataUrlFromFile(file) };
+        return { url: toDataUrlFromFile(file) };
     }
 };
 
@@ -103,8 +74,8 @@ const resolveCategoryImageUrl = async (
             allowDataUrlFallback: true,
             fieldName,
         });
-        const secureUrl = result?.secure_url?.toString().trim();
-        if (secureUrl) return secureUrl;
+        const url = result?.url?.toString().trim();
+        if (url) return url;
     } catch (error) {
         const errorMessage = getErrorMessage(error);
         console.warn(

@@ -1,30 +1,15 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const AboutUs = require('../models/AboutUs');
 const Stats = require('../models/Stats');
 const Footer = require('../models/Footer');
 const StaticPage = require('../models/StaticPage');
 const admin = require('../config/firebase');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
 // Helper
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
-            { folder: "cloudwash/webcontent" },
-            (error, result) => {
-                if (result) resolve(result);
-                else reject(error);
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+// Helper
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/webcontent");
+    return result;
 };
 
 const getErrorMessage = (error) => {
@@ -45,7 +30,7 @@ const uploadImageWithFallback = async (
     { allowDataUrlFallback = false, fieldName = 'image' } = {}
 ) => {
     try {
-        return await uploadFromBuffer(file.buffer);
+        return await uploadFromBuffer(file.buffer, file.originalname);
     } catch (error) {
         if (!allowDataUrlFallback) {
             throw error;
@@ -53,9 +38,9 @@ const uploadImageWithFallback = async (
 
         const errorMessage = getErrorMessage(error);
         console.warn(
-            `⚠️ Cloudinary upload failed for ${fieldName}. Using data URL fallback: ${errorMessage}`
+            `⚠️ ImageKit upload failed for ${fieldName}. Using data URL fallback: ${errorMessage}`
         );
-        return { secure_url: toDataUrlFromFile(file) };
+        return { url: toDataUrlFromFile(file) };
     }
 };
 
@@ -298,8 +283,8 @@ const updateAboutUs = async (req, res) => {
         about.isActive = parseBooleanValue(isActive, about.isActive);
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            about.imageUrl = result.secure_url;
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            about.imageUrl = result.url;
         }
 
         await about.save();
@@ -585,7 +570,7 @@ const updateStaticPage = async (req, res) => {
                 allowDataUrlFallback: true,
                 fieldName: `static page ${slug} image`,
             });
-            page.imageUrl = result.secure_url;
+            page.imageUrl = result.url;
         }
 
         staticPage.slug = page.slug;

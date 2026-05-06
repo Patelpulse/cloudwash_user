@@ -1,6 +1,6 @@
 const User = require('../models/User'); // Restart trigger
 const jwt = require('jsonwebtoken');
-const { uploadToCloudinary } = require('../utils/cloudinary');
+const { uploadToImageKit } = require('../utils/imagekit');
 
 // Helper to generate JWT
 const generateToken = (id) => {
@@ -24,9 +24,10 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'User already exists with this email, phone, or Firebase UID' });
         }
         // ... rest of registerUser
-        let cloudinaryImageUrl = profileImage;
+        let imageUrl = profileImage;
         if (profileImage && (profileImage.startsWith('http') || profileImage.startsWith('data:image'))) {
-            cloudinaryImageUrl = await uploadToCloudinary(profileImage);
+            const result = await uploadToImageKit(profileImage, `profile_${Date.now()}.png`, 'cloudwash/users');
+            imageUrl = result.url;
         }
 
         const user = await User.create({
@@ -35,7 +36,7 @@ const registerUser = async (req, res) => {
             email,
             phone,
             password, // Will be hashed by pre-save hook
-            profileImage: cloudinaryImageUrl
+            profileImage: imageUrl
         });
 
         if (user) {
@@ -136,8 +137,8 @@ const updateProfile = async (req, res) => {
             user.phone = req.body.phone || user.phone;
 
             if (req.body.profileImage && req.body.profileImage.startsWith('data:image')) {
-                const cloudinaryImageUrl = await uploadToCloudinary(req.body.profileImage);
-                user.profileImage = cloudinaryImageUrl;
+                const result = await uploadToImageKit(req.body.profileImage, `profile_${Date.now()}.png`, 'cloudwash/users');
+                user.profileImage = result.url;
             }
 
             if (req.body.password) {

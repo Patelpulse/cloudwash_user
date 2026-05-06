@@ -1,30 +1,9 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const Banner = require('../models/Banner');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
-            {
-                folder: "cloud_wash_banners"
-            },
-            (error, result) => {
-                if (result) {
-                    resolve(result);
-                } else {
-                    reject(error);
-                }
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/banners");
+    return result;
 };
 
 const createBanner = async (req, res) => {
@@ -35,13 +14,13 @@ const createBanner = async (req, res) => {
             return res.status(400).json({ message: 'Please upload a banner image' });
         }
 
-        const result = await uploadFromBuffer(req.file.buffer);
+        const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
 
         const banner = await Banner.create({
             title,
             description,
             position,
-            imageUrl: result.secure_url,
+            imageUrl: result.url,
             isActive: isActive === 'true',
             displayOrder: displayOrder || 0,
         });
@@ -101,8 +80,8 @@ const updateBanner = async (req, res) => {
         }
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            banner.imageUrl = result.secure_url;
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            banner.imageUrl = result.url;
         }
 
         const updatedBanner = await banner.save();

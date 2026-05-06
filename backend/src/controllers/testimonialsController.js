@@ -1,25 +1,9 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const Testimonial = require('../models/Testimonial');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
-            { folder: "cloudwash/testimonials" },
-            (error, result) => {
-                if (result) resolve(result);
-                else reject(error);
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/testimonials");
+    return result;
 };
 
 const getTestimonials = async (req, res) => {
@@ -37,8 +21,8 @@ const createTestimonial = async (req, res) => {
         let imageUrl = '';
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            imageUrl = result.secure_url;
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            imageUrl = result.url;
         }
 
         const testimonial = await Testimonial.create({
@@ -78,8 +62,8 @@ const updateTestimonial = async (req, res) => {
         if (isActive !== undefined) testimonial.isActive = isActive === 'true';
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            testimonial.imageUrl = result.secure_url;
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            testimonial.imageUrl = result.url;
         }
 
         await testimonial.save();

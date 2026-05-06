@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     },
@@ -37,7 +37,7 @@ const orderSchema = new mongoose.Schema({
     },
     services: [{
         serviceId: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: String,
             ref: 'Service'
         },
         name: { type: String, required: true },
@@ -49,7 +49,7 @@ const orderSchema = new mongoose.Schema({
     }],
     addons: [{
         addonId: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: String,
             ref: 'Addon'
         },
         name: { type: String, required: true },

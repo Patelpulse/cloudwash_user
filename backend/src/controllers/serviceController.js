@@ -1,49 +1,38 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const Service = require('../models/Service');
 
-// Configure Cloudinary (assumes env vars are loaded)
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/services");
+    return result;
+};
 
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
-            {
-                folder: "cloud_wash_services"
-            },
-            (error, result) => {
-                if (result) {
-                    resolve(result);
-                } else {
-                    reject(error);
-                }
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+const parsePrice = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
 };
 
 const createService = async (req, res) => {
     try {
         const { name, category, subCategory: subCategoryId, price, duration, description, isActive, displayOrder } = req.body;
+        const parsedPrice = parsePrice(price);
         
         let imageUrl = '';
 
         if (req.file) {
-            // Upload image to Cloudinary if provided
-            const result = await uploadFromBuffer(req.file.buffer);
-            imageUrl = result.secure_url;
+            // Upload image to ImageKit if provided
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            imageUrl = result.url;
+        }
+
+        if (parsedPrice === null) {
+            return res.status(400).json({ message: 'Price must be a valid number' });
         }
 
         const service = await Service.create({
             name,
             category,
             subCategory: subCategoryId || null,
-            price,
+            price: parsedPrice,
             duration,
             description,
             imageUrl,
@@ -118,7 +107,15 @@ const updateService = async (req, res) => {
         service.name = name || service.name;
         if (category) service.category = category;
         if (subCategory) service.subCategory = subCategory;
-        service.price = price || service.price;
+        
+        if (price !== undefined && price !== '') {
+            const parsedPrice = parsePrice(price);
+            if (parsedPrice === null) {
+                return res.status(400).json({ message: 'Price must be a valid number' });
+            }
+            service.price = parsedPrice;
+        }
+
         service.duration = duration || service.duration;
         service.description = description || service.description;
         if (displayOrder !== undefined && displayOrder !== '') {
@@ -135,10 +132,10 @@ const updateService = async (req, res) => {
 
         if (req.file) {
             try {
-                const result = await uploadFromBuffer(req.file.buffer);
-                service.imageUrl = result.secure_url;
+                const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+                service.imageUrl = result.url;
             } catch (cldError) {
-                console.error('Cloudinary upload failed during update:', cldError);
+                console.error('ImageKit upload failed during update:', cldError);
                 // Continue without updating imageUrl
             }
         }

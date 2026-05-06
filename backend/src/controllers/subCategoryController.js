@@ -1,50 +1,46 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const SubCategory = require('../models/SubCategory');
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/sub_categories");
+    return result;
+};
 
-// Helper to upload to Cloudinary using stream
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
-            {
-                folder: "cloud_wash_sub_categories"
-            },
-            (error, result) => {
-                if (result) {
-                    resolve(result);
-                } else {
-                    reject(error);
-                }
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+const parsePrice = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
 };
 
 const createSubCategory = async (req, res) => {
     try {
         const { name, category, description, price, isActive, displayOrder } = req.body;
+        const parsedPrice = parsePrice(price);
         
         let imageUrl = '';
 
         if (req.file) {
-            // Upload image to Cloudinary if provided
-            const result = await uploadFromBuffer(req.file.buffer);
-            imageUrl = result.secure_url;
+            // Upload image to ImageKit if provided
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            imageUrl = result.url;
+        }
+
+        if (!name || !name.toString().trim()) {
+            return res.status(400).json({ message: 'SubCategory name is required' });
+        }
+
+        if (!category) {
+            return res.status(400).json({ message: 'Category is required' });
+        }
+
+        if (parsedPrice === null) {
+            return res.status(400).json({ message: 'Price must be a valid number' });
         }
 
         const subCategory = await SubCategory.create({
             name,
             category,
             description,
-            price,
+            price: parsedPrice,
             imageUrl,
             isActive: isActive === 'true',
             displayOrder: Number.isFinite(Number(displayOrder))
@@ -109,20 +105,28 @@ const updateSubCategory = async (req, res) => {
         subCategory.name = name || subCategory.name;
         if (category) subCategory.category = category;
         subCategory.description = description || subCategory.description;
-        subCategory.price = price || subCategory.price;
+        
+        if (price !== undefined && price !== '') {
+            const parsedPrice = parsePrice(price);
+            if (parsedPrice === null) {
+                return res.status(400).json({ message: 'Price must be a valid number' });
+            }
+            subCategory.price = parsedPrice;
+        }
+
         subCategory.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : subCategory.isActive);
         if (displayOrder !== undefined && displayOrder !== '') {
-          subCategory.displayOrder = Number.isFinite(Number(displayOrder))
-              ? Number(displayOrder)
-              : subCategory.displayOrder;
+            subCategory.displayOrder = Number.isFinite(Number(displayOrder))
+                ? Number(displayOrder)
+                : subCategory.displayOrder;
         }
 
         if (req.file) {
             try {
-                const result = await uploadFromBuffer(req.file.buffer);
-                subCategory.imageUrl = result.secure_url;
+                const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+                subCategory.imageUrl = result.url;
             } catch (cldError) {
-                console.error('Cloudinary upload failed during update:', cldError);
+                console.error('ImageKit upload failed during update:', cldError);
                 // Continue without updating imageUrl
             }
         }

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const cloudinary = require('cloudinary').v2;
+const { uploadToImageKit } = require('../utils/imagekit');
 const fs = require('fs');
 const path = require('path');
 const Category = require('../models/Category');
@@ -8,13 +8,6 @@ const connectDB = require('../config/db');
 
 // Load env vars
 dotenv.config();
-
-// Configure cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
 
 // Icon mapping to category names
 const iconMapping = {
@@ -55,19 +48,18 @@ const uploadIconsAndUpdateCategories = async () => {
             console.log(`\n📤 Uploading ${file} for category: ${categoryName}`);
 
             try {
-                // Upload to Cloudinary
-                const result = await cloudinary.uploader.upload(filePath, {
-                    folder: 'cloudwash/categories',
-                    public_id: file.replace('.png', ''),
-                    resource_type: 'image'
-                });
+                // Read file as buffer
+                const fileBuffer = fs.readFileSync(filePath);
 
-                console.log(`✅ Uploaded to Cloudinary: ${result.secure_url}`);
+                // Upload to ImageKit
+                const result = await uploadToImageKit(fileBuffer, file, 'cloudwash/categories');
+
+                console.log(`✅ Uploaded to ImageKit: ${result.url}`);
 
                 // Update category in database
                 const category = await Category.findOneAndUpdate(
                     { name: categoryName },
-                    { imageUrl: result.secure_url },
+                    { imageUrl: result.url },
                     { new: true }
                 );
 

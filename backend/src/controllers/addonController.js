@@ -1,50 +1,39 @@
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
+const { uploadToImageKit } = require('../utils/imagekit');
 const Addon = require('../models/Addon');
 
-// Configure Cloudinary (assumes env vars are loaded)
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+const uploadFromBuffer = async (buffer, fileName) => {
+    const result = await uploadToImageKit(buffer, fileName, "cloudwash/addons");
+    return result;
+};
 
-const uploadFromBuffer = (buffer) => {
-    return new Promise((resolve, reject) => {
-        let cld_upload_stream = cloudinary.uploader.upload_stream(
-            {
-                folder: "cloud_wash_addons"
-            },
-            (error, result) => {
-                if (result) {
-                    resolve(result);
-                } else {
-                    reject(error);
-                }
-            }
-        );
-        streamifier.createReadStream(buffer).pipe(cld_upload_stream);
-    });
+const parsePrice = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
 };
 
 const createAddon = async (req, res) => {
     try {
         const { name, description, price, duration, category, subCategory, isActive } = req.body;
+        const parsedPrice = parsePrice(price);
+
+        if (parsedPrice === null) {
+            return res.status(400).json({ message: 'Price must be a valid number' });
+        }
 
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload an image' });
         }
 
-        const result = await uploadFromBuffer(req.file.buffer);
+        const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
 
         const addon = await Addon.create({
             name,
             description,
-            price: Number(price),
+            price: parsedPrice,
             duration,
             category,
             subCategory,
-            imageUrl: result.secure_url,
+            imageUrl: result.url,
             isActive: isActive === 'true'
         });
 
@@ -95,7 +84,15 @@ const updateAddon = async (req, res) => {
 
         addon.name = name || addon.name;
         addon.description = description || addon.description;
-        addon.price = price ? Number(price) : addon.price;
+        
+        if (price !== undefined && price !== '') {
+            const parsedPrice = parsePrice(price);
+            if (parsedPrice === null) {
+                return res.status(400).json({ message: 'Price must be a valid number' });
+            }
+            addon.price = parsedPrice;
+        }
+
         addon.duration = duration || addon.duration;
         addon.category = category || addon.category;
         addon.subCategory = subCategory || addon.subCategory;
@@ -106,8 +103,8 @@ const updateAddon = async (req, res) => {
         }
 
         if (req.file) {
-            const result = await uploadFromBuffer(req.file.buffer);
-            addon.imageUrl = result.secure_url;
+            const result = await uploadFromBuffer(req.file.buffer, req.file.originalname);
+            addon.imageUrl = result.url;
         }
 
         const updatedAddon = await addon.save();

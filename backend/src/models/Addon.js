@@ -23,12 +23,12 @@ const addonSchema = new mongoose.Schema({
         required: true,
     },
     category: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Category',
         required: true,
     },
     subCategory: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'SubCategory',
     },
     isActive: {
