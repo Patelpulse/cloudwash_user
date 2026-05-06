@@ -23,6 +23,8 @@ import 'dart:math' as math;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 class WebHomeScreen extends ConsumerStatefulWidget {
   const WebHomeScreen({super.key});
 
@@ -302,37 +304,31 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // Tagline Badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: kHeroNeutralBg,
+            color: AppTheme.primary.withOpacity(0.05),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: kHeroNeutralBorder,
-              width: 1.5,
+              color: AppTheme.primary.withOpacity(0.1),
+              width: 1,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF64748B),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
+              const Icon(Icons.auto_awesome, size: 14, color: AppTheme.accent),
+              const SizedBox(width: 8),
               Text(
-                tagline,
+                tagline.toUpperCase(),
                 style: GoogleFonts.getFont(
                   bodyFontFamily,
                   textStyle: const TextStyle(
-                    color: kHeroNeutralText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                    color: AppTheme.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
@@ -340,6 +336,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           ),
         ),
         SizedBox(height: isMobile ? 24 : 32),
+        // Title
         Text(
           title.replaceAll('\\n', '\n'),
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
@@ -348,13 +345,14 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             textStyle: TextStyle(
               fontSize: _heroTitleFontSize(hero, isMobile),
               fontWeight: FontWeight.w900,
-              height: 1.1,
+              height: 1.05,
               color: titleColor,
-              letterSpacing: -1,
+              letterSpacing: -1.5,
             ),
           ),
         ),
         SizedBox(height: isMobile ? 20 : 28),
+        // Description
         Text(
           desc,
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
@@ -363,65 +361,20 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             textStyle: TextStyle(
               fontSize: _heroDescriptionFontSize(hero, isMobile),
               color: descriptionColor,
-              height: 1.7,
+              height: 1.6,
             ),
           ),
         ),
-        SizedBox(height: isMobile ? 32 : 40),
+        SizedBox(height: isMobile ? 32 : 44),
+        // Action Buttons
         Row(
           mainAxisAlignment:
               isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [kHeroCtaDark, kHeroCtaDarkEnd],
-                ),
-                borderRadius: BorderRadius.circular(50),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () => context.push('/services'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 28 : 36,
-                    vertical: isMobile ? 18 : 22,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      btnText,
-                      style: GoogleFonts.getFont(
-                        bodyFontFamily,
-                        textStyle: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: isMobile ? 15 : 16,
-                          color: buttonTextColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 20,
-                      color: buttonTextColor,
-                    ),
-                  ],
-                ),
-              ),
+            _ModernCTAButton(
+              label: btnText,
+              onTap: () => context.push('/services'),
+              textColor: buttonTextColor,
             ),
             const SizedBox(width: 20),
             _PulseButton(
@@ -429,84 +382,42 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             ),
           ],
         ),
-        SizedBox(height: isMobile ? 40 : 50),
+        SizedBox(height: isMobile ? 40 : 60),
+        // Social Proof
         Row(
           mainAxisAlignment:
               isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 120,
-              height: 45,
-              child: Stack(
-                children: List.generate(
-                  4,
-                  (i) => Positioned(
-                    left: i * 25.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 22,
-                        backgroundColor: [
-                          Color(0xFF94A3B8),
-                          Color(0xFFCBD5E1),
-                          Color(0xFF64748B),
-                          Color(0xFF475569),
-                        ][i],
-                        child: Text(
-                          ['👤', '👨', '👩', '🧑'][i],
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _buildAvatars(),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '50,000+ Happy Customers',
-                  style: GoogleFonts.getFont(
-                    bodyFontFamily,
-                    textStyle: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  style: GoogleFonts.inter(
+                    color: AppTheme.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 Row(
                   children: [
                     ...List.generate(
                       5,
-                      (i) => Icon(
+                      (i) => const Icon(
                         Icons.star_rounded,
-                        size: 14,
+                        size: 16,
                         color: Color(0xFFFBBF24),
                       ),
                     ),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Text(
                       '4.9/5 Rating',
-                      style: GoogleFonts.getFont(
-                        bodyFontFamily,
-                        textStyle: const TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -516,6 +427,35 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildAvatars() {
+    return SizedBox(
+      width: 110,
+      height: 40,
+      child: Stack(
+        children: List.generate(
+          4,
+          (i) => Positioned(
+            left: i * 22.0,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: AppTheme.softShadow,
+              ),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: NetworkImage(
+                  'https://i.pravatar.cc/150?img=${i + 10}',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1568,14 +1508,14 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
                   child: isMobile
                       ? Column(
                           children: [
-                            _buildDownloadContent(isMobile),
+                            _buildDownloadContent(isMobile, statsData),
                             const SizedBox(height: 60),
                             _buildDownloadAppMockup(isMobile),
                           ],
                         )
                       : Row(
                           children: [
-                            Expanded(child: _buildDownloadContent(isMobile)),
+                            Expanded(child: _buildDownloadContent(isMobile, statsData)),
                             const SizedBox(width: 100),
                             _buildDownloadAppMockup(isMobile),
                           ],
@@ -1642,7 +1582,13 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
     );
   }
 
-  Widget _buildDownloadContent(bool isMobile) {
+  Widget _buildDownloadContent(bool isMobile, StatsModel? stats) {
+    final tag = stats?.appDownloadTag ?? 'DOWNLOAD THE APP';
+    final title = stats?.appDownloadTitle ?? 'Your Personal Laundry\nManager in Your Pocket';
+    final subtitle = stats?.appDownloadSubtitle ?? 'Book, track, and manage your laundry needs with a single tap. Join 50,000+ happy users today.';
+    final appStoreUrl = stats?.appStoreUrl ?? '#';
+    final playStoreUrl = stats?.playStoreUrl ?? '#';
+
     return Column(
       crossAxisAlignment:
           isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
@@ -1663,7 +1609,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
             ],
           ),
           child: Text(
-            'DOWNLOAD THE APP',
+            tag.toUpperCase(),
             style: GoogleFonts.inter(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -1674,7 +1620,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         ),
         const SizedBox(height: 28),
         Text(
-          'Your Personal Laundry\nManager in Your Pocket',
+          title,
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
           style: GoogleFonts.playfairDisplay(
             fontSize: isMobile ? 36 : 52,
@@ -1686,7 +1632,7 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Book, track, and manage your laundry needs with a single tap. Join 50,000+ happy users today.',
+          subtitle,
           textAlign: isMobile ? TextAlign.center : TextAlign.start,
           style: GoogleFonts.inter(
             fontSize: isMobile ? 16 : 18,
@@ -1704,13 +1650,21 @@ class _WebHomeScreenState extends ConsumerState<WebHomeScreen> {
               icon: Icons.apple,
               text: 'App Store',
               subtext: 'Download on the',
-              onTap: () {},
+              onTap: () {
+                if (appStoreUrl != '#') {
+                  // TODO: Implement launchUrl
+                }
+              },
             ),
             _AppStoreBadge(
               icon: Icons.play_arrow_rounded,
               text: 'Google Play',
               subtext: 'Get it on',
-              onTap: () {},
+              onTap: () {
+                if (playStoreUrl != '#') {
+                  // TODO: Implement launchUrl
+                }
+              },
             ),
           ],
         ),
@@ -1919,91 +1873,93 @@ class _EnhancedCategoryCardState extends State<_EnhancedCategoryCard> {
   Widget build(BuildContext context) {
     final normalizedImagePath = (widget.imagePath ?? '').trim();
     final embeddedImageBytes = decodeDataImage(normalizedImagePath);
+    final hasNetworkImage = normalizedImagePath.isNotEmpty && embeddedImageBytes == null;
+
     return MouseRegion(
-      onEnter: (_) {
-        if (mounted) setState(() => isHovered = true);
-      },
-      onExit: (_) {
-        if (mounted) setState(() => isHovered = false);
-      },
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isHovered
-                  ? [widget.color1, widget.color2]
-                  : [Colors.white, Colors.white],
+        child: AnimatedScale(
+          scale: isHovered ? 1.05 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: isHovered ? AppTheme.deepShadow : AppTheme.softShadow,
+              border: Border.all(
+                color: isHovered ? widget.color1.withOpacity(0.2) : Colors.transparent,
+                width: 1.5,
+              ),
             ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: isHovered
-                    ? widget.color1.withOpacity(0.4)
-                    : Colors.black.withOpacity(0.05),
-                blurRadius: isHovered ? 30 : 15,
-                offset: Offset(0, isHovered ? 15 : 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (embeddedImageBytes != null)
-                Image.memory(
-                  embeddedImageBytes,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.contain,
-                )
-              else if (normalizedImagePath.isNotEmpty)
-                CachedNetworkImage(
-                  imageUrl: normalizedImagePath,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.contain,
-                  placeholder: (_, __) => CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: isHovered ? Colors.white : widget.color1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icon/Image Container
+                Container(
+                  height: 80,
+                  width: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [widget.color1.withOpacity(0.1), widget.color2.withOpacity(0.05)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
                   ),
-                  errorWidget: (_, __, ___) => Icon(
-                    widget.icon,
-                    size: 48,
-                    color: isHovered ? Colors.white : widget.color1,
+                  child: Center(
+                    child: normalizedImagePath.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: embeddedImageBytes != null
+                                ? Image.memory(
+                                    embeddedImageBytes,
+                                    width: 44,
+                                    height: 44,
+                                    fit: BoxFit.contain,
+                                  )
+                                : hasNetworkImage
+                                    ? CachedNetworkImage(
+                                        imageUrl: normalizedImagePath,
+                                        width: 44,
+                                        height: 44,
+                                        fit: BoxFit.contain,
+                                        placeholder: (_, __) => Icon(
+                                          widget.icon,
+                                          size: 32,
+                                          color: widget.color1.withOpacity(0.3),
+                                        ),
+                                      )
+                                    : Icon(widget.icon, size: 36, color: widget.color1))
+                        : Icon(widget.icon, size: 36, color: widget.color1),
                   ),
-                )
-              else
-                Icon(
-                  widget.icon,
-                  size: 48,
-                  color: isHovered ? Colors.white : widget.color1,
                 ),
-              const SizedBox(height: 20),
-              Text(
-                widget.name,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: isHovered ? Colors.white : const Color(0xFF1E293B),
+                const SizedBox(height: 24),
+                Text(
+                  widget.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.count,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isHovered
-                      ? Colors.white.withOpacity(0.9)
-                      : const Color(0xFF64748B),
+                const SizedBox(height: 8),
+                Text(
+                  widget.count,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ]
+            ),
           ),
         ),
       ),
@@ -2856,6 +2812,71 @@ class _OffersCarouselState extends State<_OffersCarousel> {
           ),
         ),
       ],
+    );
+  }
+}
+class _ModernCTAButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  final Color textColor;
+
+  const _ModernCTAButton({
+    required this.label,
+    required this.onTap,
+    required this.textColor,
+  });
+
+  @override
+  State<_ModernCTAButton> createState() => _ModernCTAButtonState();
+}
+
+class _ModernCTAButtonState extends State<_ModernCTAButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: _isHovered ? AppTheme.deepShadow : AppTheme.softShadow,
+        ),
+        transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
+        child: ElevatedButton(
+          onPressed: widget.onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.label,
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: widget.textColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 20,
+                color: widget.textColor,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

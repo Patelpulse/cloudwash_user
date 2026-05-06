@@ -21,6 +21,45 @@ class AppTheme {
   static const Color textPrimary = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF64748B);
 
+  // Gradients
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary, primaryDark],
+  );
+
+  static const LinearGradient accentGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [accent, Color(0xFFB8860B)], // Gold to Darker Gold
+  );
+
+  static const LinearGradient glassGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0x33FFFFFF),
+      Color(0x11FFFFFF),
+    ],
+  );
+
+  // Shadows
+  static List<BoxShadow> get softShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ];
+
+  static List<BoxShadow> get deepShadow => [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.12),
+          blurRadius: 20,
+          offset: const Offset(0, 10),
+        ),
+      ];
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

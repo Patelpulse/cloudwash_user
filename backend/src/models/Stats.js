@@ -20,6 +20,26 @@ const statsSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    appDownloadTag: {
+        type: String,
+        default: 'DOWNLOAD THE APP'
+    },
+    appDownloadTitle: {
+        type: String,
+        default: 'Your Personal Laundry\nManager in Your Pocket'
+    },
+    appDownloadSubtitle: {
+        type: String,
+        default: 'Book, track, and manage your laundry needs with a single tap. Join 50,000+ happy users today.'
+    },
+    appStoreUrl: {
+        type: String,
+        default: '#'
+    },
+    playStoreUrl: {
+        type: String,
+        default: '#'
     }
 }, {
     timestamps: true

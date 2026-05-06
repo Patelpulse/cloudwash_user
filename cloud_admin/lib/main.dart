@@ -34,6 +34,7 @@ import 'package:cloud_admin/features/web_landing/screens/edit_stats_screen.dart'
 import 'package:cloud_admin/features/web_landing/screens/edit_testimonials_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_why_choose_us_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/edit_footer_screen.dart';
+import 'package:cloud_admin/features/web_landing/screens/edit_downloads_screen.dart';
 import 'package:cloud_admin/features/web_landing/screens/web_landing_screen.dart';
 import 'package:cloud_admin/layout/dashboard_layout.dart';
 import 'package:flutter/material.dart';
@@ -386,6 +387,10 @@ class _CloudAdminAppState extends State<CloudAdminApp> {
                 GoRoute(
                   path: 'footer',
                   builder: (context, state) => const EditFooterScreen(),
+                ),
+                GoRoute(
+                  path: 'downloads',
+                  builder: (context, state) => const EditDownloadsScreen(),
                 ),
               ],
             ),

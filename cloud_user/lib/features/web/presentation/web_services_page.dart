@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sizer/sizer.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class WebServicesPage extends ConsumerStatefulWidget {
   const WebServicesPage({super.key});
@@ -17,51 +17,48 @@ class WebServicesPage extends ConsumerStatefulWidget {
 }
 
 class _WebServicesPageState extends ConsumerState<WebServicesPage> {
-  double _scrollOpacity = 0;
-
-
   // Category icon mapping
   IconData _getCategoryIcon(String name) {
     switch (name.toLowerCase()) {
       case 'cleaning':
-        return Icons.cleaning_services;
+        return Icons.cleaning_services_rounded;
       case 'repair':
-        return Icons.build;
+        return Icons.build_rounded;
       case 'painting':
-        return Icons.format_paint;
+        return Icons.format_paint_rounded;
       case 'plumbing':
-        return Icons.plumbing;
+        return Icons.plumbing_rounded;
       case 'electrical':
-        return Icons.electrical_services;
+        return Icons.electrical_services_rounded;
       case 'carpentry':
-        return Icons.carpenter;
+        return Icons.carpenter_rounded;
       case 'ac repair':
-        return Icons.ac_unit;
+        return Icons.ac_unit_rounded;
       case 'pest control':
-        return Icons.bug_report;
+        return Icons.bug_report_rounded;
       case 'home salon':
-        return Icons.content_cut;
+        return Icons.face_retouching_natural_rounded;
       case 'gardening':
-        return Icons.grass;
+        return Icons.grass_rounded;
       case 'car wash':
-        return Icons.local_car_wash;
+        return Icons.local_car_wash_rounded;
       case 'laundry':
-        return Icons.local_laundry_service;
+        return Icons.local_laundry_service_rounded;
       default:
-        return Icons.home_repair_service;
+        return Icons.home_repair_service_rounded;
     }
   }
 
   Color _getCategoryColor(int index) {
     final colors = [
-      const Color(0xFFE3F2FD),
-      const Color(0xFFFFF3E0),
-      const Color(0xFFE8F5E9),
-      const Color(0xFFFCE4EC),
-      const Color(0xFFE0F7FA),
-      const Color(0xFFF3E5F5),
-      const Color(0xFFFFF8E1),
-      const Color(0xFFE0F2F1),
+      const Color(0xFF6366F1), // Indigo
+      const Color(0xFF10B981), // Emerald
+      const Color(0xFF3B82F6), // Blue
+      const Color(0xFFF43F5E), // Rose
+      const Color(0xFFF59E0B), // Amber
+      const Color(0xFF8B5CF6), // Violet
+      const Color(0xFFEC4899), // Pink
+      const Color(0xFF06B6D4), // Cyan
     ];
     return colors[index % colors.length];
   }
@@ -70,275 +67,326 @@ class _WebServicesPageState extends ConsumerState<WebServicesPage> {
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isMobile = screenWidth < 1000;
+    final bool isSmallScreen = screenWidth < 700;
+    final bool isMediumScreen = screenWidth >= 700 && screenWidth < 1200;
 
     return WebLayout(
-      showNavBar: !isMobile,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification is ScrollUpdateNotification) {
-            final newOpacity = (notification.metrics.pixels / 50).clamp(0.0, 1.0);
-            if (newOpacity != _scrollOpacity) {
-              setState(() {
-                _scrollOpacity = newOpacity;
-              });
-            }
-          }
-          return false;
-        },
-        child: Stack(
+      showNavBar: true,
+      child: Container(
+        color: AppTheme.background,
+        child: Column(
           children: [
+            // 1. HEADER SECTION
             Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 60 : 60,
-          horizontal: isMobile ? 20 : 40,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Text(
-                  'Our Services',
-                  style: TextStyle(
-                    fontSize: isMobile ? 18.sp : 36,
-                    fontWeight: FontWeight.bold,
-                  ),
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                vertical: isSmallScreen ? 40 : 80,
+                horizontal: isSmallScreen ? 20 : 40,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade100, width: 1),
                 ),
-              //  SizedBox(height: 1.h),
-                Text(
-                  'Professional home services at your doorstep',
-                  style: TextStyle(
-                    fontSize: isMobile ? 15 : 18,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                categoriesAsync.when(
-                  data: (categories) => Wrap(
-                    spacing: 24,
-                    runSpacing: 24,
-                    children: categories.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final category = entry.value;
-                      return _ServiceCategoryCard(
-                        name: category.name,
-                        imageUrl: category.imageUrl, // Pass image URL
-                        icon: _getCategoryIcon(category.name),
-                        bgColor: _getCategoryColor(index),
-                        description: category.description.isNotEmpty
-                            ? category.description
-                            : _getDescription(category.name),
-                        onTap: () => context.push(
-                          '/category/${category.id}',
-                          extra: category.name,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                      );
-                    }).toList(),
-                  ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (err, _) => Text('Error loading services: $err'),
-                ),
-
-                const SizedBox(height: 80),
-
-                // How It Works Section
-                Text(
-                  'How It Works',
-                  style: TextStyle(
-                    fontSize: isMobile ? 24 : 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                isMobile
-                    ? const Column(
-                        children: [
-                          _StepCard(
-                            number: '1',
-                            title: 'Choose Service',
-                            description:
-                                'Select the service you need from our wide range of categories.',
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Text(
+                          'EXPLORE OUR SERVICES',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primary,
+                            letterSpacing: 1.2,
                           ),
-                          const SizedBox(height: 20),
-                          _StepCard(
-                            number: '2',
-                            title: 'Book Time Slot',
-                            description:
-                                'Pick a convenient date and time that works for you.',
-                          ),
-                          const SizedBox(height: 20),
-                          _StepCard(
-                            number: '3',
-                            title: 'Get It Done',
-                            description:
-                                'Our verified professional arrives and completes the job.',
-                          ),
-                        ],
-                      )
-                    : const Row(
-                        children: [
-                          Expanded(
-                            child: _StepCard(
-                              number: '1',
-                              title: 'Choose Service',
-                              description:
-                                  'Select the service you need from our wide range of categories.',
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: _StepCard(
-                              number: '2',
-                              title: 'Book Time Slot',
-                              description:
-                                  'Pick a convenient date and time that works for you.',
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: _StepCard(
-                              number: '3',
-                              title: 'Get It Done',
-                              description:
-                                  'Our verified professional arrives and completes the job.',
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-
-                const SizedBox(height: 80),
-
-                // CTA Section
-                 Container(
-                  padding: EdgeInsets.all(isMobile ? 24 : 40),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.primary, AppTheme.primaryDark],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Premium Care for Your Home',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: isSmallScreen ? 32 : 48,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Choose from our professional cleaning and maintenance services\ndelivered by verified experts at your doorstep.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: isSmallScreen ? 16 : 18,
+                          color: AppTheme.textSecondary,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: isMobile
-                      ? Column(
+                ),
+              ),
+            ),
+
+            // 2. SERVICES GRID
+            Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: 60,
+                horizontal: isSmallScreen ? 20 : 40,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: categoriesAsync.when(
+                    data: (categories) {
+                      if (categories.isEmpty) {
+                        return const Center(child: Text('No services found.'));
+                      }
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 400,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: isSmallScreen ? 0.85 : 1.2,
+                        ),
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          return _ServiceCategoryCard(
+                            name: category.name,
+                            imageUrl: category.imageUrl,
+                            icon: _getCategoryIcon(category.name),
+                            bgColor: _getCategoryColor(index),
+                            description: category.description.isNotEmpty
+                                ? category.description
+                                : _getDescription(category.name),
+                            onTap: () => context.push(
+                              '/category/${category.id}',
+                              extra: category.name,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (err, _) => Center(child: Text('Error: $err')),
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. HOW IT WORKS
+            _buildHowItWorks(isSmallScreen),
+
+            // 4. CTA SECTION
+            _buildCTA(isSmallScreen),
+            
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHowItWorks(bool isSmallScreen) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: 80, horizontal: isSmallScreen ? 20 : 40),
+      color: Colors.white,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Column(
+            children: [
+              Text(
+                'How It Works',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: isSmallScreen ? 28 : 36,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 48),
+              if (isSmallScreen)
+             const   Column(
+                  children: [
+                    _StepCard(
+                      number: '1',
+                      title: 'Choose Service',
+                      description: 'Select the service you need from our wide range of categories.',
+                    ),
+                     SizedBox(height: 24),
+                    _StepCard(
+                      number: '2',
+                      title: 'Book Time Slot',
+                      description: 'Pick a convenient date and time that works for you.',
+                    ),
+                     SizedBox(height: 24),
+                    _StepCard(
+                      number: '3',
+                      title: 'Get It Done',
+                      description: 'Our verified professional arrives and completes the job.',
+                    ),
+                  ],
+                )
+              else
+               const Row(
+                  children: [
+                     Expanded(
+                      child: _StepCard(
+                        number: '1',
+                        title: 'Choose Service',
+                        description: 'Select the service you need from our wide range of categories.',
+                      ),
+                    ),
+                    const SizedBox(width: 32),
+                    const Expanded(
+                      child: _StepCard(
+                        number: '2',
+                        title: 'Book Time Slot',
+                        description: 'Pick a convenient date and time that works for you.',
+                      ),
+                    ),
+                    const SizedBox(width: 32),
+                    const Expanded(
+                      child: _StepCard(
+                        number: '3',
+                        title: 'Get It Done',
+                        description: 'Our verified professional arrives and completes the job.',
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCTA(bool isSmallScreen) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 80, horizontal: isSmallScreen ? 20 : 40),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Container(
+            padding: EdgeInsets.all(isSmallScreen ? 32 : 60),
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: AppTheme.deepShadow,
+            ),
+            child: isSmallScreen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Need a Custom Service?',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Can't find what you're looking for? Our team is here to help with personalized solutions for your home.",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.8),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _ModernButton(
+                          label: 'Contact Support',
+                          onTap: () => context.push('/contact'),
+                          isLight: true,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Need a Custom Service?',
-                              style: TextStyle(
-                                fontSize: 24,
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 36,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 16),
                             Text(
-                              "Can't find what you're looking for? Contact us for custom solutions.",
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () => context.push('/contact'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: AppTheme.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Contact Us',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Need a Custom Service?',
-                                    style: TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "Can't find what you're looking for? Contact us for custom solutions.",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.9,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => context.push('/contact'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppTheme.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
-                                  vertical: 16,
-                                ),
-                              ),
-                              child: const Text(
-                                'Contact Us',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              "Can't find what you're looking for? Our team is here to help with\npersonalized solutions for your home.",
+                              style: GoogleFonts.inter(
+                                fontSize: 18,
+                                color: Colors.white.withOpacity(0.8),
+                                height: 1.5,
                               ),
                             ),
                           ],
                         ),
-                ),
-              ],
-            ),
-        ),
+                      ),
+                      const SizedBox(width: 40),
+                      _ModernButton(
+                        label: 'Contact Support',
+                        onTap: () => context.push('/contact'),
+                        isLight: true,
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
-          ]
-        ),
-      )
     );
   }
 
   String _getDescription(String name) {
     switch (name.toLowerCase()) {
       case 'cleaning':
-        return 'Deep cleaning, bathroom, kitchen & more';
+        return 'Professional deep cleaning for every corner of your home.';
       case 'repair':
-        return 'General home repairs and fixes';
+        return 'Expert repairs for appliances, furniture, and fixtures.';
       case 'painting':
-        return 'Interior & exterior painting';
+        return 'Refresh your walls with premium interior and exterior painting.';
       case 'plumbing':
-        return 'Leaks, installations & repairs';
+        return 'Reliable plumbing solutions for leaks and new installations.';
       case 'electrical':
-        return 'Wiring, fixtures & repairs';
+        return 'Safe and certified electrical maintenance and repairs.';
       case 'carpentry':
-        return 'Furniture repair & custom work';
+        return 'Custom furniture work and expert woodwork repairs.';
       case 'ac repair':
-        return 'Service, repair & installation';
+        return 'Keep cool with professional AC servicing and maintenance.';
       case 'pest control':
-        return 'Cockroach, termite & pest removal';
+        return 'Protect your home with eco-friendly pest removal services.';
       default:
-        return 'Professional service at your doorstep';
+        return 'Professional service delivered with care and expertise.';
     }
   }
 }
@@ -369,11 +417,11 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 1000;
     final normalizedImageUrl = widget.imageUrl.trim();
     final embeddedImageBytes = decodeDataImage(normalizedImageUrl);
-    final hasNetworkImage =
-        normalizedImageUrl.isNotEmpty && embeddedImageBytes == null;
+    final hasNetworkImage = normalizedImageUrl.isNotEmpty && embeddedImageBytes == null;
+
+    final bool isMobile = MediaQuery.of(context).size.width < 700;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -381,113 +429,140 @@ class _ServiceCategoryCardState extends State<_ServiceCategoryCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: isMobile ? (MediaQuery.of(context).size.width - 64) / 2 : 280,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutQuart,
           padding: EdgeInsets.all(isMobile ? 16 : 24),
-          transform: Matrix4.identity()..scale(_hovered ? 1.03 : 1.0),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: _hovered
-                    ? Colors.black.withValues(alpha: 0.12)
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: _hovered ? 20 : 10,
-                offset: Offset(0, _hovered ? 10 : 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(isMobile ? 20 : 28),
+            boxShadow: _hovered 
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.06),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                    spreadRadius: -8,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+            border: Border.all(
+              color: _hovered ? widget.bgColor.withOpacity(0.3) : const Color(0xFFF1F5F9),
+              width: 1.5,
+            ),
           ),
+          transform: Matrix4.identity()..translate(0.0, _hovered ? -6.0 : 0.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Icon/Image Container with Gradient
               Container(
-                padding: const EdgeInsets.all(16),
+                height: isMobile ? 60 : 72,
+                width: isMobile ? 60 : 72,
                 decoration: BoxDecoration(
-                  color: widget.bgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      widget.bgColor,
+                      Color.lerp(widget.bgColor, Colors.black, 0.1) ?? widget.bgColor,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
                 ),
-                child: normalizedImageUrl.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: embeddedImageBytes != null
-                            ? Image.memory(
-                                embeddedImageBytes,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                              )
-                            : hasNetworkImage
-                            ? CachedNetworkImage(
-                                imageUrl: normalizedImageUrl,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: widget.bgColor,
-                                  child: Icon(
-                                    widget.icon,
-                                    size: 32,
-                                    color: HSLColor.fromColor(
-                                      widget.bgColor,
-                                    ).withLightness(0.5).toColor(),
-                                  ),
-                                ),
-                                errorWidget: (_, __, ___) => Icon(
-                                  widget.icon,
-                                  size: 32,
-                                  color: HSLColor.fromColor(
-                                    widget.bgColor,
-                                  ).withLightness(0.3).toColor(),
-                                ),
-                              )
-                            : Icon(
-                                widget.icon,
-                                size: 32,
-                                color: HSLColor.fromColor(
-                                  widget.bgColor,
-                                ).withLightness(0.3).toColor(),
-                              ),
-                      )
-                    : Icon(
-                        widget.icon,
-                        size: 32,
-                        color: HSLColor.fromColor(
-                          widget.bgColor,
-                        ).withLightness(0.3).toColor(),
-                      ),
+                child: Center(
+                  child: normalizedImageUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+                          child: embeddedImageBytes != null
+                              ? Image.memory(
+                                  embeddedImageBytes,
+                                  width: isMobile ? 32 : 38,
+                                  height: isMobile ? 32 : 38,
+                                  fit: BoxFit.contain,
+                                )
+                              : hasNetworkImage
+                                  ? CachedNetworkImage(
+                                      imageUrl: normalizedImageUrl,
+                                      width: isMobile ? 32 : 38,
+                                      height: isMobile ? 32 : 38,
+                                      fit: BoxFit.contain,
+                                      placeholder: (context, url) => Icon(
+                                        widget.icon,
+                                        size: isMobile ? 24 : 28,
+                                        color: Colors.white.withOpacity(0.5),
+                                      ),
+                                    )
+                                  : Icon(widget.icon, size: isMobile ? 28 : 32, color: Colors.white))
+                      : Icon(widget.icon, size: isMobile ? 28 : 32, color: Colors.white),
+                ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: isMobile ? 16 : 20),
               Text(
                 widget.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w800,
+                  fontSize: isMobile ? 18 : 22,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 8 : 10),
               Text(
                 widget.description,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                maxLines: isMobile ? 3 : 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: AppTheme.textSecondary,
+                  fontSize: isMobile ? 13 : 14,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      'View Services',
-                      style: TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13.sp,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              const Spacer(),
+              // Modern Button-like Action
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 12 : 16, 
+                  vertical: isMobile ? 8 : 10
+                ),
+                decoration: BoxDecoration(
+                  color: _hovered ? widget.bgColor.withOpacity(0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _hovered ? widget.bgColor.withOpacity(0.2) : Colors.transparent,
                   ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, size: 12, color: AppTheme.primary),
-                ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Explore Services',
+                      style: GoogleFonts.inter(
+                        color: _hovered ? widget.bgColor : AppTheme.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: isMobile ? 12 : 14,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    AnimatedPadding(
+                      duration: const Duration(milliseconds: 300),
+                      padding: EdgeInsets.only(left: _hovered ? 6 : 0),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: isMobile ? 16 : 18,
+                        color: _hovered ? widget.bgColor : AppTheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -511,41 +586,105 @@ class _StepCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 30,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: AppTheme.primary,
-              borderRadius: BorderRadius.circular(20),
+              gradient: AppTheme.primaryGradient,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Center(
               child: Text(
                 number,
-                style: const TextStyle(
+                style: GoogleFonts.inter(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.5,
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(description, style: TextStyle(color: Colors.grey.shade600)),
+          const SizedBox(height: 16),
+          Text(
+            description,
+            style: GoogleFonts.inter(
+              color: AppTheme.textSecondary,
+              fontSize: 16,
+              height: 1.6,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _ModernButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool isLight;
+
+  const _ModernButton({
+    required this.label,
+    required this.onTap,
+    this.isLight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isLight ? Colors.white : AppTheme.primary,
+        foregroundColor: isLight ? AppTheme.primary : Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+      ).copyWith(
+        overlayColor: MaterialStateProperty.all(
+          (isLight ? AppTheme.primary : Colors.white).withOpacity(0.1),
+        ),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
       ),
     );
   }

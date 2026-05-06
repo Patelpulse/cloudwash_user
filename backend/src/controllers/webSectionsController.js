@@ -312,6 +312,11 @@ const syncStatsToFirestore = async (stats) => {
                     totalCities: stats.totalCities,
                     totalOrders: stats.totalOrders,
                     isActive: stats.isActive,
+                    appDownloadTag: stats.appDownloadTag,
+                    appDownloadTitle: stats.appDownloadTitle,
+                    appDownloadSubtitle: stats.appDownloadSubtitle,
+                    appStoreUrl: stats.appStoreUrl,
+                    playStoreUrl: stats.playStoreUrl,
                     mongoId: stats._id.toString(),
                     updatedAt: stats.updatedAt
                         ? new Date(stats.updatedAt).toISOString()
@@ -348,6 +353,11 @@ const updateStats = async (req, res) => {
             totalCities,
             totalOrders,
             isActive,
+            appDownloadTag,
+            appDownloadTitle,
+            appDownloadSubtitle,
+            appStoreUrl,
+            playStoreUrl,
         } = req.body || {};
         let stats = await Stats.findOne({});
         if (!stats) {
@@ -363,6 +373,13 @@ const updateStats = async (req, res) => {
         if (normalizedTotalBranches) stats.totalBranches = normalizedTotalBranches;
         if (normalizedTotalCities) stats.totalCities = normalizedTotalCities;
         if (normalizedTotalOrders) stats.totalOrders = normalizedTotalOrders;
+        
+        if (appDownloadTag !== undefined) stats.appDownloadTag = appDownloadTag;
+        if (appDownloadTitle !== undefined) stats.appDownloadTitle = appDownloadTitle;
+        if (appDownloadSubtitle !== undefined) stats.appDownloadSubtitle = appDownloadSubtitle;
+        if (appStoreUrl !== undefined) stats.appStoreUrl = appStoreUrl;
+        if (playStoreUrl !== undefined) stats.playStoreUrl = playStoreUrl;
+
         stats.isActive = isActive === 'true' ? true : (isActive === 'false' ? false : stats.isActive);
 
         const updatedStats = await stats.save();

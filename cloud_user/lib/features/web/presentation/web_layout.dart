@@ -212,10 +212,9 @@ class _WebLayoutState extends ConsumerState<WebLayout> {
                     children: [
                       // Main Content
                       widget.child,
-
+// if(!isMobile)
                       // Footer
-                      if (!isMobile)
-                        WebFooter(logoUrl: logoUrl, logoHeight: logoHeight),
+                      WebFooter(logoUrl: logoUrl, logoHeight: logoHeight),
                     ],
                   ),
                 ),

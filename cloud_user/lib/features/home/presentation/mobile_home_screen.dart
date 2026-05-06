@@ -252,38 +252,34 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // 1. VIDEO HEADER WITH OVERLAY CONTENT
+                // 1. VIDEO HEADER WITH PREMIUM OVERLAY
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 300,
+                    height: 380, // Slightly taller for more presence
                     width: double.infinity,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // 1. Fallback Image Background (Visible while video loads)
+                        // Background (Image + Video)
                         Positioned.fill(
                           child: heroAsync.maybeWhen(
-                            data: (hero) =>
-                                hero != null && hero.imageUrl.isNotEmpty
+                            data: (hero) => hero != null && hero.imageUrl.isNotEmpty
                                 ? CachedNetworkImage(
                                     imageUrl: hero.imageUrl,
                                     fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        Container(color: Colors.grey[200]),
-                                    errorWidget: (context, url, error) =>
-                                        Container(color: Colors.grey[200]),
+                                    placeholder: (context, url) => Container(color: Colors.white),
+                                    errorWidget: (context, url, error) => Container(color: Colors.white),
                                   )
-                                : Container(color: Colors.grey[200]),
-                            orElse: () => Container(color: Colors.grey[200]),
+                                : Container(color: Colors.white),
+                            orElse: () => Container(color: Colors.white),
                           ),
                         ),
-                        // 2. Video Background (Full Coverage)
+                        // Video Layer
                         Positioned.fill(
                           child: VisibilityDetector(
                             key: const Key('home_video_visibility'),
                             onVisibilityChanged: (visibilityInfo) {
-                              final isNowVisible =
-                                  visibilityInfo.visibleFraction > 0.1;
+                              final isNowVisible = visibilityInfo.visibleFraction > 0.1;
                               if (isNowVisible && !_isVisible) {
                                 _isVisible = true;
                                 _initializeController(force: true);
@@ -291,37 +287,33 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                                 _isVisible = false;
                               }
                             },
-                            child: Container(
-                              color: Colors.transparent,
-                              child: FittedBox(
-                                fit: BoxFit.cover,
-                                child: SizedBox(
-                                  width: 800,
-                                  height: 300,
-                                  child: _isControllerInitialized
-                                      ? WebViewWidget(
-                                          controller: _videoController,
-                                        )
-                                      : const SizedBox.shrink(),
-                                ),
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: 800,
+                                height: 380,
+                                child: _isControllerInitialized
+                                    ? WebViewWidget(controller: _videoController)
+                                    : const SizedBox.shrink(),
                               ),
                             ),
                           ),
                         ),
 
-                        // White Gradient Overlay (Bottom to Top)
+                        // Multi-Layer Gradients for Premium Look
                         Positioned.fill(
-                          child: Container(
+                          child: DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                                 colors: [
+                                  Colors.white.withOpacity(0.9),
+                                  Colors.white.withOpacity(0.4),
+                                  Colors.white.withOpacity(0.8),
                                   Colors.white,
-                                  Colors.white.withValues(alpha: 0.7),
-                                  Colors.transparent,
                                 ],
-                                stops: const [0.0, 0.3, 0.6],
+                                stops: const [0.0, 0.4, 0.7, 1.0],
                               ),
                             ),
                           ),
@@ -335,366 +327,35 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                           child: SafeArea(
                             bottom: false,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              child: Stack(
-                                alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Profile Section (Avatar + Name)
-                                      userAsync.when(
-                                        data: (user) {
-                                          if (user == null) {
-                                            // GUEST / LOGGED OUT UI
-                                            return GestureDetector(
-                                              onTap: () =>
-                                                  context.push('/login'),
-                                              child: Row(
-                                                children: [
-                                                  const CircleAvatar(
-                                                    radius: 20,
-                                                    backgroundColor:
-                                                        Colors.white,
-                                                    child: Icon(
-                                                      Icons.person,
-                                                      color: AppTheme.primary,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 16,
-                                                          vertical: 8,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            20,
-                                                          ),
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors.black
-                                                              .withOpacity(0.1),
-                                                          blurRadius: 4,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    child: Text(
-                                                      'LOGIN',
-                                                      style: GoogleFonts.inter(
-                                                        color: AppTheme.primary,
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }
-
-                                          // LOGGED IN UI
-                                          return GestureDetector(
-                                            onTap: () =>
-                                                context.push('/profile'),
-                                            child: Row(
-                                              children: [
-                                                ProfileImage(
-                                                  imageSource:
-                                                      user['profileImage'],
-                                                  size: 40,
-                                                  fallbackUrl:
-                                                      'https://i.pravatar.cc/150?u=user',
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white
-                                                        .withValues(alpha: 0.9),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          20,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    user['name'] ?? 'User',
-                                                    style: GoogleFonts.inter(
-                                                      color: const Color(
-                                                        0xFF1A1A1A,
-                                                      ),
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                        loading: () => Row(
-                                          children: [
-                                            const CircleAvatar(
-                                              radius: 20,
-                                              backgroundColor: Colors.grey,
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.9,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                'Loading...',
-                                                style: GoogleFonts.inter(
-                                                  color: const Color(
-                                                    0xFF1A1A1A,
-                                                  ),
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        error: (_, __) => const CircleAvatar(
-                                          radius: 20,
-                                          backgroundColor: Colors.grey,
-                                        ),
-                                      ),
-                                      // Notification Icon
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.9,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: InkWell(
-                                          onTap: () =>
-                                              context.push('/notifications'),
-                                          child: const Icon(
-                                            Icons.notifications_outlined,
-                                            color: Color(0xFF1A1A1A),
-                                            size: 20,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  // Profile Section
+                                  userAsync.when(
+                                    data: (user) => user == null
+                                        ? _buildLoginButton()
+                                        : _buildUserProfileBadge(user),
+                                    loading: () => _buildProfileShimmer(),
+                                    error: (_, __) => _buildLoginButton(),
                                   ),
-                                  const SizedBox.shrink(),
+                                  // Notification Icon
+                                  _buildNotificationBadge(),
                                 ],
                               ),
                             ),
                           ),
                         ),
+
+                        // Hero Content (Bottom Positioned)
                         Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Greeting
-                                userAsync.when(
-                                  data: (user) {
-                                    final hour = DateTime.now().hour;
-                                    final greeting = hour < 12
-                                        ? 'GOOD MORNING'
-                                        : hour < 17
-                                        ? 'GOOD AFTERNOON'
-                                        : 'GOOD EVENING';
-                                    return Text(
-                                      '$greeting, ${user?['name']?.toString().toUpperCase() ?? 'USER'}',
-                                      style: GoogleFonts.inter(
-                                        color: Colors.black54,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    );
-                                  },
-                                  loading: () => const SizedBox.shrink(),
-                                  error: (_, __) => const SizedBox.shrink(),
-                                ),
-                                const SizedBox(height: 8),
-
-                                heroAsync.when(
-                                  data: (hero) {
-                                    final heroTitle =
-                                        (hero?.mainTitle.isNotEmpty ?? false)
-                                        ? hero!.mainTitle.replaceAll(
-                                            '\\n',
-                                            '\n',
-                                          )
-                                        : 'Feel Fresh Every Day';
-                                    final heroDesc =
-                                        (hero?.description.isNotEmpty ?? false)
-                                        ? hero!.description
-                                        : 'Book premium laundry pickup in seconds.';
-                                    final heroTitleColor = _heroColor(
-                                      hero?.titleColor,
-                                      const Color(0xFF111827),
-                                    );
-                                    final heroDescColor = _heroColor(
-                                      hero?.descriptionColor,
-                                      Colors.black38,
-                                    );
-                                    final titleFontFamily =
-                                        _heroTitleFontFamily(hero);
-                                    final bodyFontFamily = _heroBodyFontFamily(
-                                      hero,
-                                    );
-
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        AnimatedSwitcher(
-                                          duration: const Duration(
-                                            milliseconds: 450,
-                                          ),
-                                          child: Text(
-                                            heroTitle,
-                                            key: ValueKey(heroTitle),
-                                            style: GoogleFonts.getFont(
-                                              titleFontFamily,
-                                              textStyle: TextStyle(
-                                                color: heroTitleColor,
-                                                fontSize: _heroTitleFontSize(
-                                                  hero,
-                                                ),
-                                                fontWeight: FontWeight.w800,
-                                                height: 1.1,
-                                              ),
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        AnimatedSwitcher(
-                                          duration: const Duration(
-                                            milliseconds: 450,
-                                          ),
-                                          child: Text(
-                                            heroDesc,
-                                            key: ValueKey(heroDesc),
-                                            style: GoogleFonts.getFont(
-                                              bodyFontFamily,
-                                              textStyle: TextStyle(
-                                                color: heroDescColor,
-                                                fontSize:
-                                                    _heroDescriptionFontSize(
-                                                      hero,
-                                                    ),
-                                                fontWeight: FontWeight.w500,
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                  loading: () => const SizedBox.shrink(),
-                                  error: (_, __) => const SizedBox.shrink(),
-                                ),
-
-                                const SizedBox(height: 16),
-
-                                // Badges
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.greenAccent,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.flash_on,
-                                            color: Colors.black87,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'PREMIUM',
-                                            style: GoogleFonts.inter(
-                                              color: Colors.black87,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black87,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.auto_awesome,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'EXPERT CARE',
-                                            style: GoogleFonts.inter(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                          bottom: 24,
+                          left: 20,
+                          right: 20,
+                          child: heroAsync.when(
+                            data: (hero) => _buildHeroContentOverlay(hero),
+                            loading: () => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
                           ),
                         ),
                       ],
@@ -702,185 +363,69 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                   ),
                 ),
 
+                // 2. MODERN CATEGORY GRID
                 SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      categoriesAsync.when(
-                        data: (categories) {
-                          if (categories.isEmpty) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(2),
-                                child: Text(
-                                  'No categories available',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            );
-                          }
-                          final firstRowItems = categories.take(4).toList();
-                          final secondRowItems = categories.length > 4
-                              ? categories.skip(4).take(4).toList()
-                              : <dynamic>[];
-
-                          Widget buildItem(CategoryModel cat) {
-                            String displayName = cat.name
-                                .toString()
-                                .toUpperCase();
-                            final words = cat.name.toString().trim().split(' ');
-                            if (words.length > 1) {
-                              displayName = '${words[0]} ${words[1][0]}...'
-                                  .toUpperCase();
-                            }
-                            final embeddedCategoryBytes = decodeDataImage(
-                              cat.imageUrl,
-                            );
-                            final hasEmbeddedImage =
-                                embeddedCategoryBytes != null;
-
-                            return GestureDetector(
-                              onTap: () => context.push(
-                                '/category/${cat.id}',
-                                extra: cat.name,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 65,
-                                    height: 65,
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.08,
-                                          ),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                    child: hasEmbeddedImage
-                                        ? Image.memory(
-                                            embeddedCategoryBytes!,
-                                            fit: BoxFit.contain,
-                                          )
-                                        : Image.network(
-                                            cat.imageUrl,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) =>
-                                                const Icon(
-                                                  Icons.category,
-                                                  color: Colors.grey,
-                                                ),
-                                          ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    displayName,
-                                    style: GoogleFonts.inter(
-                                      color: const Color(0xFF1A1A1A),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 15,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
+                    child: categoriesAsync.when(
+                      data: (categories) {
+                        if (categories.isEmpty) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // First Row
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    for (var item in firstRowItems)
-                                      Expanded(child: buildItem(item)),
-                                    for (
-                                      var i = 0;
-                                      i < 4 - firstRowItems.length;
-                                      i++
-                                    )
-                                      const Spacer(),
-                                  ],
+                                Text(
+                                  'Services Categories',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF0F172A),
+                                  ),
                                 ),
-
-                                const SizedBox(height: 5),
-
-                                // Second Row
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    for (var item in secondRowItems)
-                                      Expanded(child: buildItem(item)),
-                                    for (
-                                      var i = 0;
-                                      i < 4 - secondRowItems.length;
-                                      i++
-                                    )
-                                      const Spacer(),
-                                  ],
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${categories.length} Categories',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                          );
-                        },
-                        loading: () => const SizedBox(
-                          height: 160, // Increased height
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                        error: (e, stack) {
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  const Icon(
-                                    Icons.error,
-                                    color: Colors.red,
-                                    size: 40,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    'Error loading categories',
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    e.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                            const SizedBox(height: 24),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                childAspectRatio: 0.8,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 12,
                               ),
+                              itemCount: categories.length,
+                              itemBuilder: (context, index) {
+                                final cat = categories[index];
+                                return _buildModernCategoryItem(cat);
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                    ],
+                          ],
+                        );
+                      },
+                      loading: () => _buildCategoryGridShimmer(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
+
                 // 4. BANNERS
                 SliverToBoxAdapter(
                   child: bannersAsync.when(
@@ -1155,16 +700,241 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
     );
   }
 
+  Widget _buildLoginButton() {
+    return GestureDetector(
+      onTap: () => context.push('/login'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_outline, color: AppTheme.primary, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'LOGIN',
+              style: GoogleFonts.inter(
+                color: AppTheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserProfileBadge(dynamic user) {
+    return GestureDetector(
+      onTap: () => context.push('/profile'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ProfileImage(
+              imageSource: user['profileImage'],
+              size: 36,
+              fallbackUrl: 'https://i.pravatar.cc/150?u=user',
+            ),
+            const SizedBox(width: 10),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                user['name'] ?? 'User',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFF1E293B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.white.withOpacity(0.5),
+      highlightColor: Colors.white,
+      child: Container(
+        width: 120,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationBadge() {
+    return Consumer(
+      builder: (context, ref, _) {
+        // Since unreadNotificationsCountProvider is in WebNavBar, we check if it's accessible here
+        // If not, we use a simple icon for now or check notification_provider
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1E293B), size: 24),
+            onPressed: () => context.push('/notifications'),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeroContentOverlay(HeroSectionModel? hero) {
+    final title = hero?.mainTitle.replaceAll('\\n', '\n') ?? 'Feel Fresh Every Day';
+    final desc = hero?.description ?? 'Book premium laundry pickup in seconds.';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tagline Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: AppTheme.glassGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.auto_awesome, color: AppTheme.primary, size: 14),
+              const SizedBox(width: 8),
+              Text(
+                '#1 RATED SERVICE',
+                style: GoogleFonts.inter(
+                  color: AppTheme.primary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF0F172A),
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          desc,
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            color: const Color(0xFF475569),
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Modern Search Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppTheme.softShadow,
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search_rounded, color: Color(0xFF94A3B8)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Search for services...',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF94A3B8),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.tune_rounded, color: Colors.white, size: 18),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        title,
-        style: GoogleFonts.poppins(
-          color: const Color(0xFF1A1A1A),
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              color: const Color(0xFF0F172A),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          TextButton(
+            onPressed: () {},
+            child: Text(
+              'View All',
+              style: GoogleFonts.inter(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1173,104 +943,66 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
     return GestureDetector(
       onTap: () => context.push('/service-details', extra: service),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppTheme.softShadow,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(24),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Background Image
+              // Image
               service.image != null && service.image!.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: service.image!,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(color: Colors.white),
-                      ),
-                      errorWidget: (_, __, ___) => Container(
-                        color: Colors.grey[300],
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.grey[600],
-                        ),
-                      ),
                     )
-                  : Container(
-                      color: Colors.blueGrey[100],
-                      child: Icon(
-                        Icons.local_laundry_service,
-                        size: 40,
-                        color: Colors.blueGrey,
-                      ),
-                    ),
-
+                  : Container(color: Colors.grey[200]),
+              
               // Gradient Overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(
-                        0.8,
-                      ), // Using withOpacity instead of withValues for broader compatibility
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: const [0.4, 1.0],
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.8),
+                      ],
+                      stops: const [0.5, 1.0],
+                    ),
                   ),
                 ),
               ),
 
-              // Rating Badge
+              // Rating
               Positioned(
-                top: 15,
-                right: 15,
+                top: 16,
+                right: 16,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 5,
-                      ),
-                    ],
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 14),
+                      const Icon(Icons.star_rounded, color: Colors.orange, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         service.rating.toString(),
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: Colors.black87,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // Content
+              // Details
               Positioned(
                 bottom: 20,
                 left: 20,
@@ -1280,26 +1012,14 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      service.category,
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
                       service.title,
                       style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -1307,8 +1027,8 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                           '₹${service.price}',
                           style: GoogleFonts.inter(
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
                             fontSize: 20,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                         Container(
@@ -1317,11 +1037,7 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                             color: Colors.white,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 14,
-                            color: Colors.black,
-                          ),
+                          child: const Icon(Icons.add, color: Colors.black, size: 20),
                         ),
                       ],
                     ),
@@ -1339,69 +1055,33 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
     return GestureDetector(
       onTap: () => context.push('/services-list/${cat.id}', extra: cat.name),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
+        margin: const EdgeInsets.only(right: 16),
+        width: 120,
         child: Column(
           children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(15),
+            Container(
+              height: 120,
+              width: 120,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                image: DecorationImage(
+                  image: CachedNetworkImageProvider(cat.imageUrl),
+                  fit: BoxFit.cover,
                 ),
-                child: Stack(
-                  children: [
-                    CachedNetworkImage(
-                      imageUrl: cat.imageUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(color: Colors.white),
-                      ),
-                      errorWidget: (_, __, ___) =>
-                          const Center(child: Icon(Icons.category)),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.4),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                boxShadow: AppTheme.softShadow,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-              child: Text(
-                cat.name,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 12),
+            Text(
+              cat.name,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1E293B),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -1415,33 +1095,19 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-            ),
-          ],
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: AppTheme.softShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 child: CachedNetworkImage(
                   imageUrl: service.image ?? '',
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(color: Colors.white),
-                  ),
-                  errorWidget: (_, __, ___) =>
-                      const Center(child: Icon(Icons.image)),
                 ),
               ),
             ),
@@ -1452,12 +1118,13 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                 children: [
                   Text(
                     service.title,
-                    style: const TextStyle(
-                      color: Color(0xFF1A1A1A),
+                    style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 14,
+                      color: const Color(0xFF1E293B),
                     ),
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -1465,17 +1132,13 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
                     children: [
                       Text(
                         '₹${service.price}',
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           color: AppTheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
                         ),
                       ),
-                      const Icon(
-                        Icons.add_circle,
-                        color: AppTheme.primary,
-                        size: 20,
-                      ),
+                      const Icon(Icons.add_circle_outline_rounded, color: AppTheme.primary, size: 24),
                     ],
                   ),
                 ],
@@ -1488,32 +1151,119 @@ class _MobileHomeScreenState extends ConsumerState<MobileHomeScreen>
   }
 
   Widget _buildWhyItem(String title, String desc) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.softShadow,
+      ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: Colors.green, size: 16),
-          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 24),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xFF1A1A1A),
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 15,
+                    color: const Color(0xFF1E293B),
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                  ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+  Widget _buildModernCategoryItem(CategoryModel cat) {
+    final embeddedBytes = decodeDataImage(cat.imageUrl);
+    return GestureDetector(
+      onTap: () => context.push('/category/${cat.id}', extra: cat.name),
+      child: Column(
+        children: [
+          Container(
+            height: 60,
+            width: 60,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: embeddedBytes != null
+                ? Image.memory(embeddedBytes, fit: BoxFit.contain)
+                : CachedNetworkImage(
+                    imageUrl: cat.imageUrl,
+                    fit: BoxFit.contain,
+                    errorWidget: (_, __, ___) => const Icon(Icons.category_outlined, color: Color(0xFF94A3B8)),
+                  ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            cat.name,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF475569),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryGridShimmer() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        childAspectRatio: 0.8,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: 8,
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: Colors.grey[200]!,
+        highlightColor: Colors.grey[100]!,
+        child: Column(
+          children: [
+            Container(height: 60, width: 60, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16))),
+            const SizedBox(height: 8),
+            Container(height: 12, width: 40, color: Colors.white),
+          ],
+        ),
       ),
     );
   }

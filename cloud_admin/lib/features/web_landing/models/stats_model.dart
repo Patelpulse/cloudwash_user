@@ -5,6 +5,11 @@ class StatsModel {
   final String totalCities;
   final String totalOrders;
   final bool isActive;
+  final String appDownloadTag;
+  final String appDownloadTitle;
+  final String appDownloadSubtitle;
+  final String appStoreUrl;
+  final String playStoreUrl;
 
   StatsModel({
     required this.id,
@@ -13,16 +18,26 @@ class StatsModel {
     required this.totalCities,
     required this.totalOrders,
     required this.isActive,
+    this.appDownloadTag = '',
+    this.appDownloadTitle = '',
+    this.appDownloadSubtitle = '',
+    this.appStoreUrl = '',
+    this.playStoreUrl = '',
   });
 
   factory StatsModel.fromJson(Map<String, dynamic> json) {
     return StatsModel(
       id: (json['_id'] ?? '').toString(),
-      happyClients: json['happyClients'] ?? '',
-      totalBranches: json['totalBranches'] ?? '',
-      totalCities: json['totalCities'] ?? '',
-      totalOrders: json['totalOrders'] ?? '',
+      happyClients: (json['happyClients'] ?? '').toString(),
+      totalBranches: (json['totalBranches'] ?? '').toString(),
+      totalCities: (json['totalCities'] ?? '').toString(),
+      totalOrders: (json['totalOrders'] ?? '').toString(),
       isActive: _parseBool(json['isActive'], fallback: true),
+      appDownloadTag: (json['appDownloadTag'] ?? '').toString(),
+      appDownloadTitle: (json['appDownloadTitle'] ?? '').toString(),
+      appDownloadSubtitle: (json['appDownloadSubtitle'] ?? '').toString(),
+      appStoreUrl: (json['appStoreUrl'] ?? '').toString(),
+      playStoreUrl: (json['playStoreUrl'] ?? '').toString(),
     );
   }
 
@@ -34,6 +49,11 @@ class StatsModel {
       'totalCities': totalCities,
       'totalOrders': totalOrders,
       'isActive': isActive,
+      'appDownloadTag': appDownloadTag,
+      'appDownloadTitle': appDownloadTitle,
+      'appDownloadSubtitle': appDownloadSubtitle,
+      'appStoreUrl': appStoreUrl,
+      'playStoreUrl': playStoreUrl,
     };
   }
 
